@@ -24,6 +24,9 @@ use constant LOGIN_FORM_LOGIN_FIELD_NAME=>"login";
 use constant LOGIN_FORM_PASSWORD_FIELD_NAME=>"password";
 use constant LOGIN_FORM_CAS_TICKET_FIELD_NAME=>"ticket";
 
+use constant REQ_PARAM_NAME=>"lang";
+
+
 BEGIN {
 	if (MP2) {
 		require Apache2::Const;
