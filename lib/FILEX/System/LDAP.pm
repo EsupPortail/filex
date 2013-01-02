@@ -41,7 +41,7 @@ sub _connect {
 	# attempt to connect
 	if ( !defined($self->{'_ldap_'}) ) {
 		$self->{'_bind_'} = undef;
-		$self->{'_ldap_'} = Net::LDAP->new($self->{'_config_'}->getLdapServerUrl()) 
+		$self->{'_ldap_'} = Net::LDAP->new( [ split(',',$self->{'_config_'}->getLdapServerUrl()) ] )
 			or die(__PACKAGE__," => unable to connect to ldap server : ",$@);
 	}
 	# already binded ?

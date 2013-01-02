@@ -31,7 +31,7 @@ sub processAuth {
 		return undef;
 	}
 	# step 2 - attempt to bind using user dn + password
-	my $ldap_bind = Net::LDAP->new($self->_config->getLdapServerUrl());
+	my $ldap_bind = Net::LDAP->new( [ split(',',$self->_config->getLdapServerUrl()) ] );
 	if ( ! $ldap_bind ) {
 		$self->_set_error("$@");
 		return undef;
