@@ -12,6 +12,7 @@ use FILEX::Tools::Utils qw(tsToLocal hrSize toHtml genUniqId);
 # Others
 use File::Spec;
 use IO::Select;
+use Time::HiRes qw(gettimeofday tv_interval);
 use Cache::FileCache;
 
 use constant FILEX_CONFIG_NAME => "FILEXConfig";
@@ -97,22 +98,31 @@ sub run {
 			# initialize the upload hook
 			# note : hook_data = uploadid
 			# note : inspired from Apache::UploadMeter
+			my $prevtime;
+			my $oldlength = 0;
 			my $transparent_hook = sub {
 				my ($upl, $buf, $len, $hook_data) = @_;
 				return if ( ! $IPCache );
 				# check if upload begin
-				my $oldlength = $IPCache->get($hook_data."length") || 0;
-				# on MP2 the len was the current total upload size
-				my $newlength = (MP2) ? $len : $len + $oldlength;
 				if ( $oldlength == 0 ) {
 					$IPCache->set($hook_data."filename",normalize((MP2) ? $upl->upload_filename() : $upl->filename()));
 					$IPCache->set($hook_data."starttime",time());
 					$IPCache->set($hook_data."canceled",0);
 					$IPCache->set($hook_data."end",0);
 				}
-				# store current length
+
+				# on MP2 the len was the current total upload size
+				my $newlength = (MP2) ? $len : $len + $oldlength;
+
 				# increment current length
-				$IPCache->set($hook_data."length",$newlength);
+				$oldlength = $newlength;
+
+				my $time = [gettimeofday];
+				if (!$prevtime || tv_interval($prevtime, $time) > 0.2) {
+				    # store current length
+				    $IPCache->set($hook_data."length",$newlength);
+				    $prevtime = $time;
+				}
 			};
 			$S = FILEX::System->new($r,with_upload=>1,with_hook=>{"hook_data"=>$download_id,"upload_hook"=>$transparent_hook});
 		}
