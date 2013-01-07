@@ -97,7 +97,7 @@ sub getUserDn {
 # check if user exists into ldap database
 sub userExists {
   my $self = shift;
-  my $uname = shift;
+  my $uid = shift;
   my $ldap = $self->srv();
   my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
   my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
@@ -105,7 +105,7 @@ sub userExists {
   $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
   $searchArgz{'scope'} = "sub";
   $searchArgz{'attrs'} = [$uidAttr];
-  $searchArgz{'filter'} = "($uidAttr=$uname)";
+  $searchArgz{'filter'} = "($uidAttr=$uid)";
   my $mesg = $ldap->search(%searchArgz);
   if ( $mesg->is_error() || $mesg->code() ) {
     warn(__PACKAGE__,"-> LDAP error : ",$mesg->error());
@@ -150,9 +150,9 @@ sub getUserAttrs {
 # require uname
 sub getMail {
   my $self = shift;
-  my $uname = shift;
+  my $uid = shift;
 	my $mailAttr = $self->{'_config_'}->getLdapMailAttr();
-	my $res = $self->getUserAttrs(uid=>$uname,attrs=>[$mailAttr]);
+	my $res = $self->getUserAttrs(uid=>$uid,attrs=>[$mailAttr]);
 	return undef if !$res;
 	return $res->{$mailAttr}->[0];
 }
