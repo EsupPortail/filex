@@ -32,6 +32,8 @@ sub new {
 	# set user id
 	$self->{'id'} = $ARGZ{'uid'};
 
+	$self->{'_getUserInfo_'} = $ARGZ{'getUserInfo'} or die(__PACKAGE__," => getUserInfo is mandatory!");
+
 	# config
 	$self->{'_config_'} = FILEX::System::Config->instance();
 
@@ -105,7 +107,7 @@ sub getMail {
 	my $mail = $self->_fromSession("mail");
 	return $mail if $mail;
 	# get from data source
-	$mail = $self->{'_ldap_'}->getMail($self->{'id'});
+	$mail = $self->{'_getUserInfo_'}->getMail($self->{'id'});
 	# store
 	$self->_toSession(mail=>$mail,1);
 	return $mail;
@@ -119,7 +121,7 @@ sub getRealName {
 	my $rn = $self->_fromSession("real_name");
 	return $rn if defined($rn);
 
-	$rn = $self->{'_ldap_'}->getUserRealName($self->{'id'});
+	$rn = $self->{'_getUserInfo_'}->getUserRealName($self->{'id'});
 	defined($rn) or $rn = "unknown";
 
 	# store
@@ -235,7 +237,7 @@ sub getUniqId {
 	if ( $self->{'_config_'}->getUniqAttrMode() != 1 ) {
 	    $uniq_id = $self->{'id'};
 	} else {	
-	    $uniq_id = $self->{'_ldap_'}->getUniqId($self->{'id'});
+	    $uniq_id = $self->{'_getUserInfo_'}->getUniqId($self->{'id'});
 	}
 
 	# store

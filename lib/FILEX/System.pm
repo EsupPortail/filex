@@ -186,6 +186,11 @@ sub i18n {
 	return $self->{'_i18n_'};
 }
 
+sub get_getUserInfo {
+	my $self = shift;
+	return $self->{'_auth_'}->get_getUserInfo() || $self->ldap();
+}
+
 # return ldap server object
 sub ldap {
 	my $self = shift;
@@ -238,6 +243,7 @@ sub getUser {
 sub _createUser {
 	my ($self, %params) = @_;
 
+	$params{getUserInfo} ||= $self->get_getUserInfo();
 	$params{ldap} ||= $self->ldap();
 
 	$self->{'_user_'} = FILEX::System::User->new(%params);
@@ -391,6 +397,11 @@ sub _doProcessAuthParam {
 			$result->{'password'} = $self->apreq->param(LOGIN_FORM_PASSWORD_FIELD_NAME);
 			$mandatory++ if defined($result->{'password'});
 		}
+		if ( $key eq 'headers' ) {
+		    $result->{'headers'} = $self->apreq->headers_in;
+		    $mandatory++ if defined($result->{'headers'});
+                }
+
 	}
 	return $mandatory;
 }
@@ -591,12 +602,12 @@ sub isIE {
 # require uname
 sub getMail {
 	my $self = shift;
-	return $self->ldap->getMail(@_);
+	return $self->get_getUserInfo->getMail(@_);
 }
 
 sub getUserRealName {
 	my $self = shift;
-	my $rn = $self->ldap->getUserRealName(@_);
+	my $rn = $self->get_getUserInfo->getUserRealName(@_);
 	return defined($rn) ? $rn : "unknown";
 }
 

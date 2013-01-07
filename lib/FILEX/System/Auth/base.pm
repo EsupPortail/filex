@@ -25,6 +25,10 @@ sub _config {
 	return $self->{'_config_'};
 }
 
+sub get_getUserInfo {
+    undef;
+}
+
 sub needRedirect {
 	warn(__PACKAGE__,"-> needRedirect method need to be overriden and must return 0 or 1");
 }

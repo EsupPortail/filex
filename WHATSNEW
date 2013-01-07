@@ -1,3 +1,5 @@
+- authentification Shib
+
 v1.7a
 1- Correction d'un petit bug dans le module de configuration d'Apache (HttpConfig.pm) dans le cas d'un usage avec apache 1.x
 2- Ajout des fonctionnalités :
