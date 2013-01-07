@@ -71,24 +71,34 @@ sub srv {
 	return $self->{'_ldap_'};
 }
 
-# get user DN
-sub getUserDn {
-	my $self = shift;
-  my $uid = shift;
+sub _searchRaw {
+  my ($self, $uid, $attrs) = @_;
+
   my $ldap = $self->srv();
   my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
   my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
   my %searchArgz;
   $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
   $searchArgz{'scope'} = "sub";
-  $searchArgz{'attrs'} = [$uidAttr];
+  $searchArgz{'attrs'} = $attrs;
   $searchArgz{'filter'} = "($uidAttr=$uid)";
   my $mesg = $ldap->search(%searchArgz);
   if ( $mesg->is_error() || $mesg->code() ) {
     warn(__PACKAGE__,"-> LDAP error : ",$mesg->error());
     return undef;
   }
-  # only one value can be returned
+  return $mesg;
+}
+
+# get user DN
+sub getUserDn {
+	my $self = shift;
+  my $uid = shift;
+
+  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+  my $mesg = $self->_searchRaw($uid, [$uidAttr]);
+
+ # only one value can be returned
   my $r = $mesg->as_struct();
   my @k = keys(%$r);
   return $k[0];
@@ -98,19 +108,10 @@ sub getUserDn {
 sub userExists {
   my $self = shift;
   my $uid = shift;
-  my $ldap = $self->srv();
-  my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
+
   my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
-  my %searchArgz;
-  $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
-  $searchArgz{'scope'} = "sub";
-  $searchArgz{'attrs'} = [$uidAttr];
-  $searchArgz{'filter'} = "($uidAttr=$uid)";
-  my $mesg = $ldap->search(%searchArgz);
-  if ( $mesg->is_error() || $mesg->code() ) {
-    warn(__PACKAGE__,"-> LDAP error : ",$mesg->error());
-    return undef;
-  }
+  my $mesg = $self->_searchRaw($uid, [$uidAttr]);
+
   # count
   return $mesg->count();
 }
@@ -127,19 +128,8 @@ sub getUserAttrs {
   my $attrs = $ARGZ{'attrs'} if (exists($ARGZ{'attrs'}) && ref($ARGZ{'attrs'}) eq "ARRAY");
   return undef if !defined($attrs);
 
-  my $ldap = $self->srv();
-  my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
-  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
-  my %searchArgz;
-  $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
-  $searchArgz{'scope'} = "sub";
-  $searchArgz{'filter'} = "($uidAttr=$uid)";
-  $searchArgz{'attrs'} = $attrs;
-  my $mesg = $ldap->search(%searchArgz);
-  if ( $mesg->is_error() || $mesg->code() ) {
-    warn(__PACKAGE__,"-> LDAP error : ",$mesg->error());
-    return undef;
-  }
+  my $mesg = $self->_searchRaw($uid, $attrs);
+
   # fetch datas if found then only one entry is returned !
   my $h = $mesg->as_struct();
   my ($dn,$res) = each(%$h);
