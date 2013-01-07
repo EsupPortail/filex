@@ -82,6 +82,7 @@ sub _searchRaw {
   $searchArgz{'scope'} = "sub";
   $searchArgz{'attrs'} = $attrs;
   $searchArgz{'filter'} = "($uidAttr=$uid)";
+  $searchArgz{'sizelimit'} = 1;
   my $mesg = $ldap->search(%searchArgz);
   if ( $mesg->is_error() || $mesg->code() ) {
     warn(__PACKAGE__,"-> LDAP error : ",$mesg->error());
