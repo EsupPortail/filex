@@ -12,7 +12,7 @@ do {
 	my $filex_config = $ENV{'FILEXConfig'};
 	my $conf = FILEX::System::Config->instance(file=>$filex_config);
 	# 
-	warn("Entering FILEX configuration under mod_perl : ",(MP2)?"2.0":"1.0");
+	#warn("Entering FILEX configuration under mod_perl : ",(MP2)?"2.0":"1.0");
   if ( MP2 ) {
 		# under mod_perl 2.0
 		# generic template for handlers
@@ -97,7 +97,7 @@ EOST
 		$config =~ s/FILEX::URI/$uri/sg;
 		$config =~ s/STATIC::PATH/$static_path/sg;
 		push(@apacheConfig,split(/\n/,$config));
-		warn join("\n",@apacheConfig);
+		#warn join("\n",@apacheConfig);
 		Apache2::ServerUtil->server->add_config(\@apacheConfig);
 	} else {
 		# under mod_perl 1.0
