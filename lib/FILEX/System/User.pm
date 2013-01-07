@@ -119,11 +119,9 @@ sub getRealName {
 	my $rn = $self->_fromSession("real_name");
 	return $rn if defined($rn);
 
-	# get from data souce
-  my $attr = $self->{'_config_'}->getLdapUsernameAttr();
-  my $res = $self->{'_ldap_'}->getUserAttrs(uid=>$self->{'id'},attrs=>[$attr]);
-  $attr = lc($attr);
-	$rn = ($res) ? $res->{$attr}->[0] : "unknown";
+	$rn = $self->{'_ldap_'}->getUserRealName($self->{'id'});
+	defined($rn) or $rn = "unknown";
+
 	# store
 	$self->_toSession(real_name=>$rn,1);
 	
@@ -215,9 +213,7 @@ sub getUniqId {
 	if ( $self->{'_config_'}->getLdapUniqAttrMode() != 1 ) {
 	    $uniq_id = $self->{'id'};
 	} else {	
-	    my $attr = $self->{'_config_'}->getLdapUniqAttr();
-	    # query 
-	    $uniq_id = defined($attr) && $self->{'_ldap_'}->getAttr($self->{'id'},$attr);
+	    $uniq_id = $self->{'_ldap_'}->getUniqId($self->{'id'});
 	}
 
 	# store

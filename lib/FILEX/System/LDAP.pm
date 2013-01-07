@@ -153,6 +153,20 @@ sub getMail {
   return $self->getAttr($uid, $mailAttr);
 }
 
+sub getUserRealName {
+    my $self = shift;
+    my $uid = shift;
+    my $attr = $self->{'_config_'}->getLdapUsernameAttr();
+    return $self->getAttr($uid, $attr);
+}
+
+sub getUniqId {
+    my $self = shift;
+    my $uid = shift;
+    my $attr = $self->{'_config_'}->getLdapUniqAttrMode();
+    return defined($attr) && $self->getAttr($uid, $attr);
+}
+
 # require
 # uid => user id
 # gid => group name

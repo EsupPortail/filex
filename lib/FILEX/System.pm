@@ -612,12 +612,8 @@ sub getMail {
 
 sub getUserRealName {
 	my $self = shift;
-	my $uid = shift;
-	my $attr = $self->config()->getLdapUsernameAttr();
-	my $res = $self->ldap()->getUserAttrs(uid=>$uid, attrs=>[$attr]);
- 	$attr = lc($attr);
-  my $rn = ($res) ? $res->{$attr}->[0] : "unknown";
-	return $rn;
+	my $rn = $self->ldap->getUserRealName(@_);
+	return defined($rn) ? $rn : "unknown";
 }
 
 sub getUsedDiskSpace {
