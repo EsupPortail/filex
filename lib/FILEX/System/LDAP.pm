@@ -137,15 +137,20 @@ sub getUserAttrs {
   return $res;
 }
 
+sub getAttr {
+    my ($self, $uid, $attr) = @_;
+    my $res = $self->getUserAttrs(uid=>$uid,attrs=>[$attr]);
+    return undef if !$res;
+    return $res->{lc($attr)}->[0];
+}
+
 # get mail helper method
 # require uname
 sub getMail {
   my $self = shift;
   my $uid = shift;
 	my $mailAttr = $self->{'_config_'}->getLdapMailAttr();
-	my $res = $self->getUserAttrs(uid=>$uid,attrs=>[$mailAttr]);
-	return undef if !$res;
-	return $res->{$mailAttr}->[0];
+  return $self->getAttr($uid, $mailAttr);
 }
 
 # require
