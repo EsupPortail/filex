@@ -211,23 +211,15 @@ sub getUniqId {
 	return $uniq_id if defined($uniq_id);
 	
 	# not in session then get it
-  my $attr = $self->{'_config_'}->getLdapUniqAttr();
-  # if undef then do not use UniqId
-  $uniq_id =  $self->{'id'} if ( !defined($attr) );
-	# query 
-  my $res = $self->{'_ldap_'}->getUserAttrs(uid=>$self->{'id'},attrs=>[$attr]);
-  $uniq_id =  undef if ( ! defined($res) );
-  $attr = lc($attr);
-  # if UniqAttrMode == 0 then we return the uid
-  if ( !exists($res->{$attr}) || length($res->{$attr}->[0]) <= 0 ) {
-    if ( $self->{'_config_'}->getLdapUniqAttrMode() != 1 ) {
-			$uniq_id = $self->{'id'};
-    } else {
-      $uniq_id = undef;
-    }
-  } else {
-		$uniq_id = $res->{$attr}->[0];
+
+	if ( $self->{'_config_'}->getLdapUniqAttrMode() != 1 ) {
+	    $uniq_id = $self->{'id'};
+	} else {	
+	    my $attr = $self->{'_config_'}->getLdapUniqAttr();
+	    # query 
+	    $uniq_id = defined($attr) && $self->{'_ldap_'}->getAttr($self->{'id'},$attr);
 	}
+
 	# store
 	if ( defined($uniq_id) ) {
 		$self->_toSession(uniq_id=>$uniq_id,1);
