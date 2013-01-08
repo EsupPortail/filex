@@ -245,6 +245,15 @@ sub getUser {
 	return $self->{'_user_'};
 }
 
+sub _createUser {
+	my ($self, %params) = @_;
+
+	$params{ldap} ||= $self->ldap();
+
+	$self->{'_user_'} = FILEX::System::User->new(%params);
+} 
+
+
 #
 # begin session
 # 
@@ -279,8 +288,7 @@ sub beginSession {
 			# if session has expired then re-auth
 			if ( ! $self->{'_session_'}->isExpired() ) {
 				# user's login
-				$self->{'_user_'} = FILEX::System::User->new(uid=>$self->{'_session_'}->getParam('username'),
-					ldap=>$self->ldap(),
+				$self->_createUser(uid=>$self->{'_session_'}->getParam('username'),
 					session=>$self->{'_session_'});
 				$isValid = 1 if ( defined($self->{'_user_'}) );
 			} else {
@@ -308,7 +316,7 @@ sub beginSession {
 				$err_mesg = "invalid credential";
 			}
 			if ( defined($user) && length($user) > 0 ) {
-				$self->{'_user_'} = FILEX::System::User->new(uid=>$user,ldap=>$self->ldap());
+				$self->_createUser(uid=>$user);
 				if ( defined($self->{'_user_'}) ) {
 					# start a new session
 					if ( $self->{'_session_'}->start() ) {
