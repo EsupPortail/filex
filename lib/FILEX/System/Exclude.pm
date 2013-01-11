@@ -14,7 +14,6 @@ sub new {
 	my $class = ref($this) || $this;
 	my %ARGZ = @_;
 	my $self = {
-		username => undef,
 		_ldap_ => undef,
 		_exclude_ => undef,
 	};
