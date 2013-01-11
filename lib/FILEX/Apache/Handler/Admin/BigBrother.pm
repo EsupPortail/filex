@@ -41,7 +41,7 @@ sub process {
 	my $bb_DB = eval { FILEX::DB::Admin::BigBrother->new(); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$bb_DB->getLastErrorString()));
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		return $T;
 	}
 	my $selected_rule = undef;

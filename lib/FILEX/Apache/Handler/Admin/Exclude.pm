@@ -44,7 +44,7 @@ sub process {
 	my $exclude_DB = eval { FILEX::DB::Admin::Exclude->new(); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$exclude_DB->getLastErrorString()));
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		return $T;
 	}
 

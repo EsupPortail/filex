@@ -32,7 +32,7 @@ sub process {
 	my $DB = eval { FILEX::DB::Admin::UsrAdmin->new(); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		return $T;
 	}
 	# is there a sub action

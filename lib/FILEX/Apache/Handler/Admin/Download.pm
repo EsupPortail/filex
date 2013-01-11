@@ -22,7 +22,7 @@ sub process {
 	my $DB = eval { FILEX::DB::Download->new(); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		return $T;
 	}
 	# if there a sub action

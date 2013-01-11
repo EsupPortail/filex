@@ -47,7 +47,7 @@ sub process {
 	my $quota_DB = eval { FILEX::DB::Admin::Quota->new(); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$quota_DB->getLastErrorString()));
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		return $T;
 	}
 	my $selected_rule = undef;

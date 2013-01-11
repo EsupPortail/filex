@@ -409,7 +409,7 @@ sub process {
 
 	my $db =  eval { FILEX::DB::Admin::Search->new(); };
 	if ($@) {
-		$T->param(FILEX_HAS_ERROR=>$S->i18n->localizeToHtml("database error %s",$db->getLastErrorString()));
+		$T->param(FILEX_HAS_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		return $T;
 	}
 	my @results;

@@ -86,7 +86,7 @@ sub run {
 	my $upload = eval { FILEX::DB::Upload->new(file_name=>$file_name); };
 	if ($@) {
 		$Template->param(FILEX_HAS_ERROR=>1);
-		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$upload->getLastErrorString()));
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		display($S,$Template);
 	}
 	# file record not found
