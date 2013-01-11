@@ -120,6 +120,35 @@ sub checkStrLength {
 	return ( defined($value) && (length($value) > $min && length($value) < $max) ) ? 1 : undef;
 }
 
+sub _cookWhereAndValues {
+    my (%constraints) = @_;
+    my @keys = keys %constraints;
+    my $where = @keys ? 'WHERE ' . join(" AND ", map { "$_=?" } @keys) : '';
+    $where, [ map { $constraints{$_} } @keys ];
+}
+sub simpleWhere {
+    my ($self, $table, $field, %constraints) = @_;
+    my @l = simpleWhereAllRows($self, $table, $field, %constraints);
+    $l[0];
+}
+
+sub simpleWhereAllRows {
+    my ($self, $table, $field, %constraints) = @_;
+    my ($where, $values) = _cookWhereAndValues(%constraints);
+    my $select = "SELECT $field FROM $table $where";
+    #warn "querying: $select ", @$values, "\n";
+    my $rows = queryAllRows($self, $select, @$values);
+    if ($field =~ /\*|,/) {
+        @$rows;
+    } else {
+        map {
+            my @l = values %$_;
+            @l == 1 or die;
+            $l[0];
+        } @$rows;
+    }
+}
+
 sub queryAllRows {
     my ($self, $request, @args) = @_;
 
