@@ -120,6 +120,24 @@ sub checkStrLength {
 	return ( defined($value) && (length($value) > $min && length($value) < $max) ) ? 1 : undef;
 }
 
+sub doQuery {
+    my ($self, $strQuery, @params) = @_;
+
+    my $dbh = $self->_dbh();
+    my ($res,$sth);
+    eval {
+	$sth = $dbh->prepare($strQuery);
+	$res = $sth->execute(@params);
+	$dbh->commit();
+    };
+    if ($@) {
+	$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+	warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
+	return undef;
+    }
+    return 1;
+}
+
 1;
 =pod
 

@@ -34,21 +34,9 @@ sub listUsers {
 sub addUser {
 	my $self = shift;
 	my $uname = shift;
-	my $dbh = $self->_dbh();
 	$uname = $self->_dbh->quote($uname);
 	my $strQuery = "INSERT INTO usr_admin (uid) VALUES ($uname)";
-	my ($res,$sth);
-	eval {
-		$sth = $dbh->prepare($strQuery);
-		$res = $sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 # delete user
@@ -56,20 +44,8 @@ sub addUser {
 sub delUser {
 	my $self = shift;
 	my $id = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "DELETE FROM usr_admin WHERE id=$id";
-	my ($res,$sth);
-	eval {
-		$sth = $dbh->prepare($strQuery);
-		$res = $sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 # set enable flag
@@ -79,20 +55,8 @@ sub setEnable {
 	my $self = shift;
 	my $id = shift;
 	my $enable = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "UPDATE usr_admin SET enable=$enable WHERE id=$id";
-	my ($res,$sth);
-	eval {
-		$sth = $dbh->prepare($strQuery);
-		$res = $sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 1;

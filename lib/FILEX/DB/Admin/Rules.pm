@@ -112,17 +112,7 @@ sub modify {
 	}
 	return if ($#strSet < 0);
 	my $strQuery = "UPDATE rules SET ".join(",",@strSet)." WHERE id=$id";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 sub checkType {
@@ -219,20 +209,8 @@ sub listEx {
 sub del {
 	my $self = shift;
 	my $id = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "DELETE FROM rules WHERE id=$id";
-	my ($res,$sth);
-	eval {
-		$sth = $dbh->prepare($strQuery);
-		$res = $sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 # type=>rule type
@@ -287,7 +265,6 @@ sub exists {
 # delete rules without associations
 sub delNoAssoc {
 	my $self = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "DELETE rules ".
 		"FROM rules ".
 		"LEFT JOIN exclude ON rules.id = exclude.rule_id ".
@@ -296,17 +273,7 @@ sub delNoAssoc {
 		"WHERE exclude.rule_id IS NULL ".
 		"AND quota.rule_id IS NULL ".
 		"AND big_brother.rule_id IS NULL";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"=> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 1;

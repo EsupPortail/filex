@@ -199,16 +199,7 @@ sub _update {
 	$strQuery = "UPDATE upload SET ".
               join(",",@fields).
               " WHERE id=".$self->{'_UPLOAD_'}->{'fields'}->{'id'};
-	# go on
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(string=>$dbh->errstr(),code=>$dbh->err(),query=>$strQuery);
-		return undef;
-	}
+	$self->doQuery($strQuery) or return undef;
 	$self->{'_UPLOAD_'}->{'data_change'} = 0;
 	$self->{'_UPLOAD_'}->{'expire_change'} = 0;
 	# reload datas
@@ -384,16 +375,7 @@ sub _create {
 	push(@values,$res_exp);
 	# build the query sting
 	$strQuery = "INSERT INTO upload (".join(",",@fields).") VALUES (".join(",",@values).")";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	# everythings ok ?
-	if ($@) {
-		$self->setLastError(string=>$dbh->errstr(),code=>$dbh->err(),query=>$strQuery);
-		return undef;
-	}
+	$self->doQuery($strQuery) or return undef;
 	# reload the entire content	
 	return $self->_initialize(file_name=>$self->{'_UPLOAD_'}->{'fields'}->{'file_name'});
 }
@@ -752,16 +734,7 @@ sub addDownloadRecord {
 		push(@v,$i);
 	}
 	my $strQuery = "INSERT INTO get(".join(",",@f).") VALUES (".join(",",@v).")";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 # get Download count
 sub getDownloadCount {

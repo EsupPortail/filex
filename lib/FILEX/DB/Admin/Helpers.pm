@@ -20,17 +20,7 @@ sub disableUserFiles {
 		"WHERE expire_date > NOW() ".
 		"AND enable = 1 ".
 		"AND owner_uniq_id = ".$dbh->quote($uniqId);
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery, string=>$dbh->errstr(), code => $dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 # require a user uniqId
 sub enableUserFiles {
@@ -45,15 +35,5 @@ sub enableUserFiles {
 		"WHERE expire_date > NOW() ".
 		"AND enable = 0 ".
 		"AND owner_uniq_id = ".$dbh->quote($uniqId);
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery, string=>$dbh->errstr(), code => $dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }

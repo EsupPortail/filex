@@ -41,17 +41,7 @@ sub add {
 		push(@v,$fields{$k});
 	}
 	my $strQuery = "INSERT INTO big_brother (".join(",",@f).") VALUES (".join(",",@v).")";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 sub modify {
@@ -88,17 +78,7 @@ sub modify {
 	}
 	return if ($#strSet < 0);
 	my $strQuery = "UPDATE big_brother SET ".join(",",@strSet)." WHERE id=$id";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 # id => rule id
@@ -199,20 +179,8 @@ sub listRules {
 sub del {
 	my $self = shift;
 	my $id = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "DELETE FROM big_brother WHERE id=$id";
-	my ($res,$sth);
-	eval {
-		$sth = $dbh->prepare($strQuery);
-		$res = $sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 1;

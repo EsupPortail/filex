@@ -16,18 +16,7 @@ sub logCurrentDownload {
 	my $strQuery = "INSERT INTO current_download (download_id, upload_id, start_date, ip_address) ".
 	               "VALUES (".$self->_dbh->quote($f{'download_id'}).",".$f{'upload_id'}.",".
 	               "NOW(),".$self->_dbh->quote($f{'ip_address'}).")";
-	my $dbh = $self->_dbh();
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 # delete current download
@@ -35,18 +24,7 @@ sub delCurrentDownload {
 	my $self = shift;
 	my $download_id = shift;
 	my $strQuery = "DELETE FROM current_download WHERE download_id = ".$self->_dbh->quote($download_id);
-	my $dbh = $self->_dbh();
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 # require an Array ref
@@ -75,19 +53,8 @@ sub currentDownloads {
 
 sub purgeCurrentDownloads {
 	my $self = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "DELETE from current_download";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery, string=>$dbh->errstr(),code=>$dbh->err);
-		warn(__PACKAGE__,"=> Database error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 # current non expired files
