@@ -7,24 +7,14 @@ $VERSION = 1.0;
 use FILEX::DB::Admin::BigBrother;
 use FILEX::System::LDAP;
 
-# sortir DnExclude de Auth.pm
-# [ldap=>FILEX::System::LDAP object]
 sub new {
 	my $this = shift;
 	my $class = ref($this) || $this;
 	my %ARGZ = @_;
 	my $self = {
-		_ldap_ => undef,
-		_bigbrother_ => undef,
 	};
-	# ldap
-	if ( exists($ARGZ{'ldap'}) && ref($ARGZ{'ldap'}) eq "FILEX::System::LDAP" ) {
-		$self->{'_ldap_'} = $ARGZ{'ldap'};
-	} else {
-		$self->{'_ldap_'} = eval { FILEX::System::LDAP->new(); };
-		warn(__PACKAGE__,"=> unable to load FILEX::System::LDAP : $@") && return undef if ($@);
-	}
-	# dnexclude
+	$self->{'_ruleMatcher_'} = $ARGZ{'ruleMatcher'} or die(__PACKAGE__," => ruleMatcher is mandatory!");
+
 	$self->{'_bigbrother_'} = eval { FILEX::DB::Admin::BigBrother->new(); };
 	warn(__PACKAGE__,"=> unable to load FILEX::DB::Admin::BigBrother : $@") && return undef if ($@);
 	return bless($self,$class);
@@ -43,7 +33,7 @@ sub isWatched {
 		warn(__PACKAGE__,"-> Unable to list Rules");
 		return undef;
 	}
-	if (my $rule = $self->{_ldap_}->findRuleMatching($uid, \@rules)) {
+	if (my $rule = $self->{_ruleMatcher_}->findRuleMatching($uid, \@rules)) {
 	    return $rule->{'mail'};
 	}
 	return 0; # failed

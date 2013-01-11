@@ -29,6 +29,11 @@ sub get_getUserInfo {
     undef;
 }
 
+sub get_ruleMatcher {
+    undef;
+}
+
+
 sub needRedirect {
 	warn(__PACKAGE__,"-> needRedirect method need to be overriden and must return 0 or 1");
 }

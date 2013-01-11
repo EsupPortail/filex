@@ -130,7 +130,7 @@ sub getQuota {
 	my $user = FILEX::System::User->new(uid=>$session->data()->{'username'});
 	die SOAP::Fault->faultcode('Server.RuntimeError')
 		->faultstring("Unable to retrieve user : ",$session->data()->{'username'}) if (!$user);
-	my $quotas = FILEX::System::Quota->new();
+	my $quotas = FILEX::System::Quota->new(ruleMatcher => FILEX::System::LDAP->new());
 	die SOAP::Fault->faultcode('Server.RuntimeError')
 			->faultstring("Unable to access quota sub-system") if (!$quotas);
 	my ($quota_max_file_size,$quota_max_used_space) = $quotas->getQuota($user->getId());

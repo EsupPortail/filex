@@ -7,24 +7,14 @@ $VERSION = 1.0;
 use FILEX::DB::Admin::Exclude;
 use FILEX::System::LDAP;
 
-# sortir DnExclude de Auth.pm
-# [ldap=>FILEX::System::LDAP object]
 sub new {
 	my $this = shift;
 	my $class = ref($this) || $this;
 	my %ARGZ = @_;
 	my $self = {
-		_ldap_ => undef,
-		_exclude_ => undef,
 	};
-	# ldap
-	if ( exists($ARGZ{'ldap'}) && ref($ARGZ{'ldap'}) eq "FILEX::System::LDAP" ) {
-		$self->{'_ldap_'} = $ARGZ{'ldap'};
-	} else {
-		$self->{'_ldap_'} = eval { FILEX::System::LDAP->new(); };
-		warn(__PACKAGE__,"=> unable to load FILEX::System::LDAP : $@") && return undef if ($@);
-	}
-	# dnexclude
+	$self->{'_ruleMatcher_'} = $ARGZ{'ruleMatcher'} or die(__PACKAGE__," => ruleMatcher is mandatory!");
+
 	$self->{'_exclude_'} = eval { FILEX::DB::Admin::Exclude->new(); };
 	warn(__PACKAGE__,"=> unable to load FILEX::DB::Admin::Exclude : $@") && return undef if ($@);
 	return bless($self,$class);
@@ -46,7 +36,7 @@ sub isExclude {
 	}
 	my $bIsExclude = 0;
 	my $excludeReason;
-	if (my $rule = $self->{_ldap_}->findRuleMatching($uid, \@rules)) {
+	if (my $rule = $self->{_ruleMatcher_}->findRuleMatching($uid, \@rules)) {
 	    $bIsExclude = 1;
 	    $excludeReason = $rule->{'reason'};
 	}

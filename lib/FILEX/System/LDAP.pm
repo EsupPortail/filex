@@ -1,9 +1,11 @@
 package FILEX::System::LDAP;
 use strict;
 use FILEX::System::Config;
-use vars qw($VERSION);
+use vars qw(@ISA $VERSION);
 use Net::LDAP;
+use FILEX::System::RuleMatcherBase;
 
+@ISA = qw(FILEX::System::RuleMatcherBase);
 $VERSION = 1.0;
 
 # simple wrapper for handling ldap query
@@ -269,20 +271,6 @@ sub isRuleMatching {
 	return 0;
     }
 }
-
-sub findRuleMatching {
-   my $self = shift;
-   my $uid = shift;
-   my $rules = shift;
-
-   foreach my $rule (@$rules) {
-       if (isRuleMatching($self, $uid, $rule)) {
-	   return $rule;
-       }
-   }
-   return undef;
-}
-
 
 # 
 1;

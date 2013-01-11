@@ -18,7 +18,6 @@ sub new {
 		id => undef,
     uniq_id => undef,
 		_config_ => undef,
-		_ldap_ => undef,
 		_db_ => undef,
 		_watch_ => undef,
 		_quota_ => undef,
@@ -33,17 +32,10 @@ sub new {
 	$self->{'id'} = $ARGZ{'uid'};
 
 	$self->{'_getUserInfo_'} = $ARGZ{'getUserInfo'} or die(__PACKAGE__," => getUserInfo is mandatory!");
+	$self->{'_ruleMatcher_'} = $ARGZ{'ruleMatcher'} or die(__PACKAGE__," => ruleMatcher is mandatory!");
 
 	# config
 	$self->{'_config_'} = FILEX::System::Config->instance();
-
-	# ldap
-	if ( exists($ARGZ{'ldap'}) && ref($ARGZ{'ldap'}) eq "FILEX::System::LDAP" ) {
-    $self->{'_ldap_'} = $ARGZ{'ldap'};
-  } else {
-    $self->{'_ldap_'} = eval { FILEX::System::LDAP->new(); };
-    warn(__PACKAGE__,"=> unable to load FILEX::System::LDAP : $@") && return undef if ($@);
-  }
 
 	# session
 	$self->{'_session_'} = $ARGZ{'session'} if ( exists($ARGZ{'session'}) && 
@@ -197,7 +189,7 @@ sub _watch {
 	my $self = shift;
 	# load on demand
 	if ( !$self->{'_watch_'} ) {
-		$self->{'_watch_'} = FILEX::System::BigBrother->new(ldap=>$self->{'_ldap_'});
+		$self->{'_watch_'} = FILEX::System::BigBrother->new(ruleMatcher=>$self->{'_ruleMatcher_'});
 	}
 	return $self->{'_watch_'};
 }
@@ -219,7 +211,7 @@ sub _exclude {
 	my $self = shift;
 	# load on demand
 	if ( !$self->{'_exclude_'} ) {
-		$self->{'_exclude_'} = FILEX::System::Exclude->new(ldap=>$self->{'_ldap_'});
+		$self->{'_exclude_'} = FILEX::System::Exclude->new(ruleMatcher=>$self->{'_ruleMatcher_'});
 	}
 	return $self->{'_exclude_'};
 }
@@ -262,7 +254,7 @@ sub _db {
 sub _quota {
 	my $self = shift;
 	if ( !$self->{'_quota_'} ) {
-		$self->{'_quota_'} = FILEX::System::Quota->new(config=>$self->{'_config_'},ldap=>$self->{'_ldap_'});
+		$self->{'_quota_'} = FILEX::System::Quota->new(config=>$self->{'_config_'},ruleMatcher=>$self->{'_ruleMatcher_'});
 	}
 	return $self->{'_quota_'};
 }

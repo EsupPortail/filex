@@ -191,6 +191,11 @@ sub get_getUserInfo {
 	return $self->{'_auth_'}->get_getUserInfo() || $self->ldap();
 }
 
+sub get_ruleMatcher {
+	my $self = shift;
+	return $self->{'_auth_'}->get_ruleMatcher() || $self->ldap();
+}
+
 # return ldap server object
 sub ldap {
 	my $self = shift;
@@ -244,7 +249,7 @@ sub _createUser {
 	my ($self, %params) = @_;
 
 	$params{getUserInfo} ||= $self->get_getUserInfo();
-	$params{ldap} ||= $self->ldap();
+	$params{ruleMatcher} ||= $self->get_ruleMatcher();
 
 	$self->{'_user_'} = FILEX::System::User->new(%params);
 } 

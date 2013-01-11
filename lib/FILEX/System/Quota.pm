@@ -8,26 +8,16 @@ use FILEX::DB::Admin::Quota;
 use FILEX::System::LDAP;
 use FILEX::System::Config;
 
-# sortir DnExclude de Auth.pm
-# [ldap=>FILEX::System::LDAP object]
 sub new {
 	my $this = shift;
 	my $class = ref($this) || $this;
 	my %ARGZ = @_;
 	my $self = {
-		_config_ => undef,
-		_ldap_ => undef,
-		_quota_ => undef,
 	};
 	$self->{'_config_'} = FILEX::System::Config->instance();
-	# ldap
-	if ( exists($ARGZ{'ldap'}) && ref($ARGZ{'ldap'}) eq "FILEX::System::LDAP" ) {
-		$self->{'_ldap_'} = $ARGZ{'ldap'};
-	} else {
-		$self->{'_ldap_'} = eval { FILEX::System::LDAP->new(); };
-		warn(__PACKAGE__,"=> unable to load FILEX::System::LDAP : $@") && return undef if ($@);
-	}
-	# dnexclude
+
+	$self->{'_ruleMatcher_'} = $ARGZ{'ruleMatcher'} or die(__PACKAGE__," => ruleMatcher is mandatory!");
+
 	$self->{'_quota_'} = eval { FILEX::DB::Admin::Quota->new(); };
 	warn(__PACKAGE__,"=> unable to load FILEX::DB::Admin::Quota : $@") && return undef if ($@);
 	return bless($self,$class);
@@ -56,7 +46,7 @@ sub getQuota {
 		# unable to list rules then default to config ones
 		return ($quota_max_file_size,$quota_max_used_space);
 	}
-	if (my $rule = $self->{_ldap_}->findRuleMatching($uid, \@rules)) {
+	if (my $rule = $self->{_ruleMatcher_}->findRuleMatching($uid, \@rules)) {
 	    $quota_max_file_size = $rule->{'max_file_size'};
 	    $quota_max_used_space = $rule->{'max_used_space'};
 	}
