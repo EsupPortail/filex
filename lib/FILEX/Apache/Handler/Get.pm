@@ -67,7 +67,7 @@ sub run {
 		# start session without authentification
 		$user = $S->beginSession(no_auth=>1);
 		# check if user is an administrator
-		if ( defined($user) && $user->isAdmin() && ( $S->isExclude($user) != 1) ) {
+		if ( defined($user) && $user->isAdmin() && ( $user->isExclude() != 1) ) {
 			$admin_download = 1;
 		} else {
 			$admin_download = 0;

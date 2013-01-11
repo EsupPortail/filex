@@ -208,16 +208,6 @@ sub _systemdb {
 	return $self->{'_systemdb_'};
 }
 
-# return exclude object
-sub _exclude {
-	my $self = shift;
-	# load on demand
-	if ( !$self->{'_exclude_'} ) {
-		$self->{'_exclude_'} = FILEX::System::Exclude->new(ldap=>$self->ldap());
-	}
-	return $self->{'_exclude_'};
-}
-
 # return FILEX::System::Mail object
 sub mail {
 	my $self = shift;
@@ -346,7 +336,7 @@ sub beginSession {
 			$excludeReason = $self->{'_session_'}->getParam("exclude_reason");
 		} 
 		if ( !defined($bIsExclude) ) {
-			($bIsExclude,$excludeReason) = $self->isExclude($self->{'_user_'}) if !defined($bIsExclude);
+			($bIsExclude,$excludeReason) = $self->{'_user_'}->isExclude() if !defined($bIsExclude);
 			if ( ref($self->{'_session_'}) ) { 
 				$self->{'_session_'}->setParam(is_exclude=>$bIsExclude,1);
 				$self->{'_session_'}->setParam(exclude_reason=>(defined($excludeReason))?$excludeReason:"",1);
@@ -450,20 +440,6 @@ sub _initLanguage {
 sub getPreferedLanguage {
 	my $self = shift;
 	return ( defined($self->{'_language_'} ) ) ? $self->{'_language_'}->[0] : undef;
-}
-
-# check if a given user is exclude 
-sub isExclude {
-	my $self = shift;
-	my $user = shift;
-	warn(__PACKAGE__,"=> require a FILEX::System::User") && return 1 if (!defined($user) || (ref($user) ne "FILEX::System::User"));
-	# get exclude object
-	my $exclude = $self->_exclude();
-	if ( $exclude ) {
-		return $exclude->isExclude($user->getId());
-	} 
-	# deny everybody if failed
-	return 1;
 }
 
 # here we quit the application

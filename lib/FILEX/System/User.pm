@@ -200,6 +200,28 @@ sub _watch {
 	return $self->{'_watch_'};
 }
 
+# check if a given user is exclude 
+sub isExclude {
+	my $self = shift;
+	# get exclude object
+	my $exclude = $self->_exclude();
+	if ( $exclude ) {
+		return $exclude->isExclude($self->getId());
+	} 
+	# deny everybody if failed
+	return 1;
+}
+
+# return exclude object
+sub _exclude {
+	my $self = shift;
+	# load on demand
+	if ( !$self->{'_exclude_'} ) {
+		$self->{'_exclude_'} = FILEX::System::Exclude->new(ldap=>$self->{'_ldap_'});
+	}
+	return $self->{'_exclude_'};
+}
+
 # initialize user's uniq id
 sub getUniqId {
 	my $self = shift;
