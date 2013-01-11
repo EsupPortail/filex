@@ -31,23 +31,12 @@ sub delCurrentDownload {
 sub currentDownloads {
 	my $self = shift;
 	my $res = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT u.id,u.real_name,u.owner,u.file_size,UNIX_TIMESTAMP(cd.start_date) as start_date,cd.ip_address ".
 	               "FROM upload AS u, current_download AS cd ".
 	               "WHERE u.id = cd.upload_id ".
 	               "ORDER BY u.id"; 
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err);
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 
@@ -63,7 +52,6 @@ sub currentFiles {
 	my $self = shift;
 	my %ARGZ = @_;
 	warn(__PACKAGE__,"require an Array Ref") && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY");
-	my $dbh = $self->_dbh();
 	my $res = $ARGZ{'results'};
 
 	my $strQuery = "SELECT u.*, ".
@@ -83,18 +71,9 @@ sub currentFiles {
 	}
 	$strQuery .= ( $order_by eq "download_count" ) ? "ORDER BY $order_by $order" : "ORDER BY u.$order_by $order";
 	# LIMIT offset, row_count
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $r = $sth->fetchrow_hashref() ) {
-			push(@$res,$r);
-		}
-	};
-	if ($@) {
-		$self->setLastError(string=>$dbh->errstr(),code=>$dbh->err(),query=>$strQuery);
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 

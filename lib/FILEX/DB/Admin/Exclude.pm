@@ -129,7 +129,6 @@ sub list {
 	my $res = $ARGZ{'results'};
 	my $enable = ( exists($ARGZ{'enable'}) && defined($ARGZ{'enable'}) ) ? 1 : 0;
 	my $expired = ( exists($ARGZ{'expired'}) && defined($ARGZ{'expired'}) && $ARGZ{'expired'} =~ /^0$/ ) ? 0 : 1;
-	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT e.*, UNIX_TIMESTAMP(e.create_date) AS ts_create_date, ".
 								 "UNIX_TIMESTAMP(DATE_ADD(e.create_date,INTERVAL e.expire_days DAY)) AS ts_expire_date, ".
                  "r.name AS rule_name, r.exp AS rule_exp, r.type AS rule_type ".
@@ -138,18 +137,9 @@ sub list {
 	$strQuery .= "AND e.enable=1 " if ( $enable) ;
 	$strQuery .= "AND (e.expire_days = 0 OR DATE_ADD(e.create_date, INTERVAL e.expire_days DAY) > NOW()) " if ( !$expired );
 	$strQuery .= "ORDER BY e.rorder ASC";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 
@@ -163,7 +153,6 @@ sub listRules {
                       code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY" );
 	my $res = $ARGZ{'results'};
 	my $include = ( exists($ARGZ{'including'}) && defined($ARGZ{'including'}) && $ARGZ{'including'} =~ /^[0-9]+$/ ) ? $ARGZ{'including'} : undef;
-	my $dbh = $self->_dbh();
 	# the left join 
 	# all row from the the rules table will be returned 
 	# even if there are no match in the exclude table
@@ -174,18 +163,9 @@ sub listRules {
                  "LEFT JOIN exclude ON rules.id = exclude.rule_id ".
                  "WHERE exclude.rule_id IS NULL";
 	$strQuery .= " OR exclude.rule_id = $include" if defined($include);
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-    $self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-    warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-    return undef;
-  }
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 
@@ -223,19 +203,8 @@ sub existsRule {
 #
 sub delExpired {
 	my $self = shift;
-	my $dbh = $self->_dbh();
 	my $strQuery = "DELETE FROM exclude WHERE expire_days > 0 AND DATE_ADD(create_date, INTERVAL expire_days DAY) < NOW()";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
-	};
- 	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"=> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
+	return $self->doQuery($strQuery);
 }
 
 1;

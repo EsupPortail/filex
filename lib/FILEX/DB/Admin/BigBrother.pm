@@ -122,25 +122,15 @@ sub list {
 	                    code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY" );
 	my $res = $ARGZ{'results'};
 	my $enable = ( exists($ARGZ{'enable'}) && defined($ARGZ{'enable'}) ) ? 1 : 0;
-	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT b.*, UNIX_TIMESTAMP(create_date) AS ts_create_date, ".
                  "r.name AS rule_name, r.exp AS rule_exp, r.type AS rule_type ".
                  "FROM big_brother b,rules r ".
                  "WHERE  b.rule_id = r.id ";
 	$strQuery .= "AND b.enable=1 " if ( $enable) ;
 	$strQuery .= "ORDER BY b.norder ASC";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 
@@ -154,23 +144,13 @@ sub listRules {
                       code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY" );
 	my $res = $ARGZ{'results'};
 	my $include = ( exists($ARGZ{'including'}) && defined($ARGZ{'including'}) && $ARGZ{'including'} =~ /^[0-9]+$/ ) ? $ARGZ{'including'} : undef;
-	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT rules.* FROM rules ".
                  "LEFT JOIN big_brother ON rules.id = big_brother.rule_id ".
                  "WHERE big_brother.rule_id IS NULL";
 	$strQuery .= " OR big_brother.rule_id = $include" if defined($include);
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-    $self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-    warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-    return undef;
-  }
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 

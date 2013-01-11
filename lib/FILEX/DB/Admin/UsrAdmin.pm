@@ -12,20 +12,10 @@ sub listUsers {
 	my $self = shift;
 	my $res = shift;
 	return undef if (ref($res) ne "ARRAY");
-	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT * FROM usr_admin ORDER BY uid";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 

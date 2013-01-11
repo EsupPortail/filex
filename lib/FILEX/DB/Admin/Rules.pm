@@ -157,20 +157,9 @@ sub list {
 	$self->setLastError(query=>"",
 	                    string=>"Require an ARRAY REF",
 	                    code=>-1) && return undef if (ref($res) ne "ARRAY");
-	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT * FROM rules";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 
@@ -181,7 +170,6 @@ sub listEx {
 	$self->setLastError(query=>"",
 	                    string=>"Require an ARRAY REF",
 	                    code=>-1) && return undef if (ref($res) ne "ARRAY");
-	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT r.*, count(e.rule_id) AS exclude, ".
 		"count(q.rule_id) AS quota, count(b.rule_id) AS big_brother ".
 		"FROM rules r ".
@@ -189,18 +177,8 @@ sub listEx {
 		"LEFT JOIN quota q ON r.id = q.rule_id ".
 		"LEFT JOIN big_brother b ON r.id = b.rule_id ".
 		"GROUP BY r.id";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$res,$row);
-		}
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 

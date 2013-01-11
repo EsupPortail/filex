@@ -120,6 +120,27 @@ sub checkStrLength {
 	return ( defined($value) && (length($value) > $min && length($value) < $max) ) ? 1 : undef;
 }
 
+sub queryAllRows {
+    my ($self, $request, @args) = @_;
+
+    my $dbh = $self->_dbh();
+    my @l;
+    eval {
+	my $sth = $dbh->prepare($request);
+	$sth->execute(@args);
+
+	while (my $h = $sth->fetchrow_hashref()) {
+	    push @l, $h;
+	}
+    };
+    if ($@) {
+	$self->setLastError(query=>$request,string=>$dbh->errstr(),code=>$dbh->err());
+	warn(__PACKAGE__,"-> Database Error : $@ : $request");
+	return undef;
+    }
+    \@l;
+}
+
 sub doQuery {
     my ($self, $strQuery, @params) = @_;
 

@@ -168,18 +168,8 @@ sub search {
 			}
 		}
 	}
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while (my $r = $sth->fetchrow_hashref() ) {
-			push(@$results,$r);
-		}
-	};
-	if ($@) {
-		$self->setLastError(string=>$dbh->errstr(),code=>$dbh->err(),query=>$strQuery);
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$results, @$rows);
 	return 1;
 }
 

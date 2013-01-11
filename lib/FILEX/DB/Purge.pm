@@ -18,19 +18,8 @@ sub getExpiredFiles {
 	               "WHERE u.expire_date < NOW() ".
 	               "AND u.deleted = 0 ".
 	               "GROUP BY u.id";
-	my $dbh = $self->_dbh();
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $row = $sth->fetchrow_hashref() ) {
-			push(@$results,$row);
-		}
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$results, @$rows);
 	return 1;
 }
 

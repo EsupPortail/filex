@@ -758,23 +758,15 @@ sub getDownloads {
 	#$self->setLastError(string=>"Require an ArrayRef",code=>-1,query=>"") && return undef if ( ref($results) ne "ARRAY" );
 	$self->setLastError(string=>"Require an ArrayRef",code=>-1,query=>"") && return undef if ( !defined($results) );
 	return 1 if ( $self->{'_UPLOAD_'}->{'is_new'} == 1 );
-	my $dbh = $self->_dbh();
+
 	my $strQuery = "SELECT *, UNIX_TIMESTAMP(date) AS ts_date ".
 	               "FROM get ".
 	               "WHERE upload_id = ".$self->{'_UPLOAD_'}->{'fields'}->{'id'}." ";
 	$strQuery .= "AND admin_download != 1 " if ( $admin_mode == 0 );
 	$strQuery .= "ORDER BY date DESC";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $r = $sth->fetchrow_hashref() ) {
-			push(@$results,$r);
-		}
-	};
-	if ($@) {
-		$self->setLastError(string=>$dbh->errstr(),code=>$dbh->err(),query=>$strQuery);
-		return undef;
-	}
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$results, @$rows);
   return 1;              
 }
 

@@ -44,18 +44,9 @@ sub getFiles {
 	# order by default to 'upload_date'
 	# in case of sorting on 'download_count'
 	$strQuery .= ($order_by eq "download_count") ? "ORDER BY $order_by $order" : "ORDER BY u.$order_by $order";
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		while ( my $r = $sth->fetchrow_hashref() ) {
-			push(@$res,$r);
-		}
-	};
-	if ($@) {
-		$self->setLastError(string=>$dbh->errstr(),code=>$dbh->err(),query=>$strQuery);
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
+
+	my $rows = $self->queryAllRows($strQuery) or return undef;
+	push(@$res, @$rows);
 	return 1;
 }
 
