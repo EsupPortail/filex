@@ -238,6 +238,52 @@ sub inQuery {
 	return $mesg->count();
 }
 
+# load rules
+# check if given Dn matches
+sub isDnMatching {
+  my $self = shift;
+  my $uid = shift;
+	my $rule = shift;
+	return 0 if (!$rule || length($rule) <= 0);
+	# get DN for this user
+	my $dn = $self->getUserDn($uid);
+	return ( $dn =~ qr/$rule/i ) ? 1 : 0;
+}
+
+sub isRuleMatching {
+    my $self = shift;
+    my $uid = shift;
+    my $rule = shift;
+
+    # switch rule type (1=DN, 2=GROUP)
+    if ( $rule->{'rule_type'} == 1 ) { # user's DN
+	return $self->isDnMatching($uid,$rule->{'rule_exp'});
+    } elsif ( $rule->{'rule_type'} == 2 ) { # groups
+	return $self->inGroup(uid=>$uid,gid=>$rule->{'rule_exp'});
+    } elsif ( $rule->{'rule_type'} == 3 ) { # users UID
+	return ( $uid eq $rule->{'rule_exp'} ) ? 1 : 0;
+    } elsif ( $rule->{'rule_type'} == 4 ) { # ldap query
+	return $self->inQuery(uid=>$uid,query=>$rule->{'rule_exp'});
+    } else {
+	warn(__PACKAGE__,"-> unknown rule type (",$rule->{'rule_type'},") : ",$rule->{'rule_exp'});
+	return 0;
+    }
+}
+
+sub findRuleMatching {
+   my $self = shift;
+   my $uid = shift;
+   my $rules = shift;
+
+   foreach my $rule (@$rules) {
+       if (isRuleMatching($self, $uid, $rule)) {
+	   return $rule;
+       }
+   }
+   return undef;
+}
+
+
 # 
 1;
 =pod

@@ -43,54 +43,10 @@ sub isWatched {
 		warn(__PACKAGE__,"-> Unable to list Rules");
 		return undef;
 	}
-	# now for each rules 
-	my $bIsWatched = 0;
-	my $wIdx;
-	for ($wIdx = 0; $wIdx <= $#rules; $wIdx++) {
-		# switch rule type (1=DN, 2=GROUP)
-		SWITCH : {
-			# user's DN
-			if ( $rules[$wIdx]->{'rule_type'} == 1 ) {
-				$bIsWatched = $self->isDnWatched($uid,$rules[$wIdx]->{'rule_exp'});
-				last SWITCH;
-			}
-			# groups
-			if ( $rules[$wIdx]->{'rule_type'} == 2 ) {
-				$bIsWatched = $self->{'_ldap_'}->inGroup(uid=>$uid,gid=>$rules[$wIdx]->{'rule_exp'});
-				last SWITCH;
-			}
-			# users UID
-			if ( $rules[$wIdx]->{'rule_type'} == 3 ) {
-				$bIsWatched = ( $uid eq $rules[$wIdx]->{'rule_exp'} ) ? 1 : 0;
-				last SWITCH;
-			}
-			# ldap query
-			if ( $rules[$wIdx]->{'rule_type'} == 4 ) {
-				$bIsWatched = $self->{'_ldap_'}->inQuery(uid=>$uid,query=>$rules[$wIdx]->{'rule_exp'});
-				last SWITCH;
-			}
-			warn(__PACKAGE__,"-> unknown rule type (",$rules[$wIdx]->{'rule_type'},") : ",$rules[$wIdx]->{'rule_exp'});
-		}
-		last if ($bIsWatched);
+	if (my $rule = $self->{_ldap_}->findRuleMatching($uid, \@rules)) {
+	    return $rule->{'mail'};
 	}
-	# return
-	my $mail = 0;
-	if ( $bIsWatched ) {
-		$mail = $rules[$wIdx]->{'mail'};
-	}
-	return $mail;
-}
-
-# load rules
-# check if given Dn Excluded
-sub isDnWatched {
-  my $self = shift;
-  my $uid = shift;
-	my $rule = shift;
-	return 0 if (!$rule || length($rule) <= 0);
-	# get DN for this user
-	my $dn = $self->{'_ldap_'}->getUserDn($uid);
-	return ( $dn =~ qr/$rule/i ) ? 1 : 0;
+	return 0; # failed
 }
 
 1;

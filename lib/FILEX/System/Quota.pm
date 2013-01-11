@@ -56,50 +56,11 @@ sub getQuota {
 		# unable to list rules then default to config ones
 		return ($quota_max_file_size,$quota_max_used_space);
 	}
-	# loop on rules
-	my $bHaveQuota = 0;
-	my $qIdx;
-	for ( $qIdx = 0; $qIdx <= $#rules; $qIdx++ ) {
-		# switch rule type
-		SWITCH : {
-			if ( $rules[$qIdx]->{'rule_type'} == 1 ) {
-				$bHaveQuota = $self->isDnQuota($uid,$rules[$qIdx]->{'rule_exp'});
-				last SWITCH;
-			}
-			if ( $rules[$qIdx]->{'rule_type'} == 2 ) {
-				$bHaveQuota = $self->{'_ldap_'}->inGroup(uid=>$uid,gid=>$rules[$qIdx]->{'rule_exp'});
-				last SWITCH; 
-			}
-			if ( $rules[$qIdx]->{'rule_type'} == 3 ) {
-				$bHaveQuota = ( $uid eq $rules[$qIdx]->{'rule_exp'} ) ? 1 : 0;
-				last SWITCH;
-			}
-			# ldap query
-			if ( $rules[$qIdx]->{'rule_type'} == 4 ) {
-				$bHaveQuota = $self->{'_ldap_'}->inQuery(uid=>$uid,query=>$rules[$qIdx]->{'rule_exp'});
-				last SWITCH;
-			}
-			warn(__PACKAGE__,"-> unknown rule type (",$rules[$qIdx]->{'rule_type'},") : ",$rules[$qIdx]->{'rule_exp'});
-		}
-		last if $bHaveQuota;
-	}
-	if ( $bHaveQuota ) {
-		$quota_max_file_size = $rules[$qIdx]->{'max_file_size'};
-		$quota_max_used_space = $rules[$qIdx]->{'max_used_space'};
+	if (my $rule = $self->{_ldap_}->findRuleMatching($uid, \@rules)) {
+	    $quota_max_file_size = $rule->{'max_file_size'};
+	    $quota_max_used_space = $rule->{'max_used_space'};
 	}
 	return ($quota_max_file_size,$quota_max_used_space);
-}
-
-# load rules
-# check the dn
-sub isDnQuota {
-  my $self = shift;
-  my $uid = shift;
-	my $rule = shift;
-	return 0 if (!$rule || length($rule) <= 0);
-	# get DN for this user
-	my $dn = $self->{'_ldap_'}->getUserDn($uid);
-	return ( $dn =~ qr/$rule/i ) ? 1 : 0;
 }
 
 1;
