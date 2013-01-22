@@ -4,6 +4,7 @@ use vars qw(@ISA $VERSION);
 use FILEX::System::Auth::base 1.0;
 use HTTP::Headers;
 use FILEX::DB::ShibUser;
+use FILEX::System::RuleMatcherShib;
 
 # inherit FILEX::System::Auth::base
 @ISA = qw(FILEX::System::Auth::base);
@@ -22,6 +23,40 @@ sub get_getUserInfo {
     eval { $self->{_db_} ||= FILEX::DB::ShibUser->new() };
     warn(__PACKAGE__,"-> Unable to Load FILEX::DB::ShibUser object : $@") if ($@);
     return $self->{_db_};
+}
+
+
+# the Auth object is stateful:
+# after initial authentication, it saves its params in the session
+sub saveInSession {
+    my ($self, $session) = @_;
+    $session->setParam(shib_attrs => $self->{_ruleMatcher_}->attrs);    
+}
+# then it can restore its params from session
+sub readFromSession {
+    my ($self, $session) = @_;
+    $self->_create_ruleMatcher($session->getParam('shib_attrs'));
+}
+
+
+sub get_ruleMatcher {
+    my ($self) = @_;
+    return $self->{_ruleMatcher_};
+}
+
+sub _create_ruleMatcher {
+    my ($self, $shib_attrs) = @_;
+    $self->{_ruleMatcher_} = FILEX::System::RuleMatcherShib->new(attrs => $shib_attrs);
+}
+
+sub _computeAttrs {
+    my ($headers) = @_;
+    join('', sort map {
+	"$_=$headers->{$_}\n";
+    } grep {
+	!/^(Accept|Accept-Charset|Accept-Encoding|Accept-Language|Accept-Datetime|Authorization|Cache-Control|Connection|Cookie|Content-Length|Content-MD5|Content-Type|Date|Expect|From|Host|If-Match|If-Modified-Since|If-None-Match|If-Range|If-Unmodified-Since|Max-Forwards|Pragma|Proxy-Authorization|Range|Referer|TE|Upgrade|User-Agent|Via|Warning)$/ 
+	  && !/^(X-.*|Shib-Application-ID|Shib-Authentication-Instant|Shib-AuthnContext-Decl|Shib-Session-ID|Shib-Assertion-Count|Shib-Authentication-Method|Shib-AuthnContext-Class)$/;
+    } keys %$headers);
 }
 
 sub _computeUser {
@@ -43,6 +78,10 @@ sub processAuth {
 
 	my $shib_user = $self->_computeUser($headers);
 	$self->get_getUserInfo->setUser($shib_user);
+
+	my $shib_attrs = _computeAttrs($headers);
+	#print $shib_attrs;
+	$self->_create_ruleMatcher($shib_attrs);
 
 	return $shib_user->{id};
 }

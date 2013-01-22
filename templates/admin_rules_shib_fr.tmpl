@@ -1,0 +1,66 @@
+<!-- chunky template for current download -->
+<h2>Gestion des r&egrave;gles :</h2>
+	<p>Les r&egrave;gles sont utilis&eacute;es pour g&eacute;rer les <em>exclusions</em> ainsi que les <em>quotas</em>. Si une r&egrave;gle est valide pour un utilisateur donn&eacute;, alors elle d&eacute;clanchera une action comme par exemple l'exclusion de l'acc&egrave;s au syst&egrave;me. </p>
+
+          La r&egrave;gle est une expression r&eacute;guli&egrave;re appliqu&eacute;e sur les attributs=valeurs tri&eacute;es par ordre alphab&eacute;tique (par exemple : <code>^supannEntiteAffectation=student$</code> ou <code>^departmentNumber=XXX$.*^supannEntiteAffectation=student$</code> )</li>
+	</ul>
+	<p><strong>Attention</strong> : les r&egrave;gles &eacute;tant r&eacute;f&eacute;renc&eacute;es par la gestion des <em>exclusions</em> et des <em>quotas</em>; si vous supprimer une r&egrave;gle, alors les entr&eacute;es d'exclusions et de quotas les r&eacute;f&eacute;ren&ccedil;ant seront supprim&eacute;es.</p>
+	<form method="post" action="<TMPL_VAR NAME='FILEX_RULES_FORM_ACTION'>">
+	<h3>Ajouter une r&egrave;gle :</h3>
+	<p><select name="<TMPL_VAR NAME='FILEX_RULES_RULE_TYPE_FIELD_NAME'>" id="rtype" class="Field" style="xdisplay: none">
+			<TMPL_LOOP NAME="FILEX_RULES_TYPE_LOOP">
+				<option <TMPL_IF NAME="FILEX_RULES_TYPE_SELECTED">selected</TMPL_IF> value="<TMPL_VAR NAME='FILEX_RULES_TYPE_ID'>"><TMPL_VAR NAME="FILEX_RULES_TYPE_NAME"></option>
+			</TMPL_LOOP>
+		</select>
+	<label for="idrulename">Nom : </label><input class="Field" id="idrulename" type="text" name="<TMPL_VAR NAME='FILEX_RULES_RULE_NAME_FIELD_NAME'>" size="30" maxlength="50" value="<TMPL_VAR NAME='FILEX_RULES_FORM_RULE_NAME'>"><br>
+	<label for="idrule">R&egrave;gle : </label><input class="Field" id="idrule" type="text" name="<TMPL_VAR NAME='FILEX_RULES_RULE_EXP_FIELD_NAME'>" size="50" maxlength="255" VALUE="<TMPL_VAR NAME='FILEX_RULES_FORM_RULE_EXP'>">
+	<input class="Submit" type="submit" value="Envoyer"></p>
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_RULES_RULE_ID_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_RULES_FORM_RULE_ID'>">
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_MAIN_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_MAIN_ACTION_ID'>">
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_SUB_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_SUB_ACTION_ID'>">
+	</form>
+	<a href="<TMPL_VAR NAME='FILEX_DELETE_NOASSOC_RULES'>">Supprimer les r&egrave;gles qui n'ont pas d'associations</a>
+	<TMPL_IF NAME="FILEX_HAS_ERROR"><p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p></TMPL_IF>
+<TMPL_IF NAME="FILEX_HAS_RULES">
+	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des r&egrave;gles">
+		<caption>Liste des r&egrave;gles</caption>
+		<thead>
+			<tr>
+				<th rowspan="2">Type</th>
+				<th rowspan="2">Nom</th>
+				<th rowspan="2">R&egrave;gle</th>
+				<th rowspan="1" colspan="3">Li&eacute;e &agrave;</th>
+				<th rowspan="2">Actions</th>
+			</tr>
+			<tr>
+				<!-- <th/> -->
+				<!-- <th/> -->
+				<!-- <th/> -->
+				<th><abbr title="Exclusion">Ex</abbr></th>
+				<th><abbr title="Quota">Qt</abbr></th>
+				<th><abbr title="Supervision">Sp</abbr></th>
+				<!-- <th/> -->
+			</tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="FILEX_RULES_LOOP">
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
+				<td><TMPL_VAR NAME="FILEX_RULE_TYPE"></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_NAME"></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_EXP"></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_LINK_EX"></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_LINK_QT"></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_LINK_SP"></td>
+				<td style="text-align: center;">
+					<ul class="inline" style="padding: 0; margin: 0;">
+						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
+					</ul>
+				</td>
+			</tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+<TMPL_ELSE>
+<p>Pas de r&egrave;gles</p>
+</TMPL_IF>

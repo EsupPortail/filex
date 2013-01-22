@@ -288,6 +288,7 @@ sub beginSession {
 		if ( $self->{'_session_'}->load($session_id) ) {
 			# if session has expired then re-auth
 			if ( ! $self->{'_session_'}->isExpired() ) {
+				$self->{'_auth_'}->readFromSession($self->{'_session_'});
 				# user's login
 				$self->_createUser(uid=>$self->{'_session_'}->getParam('username'),
 					session=>$self->{'_session_'});
@@ -323,6 +324,7 @@ sub beginSession {
 					if ( $self->{'_session_'}->start() ) {
 						# set username
 						$self->{'_session_'}->setParam(username=>$user);
+						$self->{'_auth_'}->saveInSession($self->{'_session_'});
 						$self->{'_user_'}->setSession($self->{'_session_'});
 						# set cookie
 						$self->{'_cookie_'} = FILEX::System::Cookie::generate($self->config(),-value=>$self->{'_session_'}->getSid());

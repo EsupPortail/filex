@@ -1,4 +1,4 @@
-- authentification Shib
+- authentification Shib (avec une seule regle : SHIB)
 
 v1.7a
 1- Correction d'un petit bug dans le module de configuration d'Apache (HttpConfig.pm) dans le cas d'un usage avec apache 1.x

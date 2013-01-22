@@ -23,7 +23,8 @@ sub process {
 	my $self = shift;
 	my ($b_err,$errstr,$form_sub_action);
 	my $S = $self->sys();
-	my $T = $S->getTemplate(name=>"admin_rules");
+	my $isShib = $S->config->getAuthModule eq 'AuthShib';
+	my $T = $S->getTemplate(name=> $isShib ? "admin_rules_shib" : "admin_rules");
 	# fille template
 	$T->param(FILEX_RULES_FORM_ACTION=>$S->getCurrentUrl());
 	$T->param(FILEX_SUB_ACTION_FIELD_NAME=>SUB_ACTION_FIELD_NAME);
@@ -107,7 +108,7 @@ sub process {
 	# fill template
 	#
 	# loop on rule type
-	my @rules_type = getRuleTypes();
+	my @rules_type = getRuleTypes($isShib);
 	my @rt_loop;
 	foreach my $rt (@rules_type) {
 		my $record = {};

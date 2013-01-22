@@ -18,18 +18,21 @@ our $RULE_TYPE_DN = 1;
 our $RULE_TYPE_GROUP = 2;
 our $RULE_TYPE_UID = 3;
 our $RULE_TYPE_LDAP = 4;
+our $RULE_TYPE_SHIB = 5;
 
 my %RULE_TYPES = (
   $RULE_TYPE_DN => "DN",
   $RULE_TYPE_GROUP => "GROUP",
 	$RULE_TYPE_UID => "UID",
-	$RULE_TYPE_LDAP => "LDAP"
+	$RULE_TYPE_LDAP => "LDAP",
+	$RULE_TYPE_SHIB => "SHIB",
 );
 
 
 # exported functions
 sub getRuleTypes {
-  return keys(%RULE_TYPES);
+    my ($isShib) = @_;
+    $isShib ? $RULE_TYPE_SHIB : grep { $_ != $RULE_TYPE_SHIB } keys(%RULE_TYPES);
 }
 
 sub getRuleTypeName {
@@ -52,7 +55,7 @@ sub add {
 	                    code=>-1) && return undef if ( !exists($ARGZ{'exp'}) || !$self->checkStr($ARGZ{'exp'}) );
 	$self->setLastError(query=>"",
 	                    string=>"require a type",
-                      code=>-1) && return undef if ( !exists($ARGZ{'type'}) || !checkType($ARGZ{'type'}) );
+                      code=>-1) && return undef if ( !exists($ARGZ{'type'}) || !checkType($self, $ARGZ{'type'}) );
 	my $dbh = $self->_dbh();
 	my %fields = (
 		'name' => $dbh->quote($ARGZ{'name'}),
@@ -91,7 +94,7 @@ sub modify {
 	my %valid_fields = (
 		name => { check => sub { $self->checkStr(shift); }, quote=>1},
 		exp => 	{ check => sub { $self->checkStr(shift); }, quote=>1},
-		type => { check => \&checkType, quote=>0},
+		type => { check => sub { $self->checkType(shift) }, quote=>0},
 	);
 	my $dbh = $self->_dbh();
 	my (@strSet);
@@ -116,8 +119,10 @@ sub modify {
 }
 
 sub checkType {
+	my $self = shift;
 	my $value = shift;
-	return ( defined($value) && grep($value == $_,getRuleTypes()) ) ? 1 : undef;
+	my @ruleTypes = getRuleTypes($self->_config->isShib);
+	return ( defined($value) && grep($value == $_, @ruleTypes) ) ? 1 : undef;
 }
 
 # id => rule id

@@ -234,6 +234,11 @@ sub getAuthModule {
 	return $self->{'_config_'}->val(SYSSECTION,"AuthModule","AuthCAS");
 }
 
+sub isShib {
+	my $self = shift;
+	return $self->getAuthModule eq 'AuthShib';
+}
+
 # Get Meter Refrech Delay (default to 5 seconds)
 sub getMeterRefreshDelay {
 	my $self = shift;

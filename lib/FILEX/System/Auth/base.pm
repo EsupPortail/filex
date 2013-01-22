@@ -34,6 +34,13 @@ sub get_ruleMatcher {
 }
 
 
+# the Auth object can be stateful:
+# after initial authentication, it can save its params in the session
+sub saveInSession {}
+# then it can restore its params from session
+sub readFromSession {}
+
+
 sub needRedirect {
 	warn(__PACKAGE__,"-> needRedirect method need to be overriden and must return 0 or 1");
 }
