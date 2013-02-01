@@ -1,0 +1,267 @@
+package FILEX::Apache::Handler::Admin::Quota;
+use strict;
+use vars qw(@ISA);
+use FILEX::Apache::Handler::Admin::base;
+@ISA = qw(FILEX::Apache::Handler::Admin::base);
+
+use constant SA_DELETE => 1;
+use constant SA_STATE => 2;
+use constant SA_MODIFY => 4;
+use constant SA_SHOW_MODIFY => 5;
+use constant SA_ADD => 3;
+use constant SUBACTION => "sa";
+
+use FILEX::DB::Admin::Quota;
+use FILEX::Tools::Utils qw(tsToLocal hrSize unit2idx round unit2byte unitLabel unitLength);
+
+sub process {
+	my $self = shift;
+	my ($b_err,$errstr,$form_sub_action);
+	my $S = $self->sys();
+	my $T = $S->getTemplate(name=>"admin_quota");
+	# Exclude database
+	my $quota_DB = FILEX::DB::Admin::Quota->new(
+		name=>$S->config->getDBName(),
+		user=>$S->config->getDBUsername(),
+		password=>$S->config->getDBPassword(),
+		host=>$S->config->getDBHost(),
+		port=>$S->config->getDBPort()
+	);
+
+	my $selected_rule = undef;
+	my $selected_mfsunit = undef;
+	my $selected_musunit = undef;
+	# is there a sub action
+	my $sub_action = $S->apreq->param(SUBACTION) || -1;
+	SWITCH : {
+		# add a new rule
+		if ( $sub_action == SA_ADD ) {
+			my $max_file_size = $self->getMaxFileSize();
+			my $max_used_space = $self->getMaxUsedSpace();
+			if ( ! $quota_DB->add(name=>$S->apreq->param('quota_name'),
+				rule_id=>$S->apreq->param('quota_rule_id'),
+				qorder=>$S->apreq->param('quota_qorder'),
+				max_file_size=>$max_file_size,
+				max_used_space=>$max_used_space) ) {
+				$errstr = ($quota_DB->getLastErrorCode() == 1062) ? $S->i18n->localize("rule already exists") : $quota_DB->getLastErrorString();
+				$b_err = 1;
+			}
+			last SWITCH;
+		}
+		# delete rule
+		if ( $sub_action == SA_DELETE ) {
+			if ( ! $quota_DB->del($S->apreq->param('quota_id')) ) {
+				$errstr = $quota_DB->getLastErrorString(); 
+				$b_err = 1;
+			}
+			last SWITCH;
+		}
+		# change rule state
+		if ( $sub_action == SA_STATE ) {
+			if ( ! $quota_DB->modify(id=>$S->apreq->param('quota_id'),enable=>$S->apreq->param('quota_state')) ) {
+				$errstr = $quota_DB->getLastErrorString();
+				$b_err = 1;
+			}
+			last SWITCH;
+		}
+		# show a selected rule
+		if ( $sub_action == SA_SHOW_MODIFY ) {
+			my (%hquota,$hkey,$hid,$hrsize,$hrunit);
+			$hid = $S->apreq->param('quota_id');
+			if ( ! $quota_DB->get(id=>$hid,results=>\%hquota) ) {
+				$errstr = $quota_DB->getLastErrorString();
+				$b_err = 1;
+			}
+			$hkey = keys(%hquota);
+			if ( $hkey > 0 ) {
+				# fill modify template
+				$T->param(FORM_QUOTA_NAME=>$hquota{'name'});
+				$T->param(FORM_QUOTA_ID=>$hid);
+				$T->param(FORM_QUOTA_QORDER=>$hquota{'qorder'});
+				($hrsize,$hrunit) = hrSize($hquota{'max_file_size'});
+				$selected_mfsunit = unit2idx($hrunit);
+				$T->param(FORM_QUOTA_MAX_FILE_SIZE=>round($hrsize));
+				($hrsize,$hrunit) = hrSize($hquota{'max_used_space'});
+				$selected_musunit = unit2idx($hrunit);
+				$T->param(FORM_QUOTA_MAX_USED_SPACE=>round($hrsize));
+				$selected_rule = $hquota{'rule_id'};
+				$form_sub_action = SA_MODIFY;
+			}
+			last SWITCH;
+		}
+		# modify a selected rule
+		if ( $sub_action == SA_MODIFY ) {
+			my $max_file_size = $self->getMaxFileSize();
+			my $max_used_space = $self->getMaxUsedSpace();
+			if ( ! $quota_DB->modify(id=>$S->apreq->param('quota_id'),
+					name=>$S->apreq->param('quota_name'),
+					rule_id=>$S->apreq->param('quota_rule_id'),
+					qorder=>$S->apreq->param('quota_qorder'),
+					max_file_size=>$max_file_size,
+					max_used_space=>$max_used_space) ) {
+				$b_err = 1;
+				$errstr = ( $quota_DB->getLastErrorCode() == 1062 ) ? $S->i18n->localize("rule already exists") : $quota_DB->getLastErrorString();
+			}
+			last SWITCH;
+		}
+	}
+	if ( !defined($form_sub_action) ) {
+		$form_sub_action = SA_ADD;
+		# load default for max_file_size && max_used_space
+		my ($hrsize,$hrunit) = hrSize($S->config->getMaxFileSize());
+		$selected_mfsunit = unit2idx($hrunit);
+		$T->param(FORM_QUOTA_MAX_FILE_SIZE=>round($hrsize));
+		($hrsize,$hrunit) = hrSize($S->config->getMaxUsedSpace());
+		$selected_musunit = unit2idx($hrunit);
+		$T->param(FORM_QUOTA_MAX_USED_SPACE=>round($hrsize));
+	}
+	#
+	# fill template
+	#
+	# loop on rule 
+	my (@rules,@rules_loop);
+	# selected_rule might be undef because the method check for it
+	$quota_DB->listRules(results=>\@rules,including=>$selected_rule);
+	for ( my $ridx = 0; $ridx <= $#rules; $ridx++ ) {
+		my $record = {};
+		$record->{'RULE_ID'} = $rules[$ridx]->{'id'};
+		$record->{'RULE_NAME'} = $rules[$ridx]->{'name'};
+		$record->{'RULE_SELECTED'} = "selected" if ( defined($selected_rule) && $selected_rule == $rules[$ridx]->{'id'} );
+		push(@rules_loop,$record);
+	}
+	$T->param(RULES_LOOP=>\@rules_loop);
+	# unit table
+	my @mfsunit_loop;
+	for ( my $uidx = 0; $uidx <= unitLength(); $uidx++ ) {
+		my $record = {};
+		$record->{'MFSUNIT_ID'} = $uidx;
+		$record->{'MFSUNIT_NAME'} = $S->i18n->localize(unitLabel($uidx));
+		$record->{'MFSUNIT_SELECTED'} = "selected" if ( defined($selected_mfsunit) && $selected_mfsunit == $uidx );
+		push(@mfsunit_loop,$record);
+	} 
+	$T->param(MFSUNIT_LOOP=>\@mfsunit_loop);
+	my @musunit_loop;
+	for ( my $uidx = 0; $uidx <= unitLength(); $uidx++ ) {
+		my $record = {};
+		$record->{'MUSUNIT_ID'} = $uidx;
+		$record->{'MUSUNIT_NAME'} = $S->i18n->localize(unitLabel($uidx));
+		$record->{'MUSUNIT_SELECTED'} = "selected" if ( defined($selected_musunit) && $selected_musunit == $uidx );
+		push(@musunit_loop,$record);
+	} 
+	$T->param(MUSUNIT_LOOP=>\@musunit_loop);
+
+	# the rest
+	$T->param(FORM_ACTION=>$S->getCurrentUrl());
+	$T->param(MACTION=>$self->getDispatchName());
+	$T->param(MACTIONID=>$self->getActionId());
+	$T->param(SUBACTION=>SUBACTION);
+	$T->param(SUBACTIONID=>$form_sub_action);
+	if ( $b_err ) { 
+		$T->param(HAS_ERROR=>1);
+		$T->param(ERROR=>$S->toHtml($errstr));
+	}
+	# already defined rules
+	my (@results,@exclude_loop,$state,$hrsize,$hrunit);
+	$b_err = $quota_DB->list(results=>\@results);
+	if ($#results >= 0) {
+		for (my $i=0; $i<=$#results; $i++) {
+			my $record = {};
+			$record->{'QUOTA_DATE'} = tsToLocal($results[$i]->{'ts_create_date'});
+			$record->{'QUOTA_ORDER'} = $results[$i]->{'qorder'};
+			$record->{'QUOTA_NAME'} = $S->toHtml($results[$i]->{'name'});
+			$record->{'QUOTA_STATE'} = ($results[$i]->{'enable'} == 1) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable");
+			$record->{'QUOTA_RULE'} = $S->toHtml($results[$i]->{'rule_name'});
+			($hrsize,$hrunit) = hrSize($results[$i]->{'max_file_size'});
+			$record->{'QUOTA_MAX_FILE_SIZE'} = "$hrsize ".$S->i18n->localizeToHtml($hrunit);
+			($hrsize,$hrunit) = hrSize($results[$i]->{'max_used_space'});
+			$record->{'QUOTA_MAX_USED_SPACE'} = "$hrsize ".$S->i18n->localizeToHtml($hrunit);
+			$state = $results[$i]->{'enable'};
+			$record->{'STATEURL'} = $self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 );
+			$record->{'REMOVEURL'} = $self->genRemoveUrl($results[$i]->{'id'});
+			$record->{'MODIFYURL'} = $self->genModifyUrl($results[$i]->{'id'});
+			push(@exclude_loop,$record);
+		}
+		$T->param(HAS_QUOTA=>1);
+		$T->param(QUOTA_LOOP=>\@exclude_loop);
+	}
+	return $T;
+}
+
+sub getMaxFileSize {
+	my $self = shift;
+	my $mfs_unit = $self->sys->apreq->param('quota_max_file_size_unit') || 0;
+	$mfs_unit = ( $mfs_unit > unitLength() ) ? 0 : $mfs_unit;
+	my $max_file_size = $self->sys->apreq->param('quota_max_file_size') || 0;
+	$max_file_size = unit2byte(unitLabel($mfs_unit),round($max_file_size));
+	return ( $max_file_size < 0 ) ? -1 : $max_file_size;
+}
+
+sub getMaxUsedSpace {
+	my $self = shift;
+	my $mus_unit = $self->sys->apreq->param('quota_max_used_space_unit') || 0;
+	$mus_unit = ( $mus_unit > unitLength() ) ? 0 : $mus_unit;
+	my $max_used_space = $self->sys->apreq->param('quota_max_used_space') || 0;
+	$max_used_space = unit2byte(unitLabel($mus_unit),round($max_used_space));
+	return ( $max_used_space < 0 ) ? -1 : $max_used_space;
+}
+
+# require : id,state
+sub genStateUrl {
+	my $self = shift;
+	my $id = shift;
+	my $enable = shift;
+	my $sub_action = SUBACTION;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString(
+			$sub_action=>SA_STATE,
+			quota_id=>$id,
+			quota_state=>$enable);
+	return $url;
+}
+
+sub genModifyUrl {
+	my $self = shift;
+	my $id = shift;
+	my $sub_action = SUBACTION;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString(
+			$sub_action=>SA_SHOW_MODIFY,
+			quota_id=>$id);
+	return $url;
+}
+
+sub genRemoveUrl {
+	my $self = shift;
+	my $id = shift;
+	my $sub_action = SUBACTION;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString(
+		$sub_action=>SA_DELETE,
+		quota_id=>$id);
+	return $url;
+}
+
+1;
+=pod
+
+=head1 AUTHOR AND COPYRIGHT
+
+FileX - a web file exchange system.
+
+Copyright (c) 2004-2005 Olivier FRANCO
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; see the file COPYING . If not, write to the
+Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+=cut

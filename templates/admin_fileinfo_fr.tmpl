@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	<base href="<TMPL_VAR NAME='STATIC_FILE_BASE'>">
+	<title>FileX</title>
+	<link href="styles/filex.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div class="body">
+	<div class="main">
+		<TMPL_IF NAME="HAS_ERROR">
+		<p class="error"><TMPL_VAR NAME="ERROR"></p>
+		<TMPL_ELSE>
+		<ul>
+			<li><strong>Fichier : </strong><TMPL_VAR NAME="FILENAME">
+			<li><strong>D&eacute;pos&eacute; le : </strong><TMPL_VAR NAME="FILEDATE">
+			<li><strong>Expire le : </strong><TMPL_VAR NAME="FILEEXPIRE">
+			<li><strong>Taille : </strong><TMPL_VAR NAME="FILESIZE">
+			<TMPL_IF NAME="ADMIN_MODE"><li><strong>Depuis la machine : </strong><TMPL_VAR NAME="UL_ADDRESS">
+			<li><strong>Utilise un proxy : </strong><TMPL_VAR NAME="USE_PROXY">
+			<TMPL_IF NAME="IF_USE_PROXY"><li><strong>Information Proxy :</strong><pre style="font-size: 6pt;"><TMPL_VAR NAME="PROXY_INFOS"></pre></TMPL_IF>
+			<li><strong>Propri&eacute;taire : </strong><a href="mailto:<TMPL_VAR NAME='FILEOWNER'>"><TMPL_VAR NAME='FILEOWNER'></a> (<TMPL_VAR NAME="FILEOWNER_ID">)
+			<li><strong>Nom sur le disque</strong> : <TMPL_VAR NAME="DISKNAME"></TMPL_IF>
+			<li><strong>Nombre de t&eacute;l&eacute;chargements : </strong><TMPL_VAR NAME="FILECOUNT">
+			<TMPL_IF NAME="ADMIN_MODE"><li><strong>Etat : </strong><a href="<TMPL_VAR NAME='STATE_URL'>"><TMPL_VAR NAME="STATE"></a></TMPL_IF>
+			<li><strong>Expir&eacute; : </strong><TMPL_IF NAME="CAN_EXPIRE"><a href="<TMPL_VAR NAME='EXPIRE_URL'>"><TMPL_VAR NAME="EXPIRED"></a><TMPL_ELSE><TMPL_VAR NAME="EXPIRED"></TMPL_IF>
+			<li><strong>Recevoir un message &agrave; chaque t&eacute;l&eacute;chargement : </strong><TMPL_IF NAME="CAN_EXPIRE"><a href="<TMPL_VAR NAME='DELIVERY_URL'>"><TMPL_VAR NAME="DELIVERY"></a><TMPL_ELSE><TMPL_VAR NAME="DELIVERY"></TMPL_IF>
+			<li><strong>Recevoir un r&eacute;capitulatif lorsque le fichier sera supprim&eacute; : </strong><TMPL_IF NAME="CAN_EXPIRE"><a href="<TMPL_VAR NAME='RESUME_URL'>"><TMPL_VAR NAME="RESUME"></a><TMPL_ELSE><TMPL_VAR NAME="RESUME"></TMPL_IF>
+			<TMPL_IF NAME="CAN_EXPIRE"><li><strong>Adresse de t&eacute;l&eacute;chargement : </strong><a href="<TMPL_VAR NAME='GETADDRESS'>" target="_blank" title="t&eacute;l&eacute;charger"><TMPL_VAR NAME="GETADDRESS"></a></TMPL_IF>
+		</ul>
+		</TMPL_IF>
+	</div>
+	<TMPL_IF NAME="HAS_DOWNLOAD">
+	<hr>
+	<div class="main">
+		<table class="infos" cellpadding="0" cellspacing="0" width="100%">
+		<caption>liste des t&eacute;l&eacute;chargements</caption>
+		<thead>
+			<tr><td>Adresse</td><td>Date</td><td>Annul&eacute;</td></tr>
+		</thead>
+		<tbody>
+		<TMPL_IF NAME="HAS_DOWNLOAD_ERROR">
+			<tr><td colspan="3"><TMPL_VAR NAME="DOWNLOAD_ERROR"></td></tr>
+		<TMPL_ELSE>
+			<TMPL_LOOP NAME="DOWNLOAD_LOOP">
+			<tr><td><TMPL_VAR NAME="DL_ADDRESS"><TMPL_IF NAME="DL_USE_PROXY"><pre style="font-size: 6pt;"><TMPL_VAR NAME="DL_PROXY_INFOS"></pre></TMPL_IF></td><td><TMPL_VAR NAME="DL_DATE"></td><td><TMPL_VAR NAME="DL_STATE"></td></tr>
+			</TMPL_LOOP>
+		</TMPL_IF>
+		</tbody>
+		</table>
+	</div>
+	</TMPL_IF>
+	<p class="center"><a href="javascript:false();" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
+</div>
+</body>

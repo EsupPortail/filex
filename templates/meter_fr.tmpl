@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	<base href="<TMPL_VAR NAME='STATIC_FILE_BASE'>">
+	<title>FileX</title>
+	<link href="styles/filex.css" rel="stylesheet" type="text/css">
+	<style type="text/css">
+		p.progressbar {
+			background-color: #99C;
+			border: 1pt solid black;
+			width: <TMPL_VAR NAME="PROGRESS">%;
+			text-align: right;
+			font-size: 12pt;
+		}
+		p.meter2 {
+			text-align: center;
+			font-size: 12pt;
+			color: black;
+		}
+	</style>
+</head>
+<body <TMPL_IF NAME="HAS_COMPLETE">onLoad="javascript:self.close();"<TMPL_ELSE>onBlur="javascript:self.focus();"</TMPL_IF>>
+<div class="body">
+	<div class="main">
+		<TMPL_IF NAME="HAS_ERROR">
+		<p class="error"><TMPL_VAR NAME="ERROR"></p>
+		<TMPL_IF NAME="HAS_ERROR_DESC"><p><TMPL_VAR NAME="ERROR_DESC"></p></TMPL_IF>
+		<p class="center"><a href="javascript:false();" onClick="javascript:self.close();">Fermer la fen&ecirc;tre</a></p>
+		<TMPL_ELSE>
+		<p class="stats"><strong><TMPL_VAR NAME="FILENAME"></strong></p>
+		<TMPL_IF NAME="HAS_COMPLETE">
+		<p>T&eacute;l&eacute;chargement effectu&eacute; avec succ&egrave;s</p>
+		<p class="center"><a href="javascript:false();" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
+		<TMPL_ELSE>
+		<p class="progressbar">&nbsp;</p>
+		<p class="meter2"><TMPL_VAR NAME="PROGRESS"> %</p>
+		<hr>
+		<p class="stats">
+			<strong>Données re&ccedil;ues :</strong> <TMPL_VAR NAME="DATARECEIVED"> / <TMPL_VAR NAME="DATATOTAL"><br>
+			<strong>Temps Restant :</strong> <TMPL_VAR NAME="REMAININGTIME"><br>
+			<strong>Vitesse de transfert :</strong> <TMPL_VAR NAME="DATARATE">
+		</p>
+		</TMPL_IF>
+		</TMPL_IF>
+	</div>
+</div>
+</body>

@@ -1,0 +1,29 @@
+<!-- chunky template for current download -->
+<h1>Fichiers non expir&eacute;s :</h1>
+<TMPL_IF NAME="HAS_ERROR">
+<p class="error"><TMPL_VAR NAME="ERROR"></p>
+</TMPL_IF>
+<TMPL_IF NAME="HAS_FILES">
+	<script language="javascript">
+	<!--
+	function openInfoWindow(url) {
+	var infowin;
+	infowin = this.open(url,"_file","toolbar=no,location=no,directories=no,status=1,menubar=no,scrollbars=1,resizable=1,width=500,height=400");
+	infowin.focus();
+	}
+	//-->
+	</script>
+	<table class="infos" cellpadding="0" cellspacing="0" width="100%">
+		<caption>Liste des fichiers non expir&eacute;s (<TMPL_VAR NAME="FILECOUNT">), Espace Utilis&eacute; (inclus les fichiers expir&eacute;s non supprim&eacute;s) : <TMPL_VAR NAME="USED_DISK_SPACE"></caption>
+		<thead>
+			<tr><td><a href="<TMPL_VAR NAME='SORTNAMEURL'>">Nom</a></td><td><a href="<TMPL_VAR NAME='SORTDISKURL'>">Disque</a></td><td><a href="<TMPL_VAR NAME='SORTOWNERURL'>">Propri&eacute;taire</a></td><td><a href="<TMPL_VAR NAME='SORTSIZEURL'>">Taille</a></td><td><a href="<TMPL_VAR NAME='SORTUPDURL'>">D&eacute;pos&eacute; le</a></td><td><a href="<TMPL_VAR NAME='SORTEXDURL'>">Expire le</a></td><td><a href="<TMPL_VAR NAME='SORTDLCURL'>">T&eacute;l&eacute;charg&eacute;</a></td></tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="FILES_LOOP">
+			<tr><td><a href="javascript:false();" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEINFOURL'>')" title="Information"><TMPL_VAR NAME="FILENAME"></a></td><td><TMPL_VAR NAME="DISKNAME"></td><td><TMPL_VAR NAME="FILEOWNER"></td><td><TMPL_VAR NAME="FILESIZE"></td><td><TMPL_VAR NAME="UPLOADDATE"></td><td><TMPL_VAR NAME="EXPIREDATE"></td><td><TMPL_VAR NAME="DOWNLOADCOUNT"></td></tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+<TMPL_ELSE>
+<p>Pas de fichier non expir&eacute;s actuellement</p>
+</TMPL_IF>

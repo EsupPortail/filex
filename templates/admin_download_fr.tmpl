@@ -1,0 +1,25 @@
+<!-- chunky template for current download -->
+<h1>T&eacute;l&eacute;chargement en cours :</h1>
+<TMPL_IF NAME="HAS_DOWNLOAD">
+	<script language="javascript">
+	<!--
+	function openInfoWindow(url) {
+	var infowin;
+	infowin = this.open(url,"file infos","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizeable=yes,width=500,height=300");
+	infowin.focus();
+	}
+	//-->
+	</script>
+	<table class="infos" cellpadding="0" cellspacing="0" width="100%">
+		<thead>
+			<tr><td>Nom</td><td>Propri&eacute;taire</td><td>Taille</td><td>D&eacute;marr&eacute; le</td><td>Adresse</td></tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="DOWNLOAD_LOOP">
+			<tr><td><a href="javascript:false();" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='URLFILEINFO'>')" title="Information"><TMPL_VAR NAME="FILENAME"></a></td><td><TMPL_VAR NAME="OWNER"></td><td><TMPL_VAR NAME="SIZE"></td><td><TMPL_VAR NAME="START"></td><td><TMPL_VAR NAME="IPADDRESS"></td></tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+<TMPL_ELSE>
+<p>Pas de t&eacute;l&eacute;chargements actuellement</p>
+</TMPL_IF>

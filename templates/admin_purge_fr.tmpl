@@ -1,0 +1,34 @@
+<!-- chunky template for current download -->
+<h1>Purge manuelle des fichiers</h1>
+<TMPL_IF NAME="HAS_ERROR"><p class="error"><TMPL_VAR NAME="ERROR"></p></TMPL_IF>
+<TMPL_IF NAME="HAS_PURGE_ERROR"><p class="error"><TMPL_VAR NAME="PURGE_ERROR"></p></TMPL_IF>
+<TMPL_IF NAME="HAS_PURGE">
+	<p><a href="<TMPL_VAR NAME='PURGEALLURL'>">Tous purger</a></p>
+	<script language="javascript">
+	<!--
+	function openInfoWindow(url) {
+	var infowin;
+	infowin = this.open(url,"file infos","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizeable=yes,width=500,height=300");
+	infowin.focus();
+	}
+	//-->
+	</script>
+	<table class="infos" cellpadding="0" cellspacing="0" width="100%">
+		<thead>
+			<tr><td>Nom</td><td>Propri&eacute;taire</td><td>Taille</td><td>D&eacute;pos&eacute; le</td><td>Expire le</td></tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="PURGE_LOOP">
+			<tr>
+				<td><TMPL_VAR NAME="FILENAME"></td>
+				<td><TMPL_VAR NAME="OWNER"></td>
+				<td><TMPL_VAR NAME="SIZE"></td>
+				<td><TMPL_VAR NAME="UPLOADDATE"></td>
+				<td><TMPL_VAR NAME="EXPIREDATE"></td>
+			</tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+<TMPL_ELSE>
+<p>Pas de fichiers &agrave; supprimer actuellement</p>
+</TMPL_IF>

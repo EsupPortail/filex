@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	<base href="<TMPL_VAR NAME='STATIC_FILE_BASE'>">
+  <title>FileX</title>
+	<link href="styles/filex.css" rel="stylesheet" type="text/css">
+	</script>
+</head>
+
+<body>
+<div class="body">
+	<div class="logo">
+		<h1><span>FileX</span> [ <TMPL_VAR NAME="USERNAME"> ]</h1>
+	</div>
+	<TMPL_IF NAME="HAS_ERROR">
+	<p class="error"><TMPL_VAR NAME="ERROR"></p>
+	<TMPL_ELSE>
+	<div class="main">
+	<p class="gobackfilex"><a href="help.html" title="Aide" target="_blank">Aide</a> | <a href="<TMPL_VAR NAME='UPLOADURL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
+	<TMPL_IF NAME="HAS_FILES">
+	<script language="javascript">
+	<!--
+	function openInfoWindow(url) {
+	var infowin;
+	infowin = this.open(url,"_file","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=1,resizable=1,width=500,height=400");
+	infowin.focus();
+	}
+	//-->
+	</script>
+	<table class="infos" cellpadding="0" cellspacing="0" width="100%">
+		<caption>Liste de vos fichiers (<TMPL_VAR NAME="FILECOUNT">), Espace Utilis&eacute; : <TMPL_VAR NAME="USED_SPACE">
+		<TMPL_IF NAME="HAVE_QUOTA"> / <strong><TMPL_VAR NAME="MAX_USED_SPACE"></strong></TMPL_IF>
+		</caption>
+		<thead>
+			<tr><td><a href="<TMPL_VAR NAME='SORTNAMEURL'>" title="Trier par Nom de fichier">Nom</a></td><td><a href="<TMPL_VAR NAME='SORTSIZEURL'>" title="Trizer par taille">Taille</a></td><td><a href="<TMPL_VAR NAME='SORTUPDURL'>" title="Trier par date de d&eacute;pose">D&eacute;pos&eacute; le</a></td><td><a href="<TMPL_VAR NAME='SORTEXDURL'>" title="Trier par date d'expiration">Expire le</a></td><td><a href="<TMPL_VAR NAME='SORTDLCURL'>" title="Trier par nombre de t&eacute;l&eactue;chargement">T&eacute;l&eacute;charg&eacute;</a></td></tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="FILES_LOOP">
+			<tr><td><a href="javascript:false();" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEINFOURL'>')" title="Informations"><TMPL_VAR NAME="FILENAME"></a></td><td><TMPL_VAR NAME="FILESIZE"></td><td><TMPL_VAR NAME="UPLOADDATE"></td><td><TMPL_VAR NAME="EXPIREDATE"></td><td><TMPL_VAR NAME="DOWNLOADCOUNT"></td></tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+	<TMPL_ELSE>
+	<p>Vous n'avez pas d&eacute;pos&eacute; de fichiers</p>
+	</TMPL_IF>
+	<p class="gobackfilex"><a href="help.html" title="Aide" target="_blank">Aide</a> | <a href="<TMPL_VAR NAME='UPLOADURL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
+	</div>
+	<hr>
+	</TMPL_IF>
+	<div class="footer">
+		<p>En cas de probl&egrave;mes ou pour toutes informations, veuillez adresser vos messages à l'adresse suivante : <a href="mailto:<TMPL_VAR NAME='SYSTEMEMAIL'>"><TMPL_VAR NAME="SYSTEMEMAIL"></a></p>
+	</div>
+</div>
+<div class="img">
+	<img src="media/logo.png" width="90" height="50" alt="Insa de Lyon">
+</div>
+</body>
+</html>

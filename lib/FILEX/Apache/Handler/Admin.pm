@@ -1,0 +1,112 @@
+package FILEX::Apache::Handler::Admin;
+use strict;
+use vars qw($VERSION);
+
+# Apache
+use Apache::Constants qw(:common);
+use Apache::Request;
+
+# FILEX
+use FILEX::System;
+
+# Admins Modules
+use FILEX::Apache::Handler::Admin::Dispatcher;
+
+$VERSION = 1.0;
+
+# the main handler
+sub handler {
+	my $S; # FILEX::System
+	my $DB; # FILEX::DB::Admin
+	my $disp; # the event dispatcher
+	my $main_template; # the Main admin template
+	# Auth
+	$S = FILEX::System->new(shift);
+	$S->beginSession();
+	# verify if admin
+	if ( ! $S->isAdmin($S->getAuthUser()) ) {
+		$S->denyAccess();
+	}
+	# create the dispatcher
+	$disp = FILEX::Apache::Handler::Admin::Dispatcher->new($S);
+	# switch menu action
+	my $main_action = $disp->getDefaultDispatch($S->apreq->param($disp->getDispatchName()));
+	# go action
+	my ($T,$passthru) = $disp->dispatch($main_action);
+	# fill the main template part if required
+	if ( !$passthru ) {
+		# load the main template
+		$main_template = $S->getTemplate(name=>"admin");
+		do_action_menu($S,$main_template,$disp,$main_action); 
+		$main_template->param(MAIN_CONTENT=>$T->output());
+		$main_template->param(SYSTEMEMAIL=>$S->config->getSystemEmail());
+		$main_template->param(USERNAME=>$S->toHtml($S->getUserRealName($S->getAuthUser())));
+		$main_template->param(UPLOADURL=>$S->getUploadUrl());
+	} else {
+		$main_template = $T;
+	}
+	display($S,$main_template);# if $T;
+	return OK;
+}
+
+# display
+sub display {
+	my $S = shift;
+	my $T = shift;
+	# base for static include
+	$T->param(STATIC_FILE_BASE=>$S->getStaticUrl()) if ( $T->query(name=>'STATIC_FILE_BASE') );
+	$S->sendHeader("Content-Type"=>"text/html");
+	$S->apreq->print($T->output()) if ( ! $S->apreq->header_only() );
+	exit(OK);
+}
+
+# do form menu
+sub do_action_menu {
+	my $s = shift;
+	my $t = shift; # HTML::Template
+	my $disp = shift; # dispatcher
+	my $ca = shift; # current menu action
+	my @form_menu;
+	my $def_action; #default action
+	my $k;
+	foreach $k ( $disp->enumDispatch() ) {
+		my $r = {
+			FORM_MENU_OPT_VALUE=>$k,
+			FORM_MENU_OPT_LABEL=>$s->i18n->localizeToHtml($disp->getDispatchLabel($k))
+		};
+		# current action
+		$def_action = $r if ( $ca eq $k );
+		push(@form_menu,$r);
+	}
+	# set default action
+	$def_action->{'FORM_MENU_OPT_SELECTED'} = "selected" if defined($def_action);
+	# the form action
+	$t->param(FORM_MENU_ACTION=>$s->getCurrentUrl());
+	# the menu
+	$t->param(ACTION_MENU_LOOP=>\@form_menu);
+}
+
+1;
+=pod
+
+=head1 AUTHOR AND COPYRIGHT
+
+FileX - a web file exchange system.
+
+Copyright (c) 2004-2005 Olivier FRANCO
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; see the file COPYING . If not, write to the
+Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+=cut
