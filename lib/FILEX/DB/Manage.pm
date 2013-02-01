@@ -23,7 +23,7 @@ sub getFiles {
 	my $strQuery = "SELECT u.*, ".
 	               "UNIX_TIMESTAMP(upload_date) AS ts_upload_date, ".
 	               "UNIX_TIMESTAMP(expire_date) AS ts_expire_date, ".
-	               "COUNT(g.upload_id) AS download_count, ".
+	               "COUNT(g.upload_id) - SUM(g.admin_download) AS download_count, ".
 	               "NOW() > expire_date AS expired ".
 	               "FROM upload AS u ".
 	               "LEFT JOIN get AS g ON u.id = g.upload_id ".

@@ -43,6 +43,7 @@ USE FILEX;
 -- renew_count = nombre de fois où l'expiration du fichier a été renouvellée
 -- with_password = besoin d'un mot de passe pout le téléchargement
 -- password = mot de passe pour le téléchargement
+-- user_agent = identifiant navigateur
 CREATE TABLE upload (
   id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   real_name VARCHAR(255) NOT NULL,
@@ -62,6 +63,7 @@ CREATE TABLE upload (
 	renew_count INT UNSIGNED NOT NULL DEFAULT 0,
 	with_password BOOL NOT NULL DEFAULT 0,
 	password VARCHAR(32) DEFAULT NULL,
+	user_agent VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY  (id),
   INDEX idx_filename (file_name),
   INDEX idx_expire (expire_date)
@@ -95,7 +97,8 @@ CREATE TABLE current_download (
 -- date = date du téléchargement
 -- canceled = téléchagement a été annulé
 -- proxy_info =^information de proxy du client
-
+-- user_agent = identifiant navigateur
+-- admin_download = téléchargement "administratif"
 CREATE TABLE get (
   get_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   upload_id BIGINT(20) UNSIGNED NOT NULL,
@@ -104,6 +107,8 @@ CREATE TABLE get (
   date DATETIME NOT NULL,
   canceled BOOL NULL DEFAULT 0,
   proxy_infos VARCHAR(255) DEFAULT NULL,
+	user_agent VARCHAR(255) DEFAULT NULL,
+	admin_download BOOL NOT NULL DEFAULT 0,
   PRIMARY KEY  (get_id),
   INDEX idx_upload_id (upload_id),
   CONSTRAINT fk_upload_id FOREIGN KEY (upload_id) REFERENCES upload (id) ON DELETE CASCADE

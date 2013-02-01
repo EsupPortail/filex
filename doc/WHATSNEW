@@ -1,1 +1,28 @@
-Possibilité d'ajouter un mot de passe pour le téléchargement.
+v1.3
+1- Enregistrement des identifiants des navigateurs lors des "upload" et "download" de fichiers :
+	les identifiants (User-Agent) lors de l'upload et le download de fichier sont enregistrés dans la base.
+	Ils sont consultables via la page de propriété des fichiers.
+	(Administration/Gestion des fichiers non expirés/[nom fichier])
+2- Les administrateurs peuvent maintenant télécharger des fichiers sans que cela impacte les statistiques utilisateurs.
+	Possibilité pour les administrateurs de télécharger un fichier (à partir de la page de propriété des fichiers)
+	sans que cela ne soit visible dans les statistiques de téléchargement du fichier pour l'utilisateur. Le téléchargement
+	est tout de même loggé dans le système.
+3- Réorganisation du  de propriété d'un fichier pour prendre en compte 1 & 2
+4- Retouche des templates : 0 erreurs & 0 warning dans Tidy !
+
+v1.2a
+1- Fixe d'un bug majeur lors de l'upload de fichier
+2- Divers retouche des templates
+3- Fixe des séparateurs d'urls : & => &amp;
+
+v1.2
+1- Possibilité d'ajouter un mot de passe pour le téléchargement.
+
+v1.1
+1- Possibilité de prolonger la durée de vie d'un fichier pour les utilisateurs
+2- Le nombre mini et maxi de jours de la durée de vie des fichiers est maintenant paramétrable
+3- Possibilité de créer des règles sur l'UID d'un utilisateur
+4- Différentiation des fichiers expirés / valides dans la gestion de fichiers des utilisateurs
+
+v1.0
+première version

@@ -1,22 +1,28 @@
-* patch d'un bug important lors de l'upload de fichier : 
-  le serveur pouvait partir en boucle infinie dans la situation ou le 
-  répertoire de stockage temporaire n'était pas sur la même partition
-  que le répertoire de stockage (je n'avais pas testé cette partie !!!)
+v1.3
+1- Enregistrement des identifiants des navigateurs lors des "upload" et "download" de fichiers :
+	les identifiants (User-Agent) lors de l'upload et le download de fichier sont enregistrés dans la base.
+	Ils sont consultables via la page de propriété des fichiers.
+	(Administration/Gestion des fichiers non expirés/[nom fichier])
+2- Les administrateurs peuvent maintenant télécharger des fichiers sans que cela impacte les statistiques utilisateurs.
+	Possibilité pour les administrateurs de télécharger un fichier (à partir de la page de propriété des fichiers)
+	sans que cela ne soit visible dans les statistiques de téléchargement du fichier pour l'utilisateur. Le téléchargement
+	est tout de même loggé dans le système.
+3- Réorganisation du  de propriété d'un fichier pour prendre en compte 1 & 2
+4- Retouche des templates : 0 erreurs & 0 warning dans Tidy !
 
-  Note : il est préférable de positionner le répertoire de stockage temporaire
-  (TmpFileDir) sur la même partition que le répertoire de stockage (FileRepository)
-  car dans ce cas la re-copie de fichier s'effectue par un "hard-link" ce qui est
-  beaucoup plus rapide (quasi instantané). 
-  Sinon, un boucle (la fameuse !) lit le fichier source (temporaire) et écrit dans 
-  le fichier destination (stockage) ce qui peut être très long dans le cas de fichier
-  de plusieurs méga.
-  
-* petit patch sur la template de fin de dépose de fichier :
-  le lien à envoyer n'est plus affiché en gras (<strong>) mais sous la forme
-  d'un lien standard. Le problème était que certain client de messagerie au
-  moment du copier collé inséraient une '*' de part et d'autre du lien. 
-  Il s'agit en fait d'une méthode pour avoir un pseudo-formatage des emails
-  en mode texte.
+v1.2a
+1- Fixe d'un bug majeur lors de l'upload de fichier
+2- Divers retouche des templates
+3- Fixe des séparateurs d'urls : & => &amp;
 
-* les paramètres d'Url sont séparés maintenant par des "&amp;" ce qui est conforme
-  au recommendation du W3C.
+v1.2
+1- Possibilité d'ajouter un mot de passe pour le téléchargement.
+
+v1.1
+1- Possibilité de prolonger la durée de vie d'un fichier pour les utilisateurs
+2- Le nombre mini et maxi de jours de la durée de vie des fichiers est maintenant paramétrable
+3- Possibilité de créer des règles sur l'UID d'un utilisateur
+4- Différentiation des fichiers expirés / valides dans la gestion de fichiers des utilisateurs
+
+v1.0
+première version

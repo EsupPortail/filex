@@ -1,12 +1,11 @@
 <!-- chunky template for current download -->
 <h1>Gestion des r&egrave;gles :</h1>
-	<p>Les r&egrave;gles sont utilis&eacute;es pour g&eacute;rer les <em>exclusions</em> ainsi que les <em>quotas</em>. Si une r&egrave;gle est valide pour un utilisateur donn&eacute;, alors elle d&eacute;clanchera une action comme par exemple l'exclusion de l'acc&egrave;s au syst&egrave;me. Les r&egrave;gles sont de deux type :
-		<ul>
-			<li>Les r&egrave;gles de type "<strong>DN</strong>" : ce sont des expressions r&eacute;guli&egrave;res appliqu&eacute;es sur le DN d'un utilisateur authentifi&eacute; avec succ&egrave;s.</li>
-			<li>Les r&egrave;gles de type "<strong>GROUP</strong>" : ce sont des noms de groupe LDAP. Si l'utilisateur appartient &agrave; l'un de ces groupes, une action pourra &egrave;tre effectu&eacute;e.</li>
-			<li>Les r&egrave;gles de type "<strong>UID</strong>" : ce sont des identifiants d'utilisateurs.</li>
-		</ul>
-	</p>
+	<p>Les r&egrave;gles sont utilis&eacute;es pour g&eacute;rer les <em>exclusions</em> ainsi que les <em>quotas</em>. Si une r&egrave;gle est valide pour un utilisateur donn&eacute;, alors elle d&eacute;clanchera une action comme par exemple l'exclusion de l'acc&egrave;s au syst&egrave;me. Les r&egrave;gles sont de deux type :</p>
+	<ul>
+		<li>Les r&egrave;gles de type "<strong>DN</strong>" : ce sont des expressions r&eacute;guli&egrave;res appliqu&eacute;es sur le DN d'un utilisateur authentifi&eacute; avec succ&egrave;s.</li>
+		<li>Les r&egrave;gles de type "<strong>GROUP</strong>" : ce sont des noms de groupe LDAP. Si l'utilisateur appartient &agrave; l'un de ces groupes, une action pourra &egrave;tre effectu&eacute;e.</li>
+		<li>Les r&egrave;gles de type "<strong>UID</strong>" : ce sont des identifiants d'utilisateurs.</li>
+	</ul>
 	<p><strong>Attention</strong> : les r&egrave;gles &eacute;tant r&eacute;f&eacute;renc&eacute;es par la gestion des <em>exclusions</em> et des <em>quotas</em>; si vous supprimer une r&egrave;gle, alors les entr&eacute;es d'exclusions et de quotas les r&eacute;f&eacute;ren&ccedil;ant seront supprim&eacute;es.</p>
 	<form method="post" action="<TMPL_VAR NAME='FILEX_RULES_FORM_ACTION'>">
 	<h2>Ajouter une r&egrave;gle :</h2>
@@ -25,13 +24,14 @@
 	</form>
 	<TMPL_IF NAME="FILEX_HAS_ERROR"><p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p></TMPL_IF>
 <TMPL_IF NAME="FILEX_HAS_RULES">
-	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%">
+	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des r&egrave;gles">
+		<caption>Liste des r&egrave;gles</caption>
 		<thead>
 			<tr><td>Type</td><td>Nom</td><td>R&egrave;gle</td><td>Actions</td></tr>
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_RULES_LOOP">
-			<tr<TMPL_UNLESS NAME="__odd__"> id="even"</TMPL_UNLESS>>
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
 				<td><TMPL_VAR NAME="FILEX_RULE_TYPE"></td>
 				<td><TMPL_VAR NAME="FILEX_RULE_NAME"></td>
 				<td><TMPL_VAR NAME="FILEX_RULE_EXP"></td>

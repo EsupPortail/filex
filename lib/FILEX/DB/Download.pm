@@ -84,10 +84,10 @@ sub currentFiles {
 	my $strQuery = "SELECT u.*, ".
 	               "UNIX_TIMESTAMP(upload_date) AS ts_upload_date, ".
 	               "UNIX_TIMESTAMP(expire_date) AS ts_expire_date, ".
-	               "COUNT(g.upload_id) AS download_count ".
+                 "COUNT(g.upload_id) - SUM(g.admin_download) AS download_count ".
 	               "FROM upload AS u ".
 	               "LEFT JOIN get AS g ON u.id = g.upload_id ".
-	               "WHERE expire_date > NOW() ".
+	               "WHERE u.expire_date > NOW() ".
 	               "GROUP BY u.id ";
 	my $order_by = ( exists($ARGZ{'orderby'}) && length($ARGZ{'orderby'}) ) ? $ARGZ{'orderby'} : 'upload_date';
 	my $order = $ARGZ{'order'} if ( exists($ARGZ{'order'}) );

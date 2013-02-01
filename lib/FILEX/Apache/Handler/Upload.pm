@@ -290,6 +290,7 @@ sub handler {
 	$record->setExpireDays($upload_infos{'daykeep'});
 	$record->setGetDelivery($upload_infos{'getdelivery'});
 	$record->setGetResume($upload_infos{'getresume'});
+	$record->setUserAgent($S->getUserAgent());
 	# set password if checked and password is ok
 	if ( $upload_infos{'wpwd'} == 1 ) {
 		if ( defined($upload_infos{'password'}) ) {

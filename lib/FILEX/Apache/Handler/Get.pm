@@ -18,6 +18,7 @@ use Encode;
 use MIME::Words;
 
 use constant FILE_FIELD_NAME => "k";
+use constant ADMIN_DOWNLOAD_FIELD_NAME => "adm";
 use constant AUTO_MODE_FIELD_NAME => "auto";
 use constant PASSWORD_FIELD_NAME => "pwd";
 use constant MD5_PASSWORD_FIELD_NAME => "m";
@@ -40,6 +41,23 @@ sub handler {
 	my $file_name = $S->apreq->param(FILE_FIELD_NAME);
 	my $auto_mode = $S->apreq->param(AUTO_MODE_FIELD_NAME) || 0;
 	my $password = $S->apreq->param(PASSWORD_FIELD_NAME);
+
+	# administrative download mode
+	my $admin_download = $S->apreq->param(ADMIN_DOWNLOAD_FIELD_NAME) || 0;
+	$admin_download = ($admin_download =~ /^1$/) ? 1 : 0;
+	# if in administrative download mode :
+	if ( $admin_download == 1 ) {
+		# start session without authentification
+		$S->beginSession(no_auth=>1);
+		# check if user is an administrator
+		my $auth_user = $S->getAuthUser();
+		if ( defined($auth_user) && $S->isAdmin($auth_user) && ($S->_isExclude($auth_user)!=1) ) {
+			$admin_download = 1;
+		} else {
+			$admin_download = 0;
+		}
+	}
+warn("Admin download ? $admin_download");
 
 	$Template->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	# no filename to download then show it
@@ -87,7 +105,8 @@ sub handler {
 
 	# verify if we have a password	
 	my $bPasswordFailed = 0;
-	if ( $upload->needPassword() ) {
+	# in admin_download we bypass this password
+	if ( $upload->needPassword() && ($admin_download != 1) ) {
 		# reset the automatic download flag
 		$auto_mode = 0;
 		if ( defined($password) ) {
@@ -112,7 +131,8 @@ sub handler {
 			$Template->param(FILEX_HAS_ERROR=>1);
 			$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("invalid password"));
 		}
-		if ( $upload->needPassword() ) {
+		# bypass password request in administrative download
+		if ( $upload->needPassword() && ($admin_download != 1) ) {
 			$Template->param(FILEX_HAS_PASSWORD=>1);
 			$Template->param(FILEX_FORM_GET_ACTION=>$S->getCurrentUrl());
 			$Template->param(FILEX_FORM_PASSWORD_FIELD_NAME=>PASSWORD_FIELD_NAME);
@@ -123,7 +143,15 @@ sub handler {
 			$Template->param(FILEX_AUTO_DOWNLOAD=>1);
 			my $fk = FILE_FIELD_NAME;
 			my $fauto = AUTO_MODE_FIELD_NAME;
-			my $download_url = $S->getCurrentUrl()."?".$S->genQueryString({$fk=>$file_name,$fauto=>1});
+			my $fadm = ADMIN_DOWNLOAD_FIELD_NAME;
+			#my $download_url = $S->getCurrentUrl()."?".$S->genQueryString({$fk=>$file_name,$fauto=>1});
+			my $download_url = $S->getCurrentUrl()."?";
+			# in administrative download ?
+			if ( $admin_download == 1 ) {
+				$download_url .= $S->genQueryString({$fk=>$file_name,$fauto=>1,$fadm=>1});
+			} else {
+				$download_url .= $S->genQueryString({$fk=>$file_name,$fauto=>1});
+			}
 			$Template->param(FILEX_DOWNLOAD_URL=>$download_url);
 		}
 		display($S,$Template);
@@ -174,26 +202,21 @@ sub handler {
 	# send file
 	$S->apreq->send_fd($fh);
 	# check for connection
-	if ( !$S->isConnected() ) {
-		$upload->addDownloadRecord(
-			upload_id=>$upload->getId(),
-			ip_address=>$S->getRemoteIP(),
-			use_proxy=>$S->isBehindProxy(),
-			proxy_infos=>$S->getProxyInfos(),
-			canceled=>1) or warn(__PACKAGE__,"-> Unable to log download : ".$upload->getLastErrorString());
-	} else {
-		# log download for later stats
-		$upload->addDownloadRecord(
-			upload_id=>$upload->getId(),
-			ip_address=>$S->getRemoteIP(),
-			use_proxy=>$S->isBehindProxy(),
-			proxy_infos=>$S->getProxyInfos(),
-			canceled=>0) or warn(__PACKAGE__,"-> Unable to log download : ".$upload->getLastErrorString());
-			# send email on success and get_delivery == 1
-			if ( $S->config->needEmailNotification() && $upload->getGetDelivery() == 1) {
-				warn (__PACKAGE__,"-> Unable to send email !") if ( ! sendMail($S,$upload) );
-			}
+	my $bCanceled = ( !$S->isConnected() ) ? 1 : 0;
+	$upload->addDownloadRecord(
+		upload_id=>$upload->getId(),
+		ip_address=>$S->getRemoteIP(),
+		use_proxy=>$S->isBehindProxy(),
+		proxy_infos=>$S->getProxyInfos(),
+		user_agent=>$S->getUserAgent(),
+		admin_download=>$admin_download,
+		canceled=>$bCanceled) or warn(__PACKAGE__,"-> Unable to log download : ".$upload->getLastErrorString());
+	# send email on success AND get_delivery == 1 AND in non-administrative download mode AND download not canceled
+	if ( $S->config->needEmailNotification() && ($upload->getGetDelivery() == 1) && 
+			 ($bCanceled != 1) && ($admin_download != 1) ) {
+		warn (__PACKAGE__,"-> Unable to send email !") if ( ! sendMail($S,$upload) );
 	}
+	# close filehandle
 	$fh->close();
 	
 	# delete current download log

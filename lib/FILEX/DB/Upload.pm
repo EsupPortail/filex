@@ -44,6 +44,7 @@ sub new {
 			renew_count => undef,
 			with_password => undef,
 			password => undef,
+			user_agent => undef
 		}
 	};
 	my %ARGZ = @_;
@@ -69,7 +70,7 @@ sub _initialize(%){
 	my $strQuery = "SELECT u.*, NOW() > expire_date AS expired, ".
                  "UNIX_TIMESTAMP(upload_date) AS ts_upload_date,".
                  "UNIX_TIMESTAMP(expire_date) AS ts_expire_date,".
-                 "COUNT(g.upload_id) AS download_count, ".
+	               "COUNT(g.upload_id) - SUM(g.admin_download) AS download_count, ".
 	               "COUNT(cd.upload_id) AS is_downloaded ".
                  "FROM upload AS u ".
                  "LEFT JOIN get AS g ON u.id = g.upload_id ".
@@ -180,7 +181,7 @@ sub _update {
 			push(@fields,"with_password=$value");
 			if ( $value ) {
 				$value = $self->{'_UPLOAD_'}->{'fields'}->{'password'};
-				if ( !$self->checkStrLength($value,0,50) ) {
+				if ( !$self->checkStrLength($value,0,33) ) {
           $self->setLastError(string=>"[ password ] invalid field format",code=>-3,query=>"$value");
         } else {
         	push(@fields,"password=".$dbh->quote($value));
@@ -222,7 +223,7 @@ sub _create {
 	return 1 if ($self->{'_UPLOAD_'}->{'data_change'} == 0);
 	# real_name
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'real_name'};
-	if ( !defined($value) || ! $self->checkStrLength($value,0,255) ) {
+	if ( !defined($value) || ! $self->checkStrLength($value,0,256) ) {
 		$self->setLastError(string=>"[ real_name ] must exists or invalid field format",code=>-2,query=>"$value");
 		return undef;
 	} else {
@@ -231,7 +232,7 @@ sub _create {
 	}
 	# file_name
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'file_name'};
-  if ( !defined($value) || !$self->checkStrLength($value,0,255) ) {
+  if ( !defined($value) || !$self->checkStrLength($value,0,256) ) {
     $self->setLastError(string=>"[ file_name ] must exists or invalid field format",code=>-2,query=>"$value");
     return undef;
   } else {
@@ -249,7 +250,7 @@ sub _create {
   }
 	# owner
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'owner'};
-  if ( !defined($value) || !$self->checkStrLength($value,0,255) ) {
+  if ( !defined($value) || !$self->checkStrLength($value,0,256) ) {
     $self->setLastError(string=>"[ owner ] must exists or invalid field format",code=>-2,query=>"$value");
     return undef;
   } else {
@@ -279,7 +280,7 @@ sub _create {
 	# content_type (not mandatory)
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'content_type'};
 	if ( defined($value) ) {
-		if ( !$self->checkStrLength($value,0,255) ) {
+		if ( !$self->checkStrLength($value,0,256) ) {
 			$self->setLastError(string=>"[ content_type ] invalid field format",code=>-3,query=>"$value");
 		} else {
 			push(@fields,"content_type");
@@ -309,10 +310,20 @@ sub _create {
 	# proxy_info (not mandatory)
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'proxy_infos'};
 	if ( defined($value) ) {
-		if ( !$self->checkStrLength($value,0,255) ) {
+		if ( !$self->checkStrLength($value,0,256) ) {
 			$self->setLastError(string=>"[ proxy_infos ] invalid field format",code=>-3,query=>"$value");
 		} else {
 			push(@fields,"proxy_infos");
+			push(@values,$dbh->quote($value));
+		}
+	}
+	# user_agent (not mandatory)
+	$value = $self->{'_UPLOAD_'}->{'fields'}->{'user_agent'};
+	if ( defined($value) ) {
+		if ( !$self->checkStrLength($value,0,256) ) {
+			$self->setLastError(string=>"[ user_agent ] invalid field format",code=>-3,query=>"$value");
+		} else {
+			push(@fields,"user_agent");
 			push(@values,$dbh->quote($value));
 		}
 	}
@@ -329,7 +340,7 @@ sub _create {
 			if ( $value ) {
 				$value = $self->{'_UPLOAD_'}->{'fields'}->{'password'};
 				if ( defined($value) ) {
-					if ( !$self->checkStrLength($value,0,50) ) {
+					if ( !$self->checkStrLength($value,0,33) ) {
 						$self->setLastError(string=>"[ password ] invalid field format",code=>-3,query=>"$value");
 					} else {
 						push(@fields,"password");
@@ -630,6 +641,22 @@ sub getProxyInfos {
 	return $self->{'_UPLOAD_'}->{'fields'}->{'proxy_infos'};
 }
 
+# set user_agent string
+sub setUserAgent {
+	my $self = shift;
+	my $value = shift;
+	if ( $self->{'_UPLOAD_'}->{'is_new'} != 1 ) {
+		warn(__PACKAGE__,"-> Can only set [ user_agent ] on new record");
+		return;
+	}
+	$self->{'_UPLOAD_'}->{'fields'}->{'user_agent'} = $value;
+	$self->{'_UPLOAD_'}->{'data_change'}++;
+}
+sub getUserAgent {
+	my $self = shift;
+	return $self->{'_UPLOAD_'}->{'fields'}->{'user_agent'};
+}
+
 # 
 sub getRenewCount {
 	my $self = shift;
@@ -681,10 +708,20 @@ sub addDownloadRecord {
 	}
 	$fields{'upload_id'} = $ARGZ{'upload_id'};
 	$fields{'ip_address'} = $dbh->quote($ARGZ{'ip_address'});
-	$fields{'proxy_infos'} = ( exists($ARGZ{'proxy_infos'}) && defined($ARGZ{'proxy_infos'}) ) ? $dbh->quote($ARGZ{'proxy_infos'}) : "NULL";
+	# proxy infos
+  if ( exists($ARGZ{'proxy_infos'}) && defined($ARGZ{'proxy_infos'}) && $self->checkStrLength($ARGZ{'proxy_infos'},0,256) ) {
+		$fields{'proxy_infos'} = $dbh->quote($ARGZ{'proxy_infos'});
+	}
 	$fields{'use_proxy'} = ( exists($ARGZ{'use_proxy'}) && $ARGZ{'use_proxy'} == 1 ) ? 1 : 0;
 	$fields{'date'} = "NOW()";
 	$fields{'canceled'} = ( exists($ARGZ{'canceled'}) && $ARGZ{'canceled'} == 1 ) ? 1 : 0;
+	# user agent
+  if ( exists($ARGZ{'user_agent'}) && defined($ARGZ{'user_agent'}) && $self->checkStrLength($ARGZ{'user_agent'},0,256) ) {
+		$fields{'user_agent'} = $dbh->quote($ARGZ{'user_agent'});
+	}
+	# administrative download
+	$fields{'admin_download'} = ( exists($ARGZ{'admin_download'}) && $ARGZ{'admin_download'} == 1 ) ? 1 : 0;
+
 	my (@f,@v);
 	while ( my($k,$i) = each(%fields) ) {
 		push(@f,$k);
@@ -713,17 +750,23 @@ sub isDownloaded {
 	return ( $self->{'_UPLOAD_'}->{'fields'}->{'is_downloaded'} ) ? 1 : 0;
 }
 # list downloads for this file
-# require a ref to an ARRAY
+# results => require a ref to an ARRAY
+# admin_mode => 1|0. if 1 the retrieve also administrative download 
 sub getDownloads {
 	my $self = shift;
-	my $results = shift;
-	$self->setLastError(string=>"Require an ArrayRef",code=>-1,query=>"") && return undef if ( ref($results) ne "ARRAY" );
+	my %ARGZ = @_;
+	my $results = ( exists($ARGZ{'results'}) && (ref($ARGZ{'results'}) eq "ARRAY") ) ? $ARGZ{'results'} : undef;
+	my $admin_mode = ( exists($ARGZ{'admin_mode'}) && defined($ARGZ{'admin_mode'}) && ($ARGZ{'admin_mode'} =~ /^1$/) ) ? 1 : 0;
+	#my $results = shift;
+	#$self->setLastError(string=>"Require an ArrayRef",code=>-1,query=>"") && return undef if ( ref($results) ne "ARRAY" );
+	$self->setLastError(string=>"Require an ArrayRef",code=>-1,query=>"") && return undef if ( !defined($results) );
 	return 1 if ( $self->{'_UPLOAD_'}->{'is_new'} == 1 );
 	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT *, UNIX_TIMESTAMP(date) AS ts_date ".
 	               "FROM get ".
-	               "WHERE upload_id = ".$self->{'_UPLOAD_'}->{'fields'}->{'id'}." ".
-	               "ORDER BY date DESC";
+	               "WHERE upload_id = ".$self->{'_UPLOAD_'}->{'fields'}->{'id'}." ";
+	$strQuery .= "AND admin_download != 1 " if ( $admin_mode == 0 );
+	$strQuery .= "ORDER BY date DESC";
 	eval {
 		my $sth = $dbh->prepare($strQuery);
 		$sth->execute();

@@ -252,12 +252,19 @@ sub getQuota {
 	return ( $q ) ? $q->getQuota($uid) : (0,0);
 }
 
+#
 # begin session
+# 
+# with no_auth => 1 then only cookie is read but authentification is not processed
+#
 sub beginSession {
 	my $self = shift;
+	my %ARGZ = @_;
 	my $r = $self->apreq();
 	my $isValid = undef;
 	my $err_mesg = undef;
+	# check if in no_auth mode (ie : simply read cookie)
+	my $noAuth = ( exists($ARGZ{'no_auth'}) && defined($ARGZ{'no_auth'}) && ($ARGZ{'no_auth'} == 1) ) ? 1 : 0;
 	# cookie
 	my $ckname = $self->config->getCookieName();
 	my $cktime = $self->config->getCookieExpires();
@@ -267,6 +274,9 @@ sub beginSession {
 	#
 	# check if we are authenticated
 	#
+
+	# reset username before begin
+	$self->{'_username_'} = undef;
 	if ( $cookie && exists($cookie->{$ckname}) ) {
 		$self->{'_havecookie_'} = 1;
 		my $ckvalue = _decryptData($ckmagik,$cookie->{$ckname}->value());
@@ -276,10 +286,14 @@ sub beginSession {
 		# if cookie expires then re-auth
 		if ( $ctime < $cketime ) {
 			$self->{'_username_'} = $ckuname;
-			#return 1 if ( defined($self->{'_username_'}) && length($self->{'_username_'}) > 0 );
 			$isValid = 1 if ( defined($self->{'_username_'}) && length($self->{'_username_'}) > 0 );
 		}
-	} 
+	}
+	# 
+	# if no authentification mode then return here
+	# you can check if a user is auth with the method getAuthUser()
+	# 
+	return 1 if ($noAuth == 1);
 	#
 	# here there is no auth 
 	#
@@ -799,6 +813,11 @@ sub getProxyInfos {
 	}
 	$infos = join("\n",@proxy_infos);
 	return ( length($infos) > 255 ) ? substr($infos,0,254) : $infos;
+}
+# get the user_agent string
+sub getUserAgent {
+	my $self = shift;
+	return $self->apreq->header_in('User-Agent');
 }
 
 # check if the user it it's "cancel" button

@@ -16,7 +16,7 @@
 	<div class="main">
 		<TMPL_IF NAME="FILEX_HAS_FILE">
 		<p>Vous avez demand&eacute; le fichier <strong><TMPL_VAR NAME="FILEX_FILE_NAME"></strong></p>
-		<p>Informations :</p>
+		<h1>Informations :</h1>
 		<ul>
 			<li><strong>Taille :</strong> <TMPL_VAR NAME="FILEX_FILE_SIZE">
 			<li><strong>Publi&eacute; le :</strong> <TMPL_VAR NAME="FILEX_FILE_PUBLISHED_DATE">
@@ -37,9 +37,8 @@
 		<TMPL_ELSE>
 		<p>Si le t&eacute;l&eacute;chargement ne commence pas automatiquement dans 5 secondes, <a href="<TMPL_VAR NAME='FILEX_DOWNLOAD_URL'>">suivez ce lien</a></p>
 		</TMPL_IF>
-		<p><strong>Note :</strong><br>
-		le nom de fichier que vous proposera votre navigateur au t&eacute;l&eacute;chargement peut &ecirc;tre diff&eacute;rent du vrai nom du fichier.
-		</p>
+		<h1>Note :</h1>
+		<p>Le nom de fichier que vous proposera votre navigateur au t&eacute;l&eacute;chargement peut &ecirc;tre diff&eacute;rent du vrai nom du fichier.</p>
 		</TMPL_IF>
 		<TMPL_IF NAME="FILEX_HAS_ERROR">
 		<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>

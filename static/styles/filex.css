@@ -67,6 +67,11 @@ p.meter {
 	text-align: center ! important;
 }
 
+.hlight {
+	color: red;
+	font-style: italic;
+}
+
 .notes {
 	font-size: smaller ;
 	color: red;
@@ -101,7 +106,7 @@ table.infos td {
 	border-bottom: 1pt solid black;
 }
 
-table.infos tr#even {
+table.infos tr.even {
 	background-color: #c9cad0;
 }
 
@@ -127,7 +132,7 @@ table.infos thead a:visited {
 	font-style: italic;
 }
 
-table.infos a#expired {
+table.infos a.expired {
 	color: red;
 	font-style: italic;
 }

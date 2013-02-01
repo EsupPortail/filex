@@ -12,6 +12,9 @@ use Exporter;
 use FILEX::DB::Upload;
 use FILEX::Tools::Utils qw(tsToGmt hrSize tsToLocal);
 
+use constant FILE_FIELD_NAME => "k";
+use constant ADMIN_DOWNLOAD_FIELD_NAME => "adm";
+
 use constant FIELD_STATE_NAME => "state";
 use constant FIELD_EXPIRE_NAME => "expire";
 use constant FIELD_RESUME_NAME => "resume";
@@ -135,6 +138,7 @@ sub doFileInfos {
 		$T->param(FILEX_ERROR=>$upload->getLastErrorString());
 		return $T;
 	}
+
 	# fill
 	$T->param(FILEX_RENEW_COUNT=>$upload->getRenewCount());
 	$T->param(FILEX_MAX_RENEW_COUNT=>$S->config->getRenewFileExpire());
@@ -143,31 +147,13 @@ sub doFileInfos {
 	$T->param(FILEX_FILE_SIZE=>$fsz." ".$S->i18n->localizeToHtml("$funit"));
 	$T->param(FILEX_FILE_DATE=>$S->toHtml(tsToLocal($upload->getUploadDate())));
 	$T->param(FILEX_FILE_EXPIRE=>$S->toHtml(tsToLocal($upload->getExpireDate())));
-	$T->param(FILEX_FILE_OWNER=>$S->getMail($upload->getOwner()));
-	$T->param(FILEX_FILE_OWNER_ID=>$upload->getOwner());
 	$T->param(FILEX_FILE_COUNT=>$upload->getDownloadCount());
-	$T->param(FILEX_DISK_NAME=>$upload->getFileName());
-	# ip,proxy ...
-	$T->param(FILEX_UPLOAD_ADDRESS=>$S->toHtml($upload->getIpAddress()));
-	if ( $upload->getUseProxy() == 1 ) {
-		$T->param(FILEX_USE_PROXY=>$S->i18n->localizeToHtml("yes"));
-		$T->param(FILEX_IF_USE_PROXY=>1);
-		$T->param(FILEX_PROXY_INFOS=>$upload->getProxyInfos());
-	} else {
-		$T->param(FILEX_USE_PROXY=>$S->i18n->localizeToHtml("no"));
-	}
-	# enable / disable
-	# form parameter name
-	$T->param(FILEX_FORM_STATE_NAME=>FIELD_STATE_NAME);
-	$T->param(FILEX_FORM_STATE_VALUE_ACTIVATE=>1);
-	$T->param(FILEX_FORM_STATE_VALUE_DESACTIVATE=>0);
-	if ( $upload->getEnable() == 1 ) {
-		$T->param(FILEX_FORM_STATE_VALUE_ACTIVATE_CHECKED=>1);
-	} else {
-		$T->param(FILEX_FORM_STATE_VALUE_DESACTIVATE_CHECKED=>1);
-	}
+
+	#
 	# set expired
-	if ( $upload->isExpired() != 1 ) {
+	#
+	my $bIsExpired = $upload->isExpired();
+	if ( $bIsExpired != 1 ) {
 		$T->param(FILEX_CAN_EXPIRE=>1);
 		$T->param(FILEX_FORM_EXPIRE_NAME=>FIELD_EXPIRE_NAME);
 		$T->param(FILEX_FORM_EXPIRE_VALUE_YES=>1);
@@ -175,73 +161,151 @@ sub doFileInfos {
 	} else {
 		$T->param(FILEX_EXPIRED=>$S->i18n->localizeToHtml("yes"));
 	}
+	#
 	# password
-	$T->param(FILEX_FORM_USE_PASSWORD_NAME=>FIELD_USE_PASSWORD_NAME);
-	$T->param(FILEX_FORM_PASSWORD_NAME=>FIELD_PASSWORD_NAME);
-	$T->param(FILEX_FORM_USE_PASSWORD_VALUE_ACTIVATE=>1);
-	$T->param(FILEX_FORM_USE_PASSWORD_VALUE_DESACTIVATE=>0);
-	$T->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
-	$T->param(FILEX_MIN_PASSWORD_LENGTH=>$S->config->getMinPasswordLength());
-	if ( $upload->needPassword() ) {
-		$T->param(FILEX_FORM_USE_PASSWORD_ACTIVATE_CHECKED=>1);
-	} else {
-		$T->param(FILEX_FORM_USE_PASSWORD_DESACTIVATE_CHECKED=>1);
-	}
-	# get delivery mail
-	$T->param(FILEX_FORM_DELIVERY_NAME=>FIELD_DELIVERY_NAME);
-	$T->param(FILEX_FORM_DELIVERY_VALUE_YES=>1);
-	$T->param(FILEX_FORM_DELIVERY_VALUE_NO=>0);
-	if ( $upload->getGetDelivery() == 1 ) {
-		$T->param(FILEX_FORM_DELIVERY_VALUE_YES_CHECKED=>1);
-		$T->param(FILEX_DELIVERY=>$S->i18n->localizeToHtml("yes"));
-	} else {
-		$T->param(FILEX_FORM_DELIVERY_VALUE_NO_CHECKED=>1);
-		$T->param(FILEX_DELIVERY=>$S->i18n->localizeToHtml("no"));
-	}
-	# get resume mail
-	$T->param(FILEX_FORM_RESUME_NAME=>FIELD_RESUME_NAME);
-	$T->param(FILEX_FORM_RESUME_VALUE_YES=>1);
-	$T->param(FILEX_FORM_RESUME_VALUE_NO=>0);
-	if ( $upload->getGetResume() == 1 ) {
-		$T->param(FILEX_FORM_RESUME_VALUE_YES_CHECKED=>1);
-		$T->param(FILEX_RESUME=>$S->i18n->localizeToHtml("yes"));
-	} else {
-		$T->param(FILEX_FORM_RESUME_VALUE_NO_CHECKED=>1);
-		$T->param(FILEX_RESUME=>$S->i18n->localizeToHtml("no"));
-	}
-	# allow renewal of expiration time
-	my $renew_count = $S->config->getRenewFileExpire();
-	my $file_renew_count = $upload->getRenewCount();
-	if ( $renew_count > 0 && $file_renew_count < $renew_count ) {
-		# generate the loop
-		my (@expire_loop, $expire_value, $expire_min, $expire_max);
-		$expire_min = $S->config->getMinFileExpire();
-		$expire_max = $S->config->getMaxFileExpire();
-		# add ZERO
-		push(@expire_loop,{FILEX_FORM_RENEW_VALUE=>0});
-		for ( $expire_value = $expire_min; $expire_value <= $expire_max; $expire_value++ ) {
-			push(@expire_loop,{FILEX_FORM_RENEW_VALUE=>$expire_value});
+	#
+	if ( $bIsExpired != 1 ) {
+		$T->param(FILEX_FORM_USE_PASSWORD_NAME=>FIELD_USE_PASSWORD_NAME);
+		$T->param(FILEX_FORM_PASSWORD_NAME=>FIELD_PASSWORD_NAME);
+		$T->param(FILEX_FORM_USE_PASSWORD_VALUE_ACTIVATE=>1);
+		$T->param(FILEX_FORM_USE_PASSWORD_VALUE_DESACTIVATE=>0);
+		$T->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
+		$T->param(FILEX_MIN_PASSWORD_LENGTH=>$S->config->getMinPasswordLength());
+		if ( $upload->needPassword() ) {
+			$T->param(FILEX_FORM_USE_PASSWORD_ACTIVATE_CHECKED=>1);
+		} else {
+			$T->param(FILEX_FORM_USE_PASSWORD_DESACTIVATE_CHECKED=>1);
 		}
-		$T->param(FILEX_CAN_RENEW_FILE_LIFE=>1);
-		$T->param(FILEX_FORM_RENEW_NAME=>FIELD_RENEW_NAME);
-		$T->param(FILEX_RENEW_LOOP=>\@expire_loop);
 	}
+	#
+	# get delivery mail
+	#
+	if ( $bIsExpired != 1 ) {
+		$T->param(FILEX_FORM_DELIVERY_NAME=>FIELD_DELIVERY_NAME);
+		$T->param(FILEX_FORM_DELIVERY_VALUE_YES=>1);
+		$T->param(FILEX_FORM_DELIVERY_VALUE_NO=>0);
+		if ( $upload->getGetDelivery() == 1 ) {
+			$T->param(FILEX_FORM_DELIVERY_VALUE_YES_CHECKED=>1);
+		} else {
+			$T->param(FILEX_FORM_DELIVERY_VALUE_NO_CHECKED=>1);
+		}
+	} else {
+		if ( $upload->getGetDelivery() == 1 ) {
+			$T->param(FILEX_DELIVERY=>$S->i18n->localizeToHtml("yes"));
+		} else {
+			$T->param(FILEX_DELIVERY=>$S->i18n->localizeToHtml("no"));
+		}
+	}
+	#
+	# get resume mail
+	#
+	if ( $bIsExpired != 1 ) {
+		$T->param(FILEX_FORM_RESUME_NAME=>FIELD_RESUME_NAME);
+		$T->param(FILEX_FORM_RESUME_VALUE_YES=>1);
+		$T->param(FILEX_FORM_RESUME_VALUE_NO=>0);
+		if ( $upload->getGetResume() == 1 ) {
+			$T->param(FILEX_FORM_RESUME_VALUE_YES_CHECKED=>1);
+		} else {
+			$T->param(FILEX_FORM_RESUME_VALUE_NO_CHECKED=>1);
+		}
+	} else {
+		if ( $upload->getGetResume() == 1 ) {
+			$T->param(FILEX_RESUME=>$S->i18n->localizeToHtml("yes"));
+		} else {
+			$T->param(FILEX_RESUME=>$S->i18n->localizeToHtml("no"));
+		}
+	}
+	#
+	# allow renewal of expiration time
+	#
+	if ( $bIsExpired != 1 ) {
+		my $renew_count = $S->config->getRenewFileExpire();
+		my $file_renew_count = $upload->getRenewCount();
+		if ( $renew_count > 0 && $file_renew_count < $renew_count ) {
+			# generate the loop
+			my (@expire_loop, $expire_value, $expire_min, $expire_max);
+			$expire_min = $S->config->getMinFileExpire();
+			$expire_max = $S->config->getMaxFileExpire();
+			# add ZERO
+			push(@expire_loop,{FILEX_FORM_RENEW_VALUE=>0});
+			for ( $expire_value = $expire_min; $expire_value <= $expire_max; $expire_value++ ) {
+				push(@expire_loop,{FILEX_FORM_RENEW_VALUE=>$expire_value});
+			}
+			$T->param(FILEX_CAN_RENEW_FILE_LIFE=>1);
+			$T->param(FILEX_FORM_RENEW_NAME=>FIELD_RENEW_NAME);
+			$T->param(FILEX_RENEW_LOOP=>\@expire_loop);
+		}
+	}
+	#
 	# get download address
-	$T->param(FILEX_GET_ADDRESS=>genGetUrl($S,$upload->getFileName()));
+	#
+	$T->param(FILEX_GET_ADDRESS=>genGetUrl($S,$upload->getFileName())) if ($bIsExpired != 1);
+
+	# Administrative mode display
+	if ( $mode == ADMIN_MODE ) {
+		# file owner's mail
+		$T->param(FILEX_FILE_OWNER=>$S->getMail($upload->getOwner()));
+		# file owner's id
+		$T->param(FILEX_FILE_OWNER_ID=>$upload->getOwner());
+		# disk name
+		$T->param(FILEX_DISK_NAME=>$upload->getFileName());
+		# proxy
+		if ( $upload->getUseProxy() == 1 ) {
+			$T->param(FILEX_USE_PROXY=>$S->i18n->localizeToHtml("yes"));
+			$T->param(FILEX_IF_USE_PROXY=>1);
+			$T->param(FILEX_PROXY_INFOS=>$upload->getProxyInfos());
+		} else {
+			$T->param(FILEX_USE_PROXY=>$S->i18n->localizeToHtml("no"));
+		}
+		# user agent
+		my $user_agent = $upload->getUserAgent();
+		if ( defined($user_agent) ) {
+			$T->param(FILEX_USER_AGENT=>$S->toHtml($user_agent));
+		} else {
+			$T->param(FILEX_USER_AGENT=>$S->i18n->localizeToHtml("unknown"));
+		}
+		# upload address
+		$T->param(FILEX_UPLOAD_ADDRESS=>$S->toHtml($upload->getIpAddress()));
+		# if file has not expired
+		if ($bIsExpired != 1) {
+			# administrative download address
+			$T->param(FILEX_ADMIN_GET_ADDRESS=>genGetUrl($S,$upload->getFileName(),1));
+			# enable / disable
+			# form parameter name
+			$T->param(FILEX_FORM_STATE_NAME=>FIELD_STATE_NAME);
+			$T->param(FILEX_FORM_STATE_VALUE_ACTIVATE=>1);
+			$T->param(FILEX_FORM_STATE_VALUE_DESACTIVATE=>0);
+			if ( $upload->getEnable() == 1 ) {
+				$T->param(FILEX_FORM_STATE_VALUE_ACTIVATE_CHECKED=>1);
+			} else {
+				$T->param(FILEX_FORM_STATE_VALUE_DESACTIVATE_CHECKED=>1);
+			}
+		}
+	}
+	# return if no downloads
 	return $T if ( $upload->getDownloadCount() == 0 );
+
 	# do access report
 	my (@log,@download_loop);
 	$T->param(FILEX_HAS_DOWNLOAD=>1);
-	if ( !$upload->getDownloads(\@log) ) {
+	if ( !$upload->getDownloads(results=>\@log) ) {
 		$T->param(FILEX_HAS_DOWNLOAD_ERROR=>1);
 		$T->param(FILEX_DOWNLOAD_ERROR=>$S->i18n->localiseToHtml("database error %s",$upload->getLastErrorString()));
 		return $T;
 	}
 	for ( my $l = 0; $l <= $#log; $l++ ) {
 		my $dl_record = {};
-		if ( $log[$l]->{'use_proxy'} == 1 && ($mode == ADMIN_MODE) ) {
-			$dl_record->{'FILEX_DOWNLOAD_USE_PROXY'} = 1;
-			$dl_record->{'FILEX_DOWNLOAD_PROXY_INFOS'} = $log[$l]->{'proxy_infos'};
+		if ( $mode == ADMIN_MODE ) {
+			$dl_record->{'FILEX_DOWNLOAD_ADMIN_MODE'} = 1;
+			if ( $log[$l]->{'use_proxy'} == 1 ) {
+				$dl_record->{'FILEX_DOWNLOAD_USE_PROXY'} = 1;
+				$dl_record->{'FILEX_DOWNLOAD_PROXY_INFOS'} = $S->toHtml($log[$l]->{'proxy_infos'});
+			}
+			if ( defined($log[$l]->{'user_agent'}) && length($log[$l]->{'user_agent'}) > 0 ) {
+				$dl_record->{'FILEX_DOWNLOAD_USER_AGENT'} = $S->toHtml($log[$l]->{'user_agent'});
+			} else {
+				$dl_record->{'FILEX_DOWNLOAD_USER_AGENT'} = $S->i18n->localizeToHtml("unknown");
+			}
 		}
 		$dl_record->{'FILEX_DOWNLOAD_ADDRESS'} = $S->toHtml($log[$l]->{'ip_address'});
 		$dl_record->{'FILEX_DOWNLOAD_DATE'} = $S->toHtml(tsToLocal($log[$l]->{'ts_date'}));
@@ -289,9 +353,16 @@ sub genPurgeUrl {
 
 sub genGetUrl {
 	my $S = shift; # FILEX::System
-	my $i = shift; # file_name
+	my $f = shift; # file_name
+	my $admin = shift || 0; # admin mode ?
+	my $fFile = FILE_FIELD_NAME;
+	my $fAdmin = ADMIN_DOWNLOAD_FIELD_NAME;
 	my $url = $S->getGetUrl();
-	$url .= "?".$S->genQueryString({k=>$i});
+	if ( $admin == 1 ) {
+		$url .= "?".$S->genQueryString({$fFile=>$f,$fAdmin=>1});
+	} else {
+		$url .= "?".$S->genQueryString({$fFile=>$f});
+	}
 	return $url;
 }
 

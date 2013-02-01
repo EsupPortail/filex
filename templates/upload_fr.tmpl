@@ -5,7 +5,7 @@
 	<base href="<TMPL_VAR NAME='FILEX_STATIC_FILE_BASE'>">
   <title>FileX</title>
 	<link href="styles/filex.css" rel="stylesheet" type="text/css">
-	<script language="javascript">
+	<script language="javascript" type="text/javascript">
 	<!--
 		function openUploadMeter(url) {
     var uploadWindow;
@@ -54,7 +54,7 @@
 			</select> <label for="ctl01">Jours</label></p>
 			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_DELIVERY_NAME'>" value="1" id="ctl02"><label for="ctl02">Recevoir un avis de r&eacute;ception &agrave; chaque t&eacute;l&eacute;chargement</label></p>
 			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_RESUME_NAME'>" value="1" id="ctl03"><label for="ctl03">Recevoir un r&eacute;capitulatif des t&eacute;l&eacute;chargement lorsque le fichier aura expir&eacute;</label></p>
-			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_NEED_PASSWORD_NAME'>" value="1" id="ctl04"><label for="clt04">Utiliser un mot de passe pour le t&eacute;l&eacute;chargement :</label> <input class="Field" type="password" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_PASSWORD_NAME'>" size="15" maxlength="<TMPL_VAR NAME='FILEX_MAX_PASSWORD_LENGTH'>"><br>
+			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_NEED_PASSWORD_NAME'>" value="1" id="ctl04"><label for="ctl04">Utiliser un mot de passe pour le t&eacute;l&eacute;chargement :</label> <input class="Field" type="password" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_PASSWORD_NAME'>" size="15" maxlength="<TMPL_VAR NAME='FILEX_MAX_PASSWORD_LENGTH'>"><br>
 <span class="notes">Le mot de passe doit avoir une longueur comprise entre <strong><TMPL_VAR NAME="FILEX_MIN_PASSWORD_LENGTH"></strong> et <strong><TMPL_VAR NAME="FILEX_MAX_PASSWORD_LENGTH"></strong> caract&egrave;res</span></p>
 			<input id="upload" type="file" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_UPLOAD_NAME'>"> 
 			<input type="hidden" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_OLD_DLID_NAME'>" value="<TMPL_VAR NAME='FILEX_OLD_DLID'>">
@@ -63,7 +63,7 @@
 		</TMPL_IF>
 	</div>
 	<div class="main">
-	<p><strong>Notes :</strong></p>
+	<h1>Notes :</h1>
 	<ol>
 		<li>La fen&ecirc;tre de progression ne fonctionne qu'avec des versions de navigateurs &gt; 4 (IE,Netscape) ou mozilla,opera
 		<li>Toutes les activit&eacute;s sont consign&eacute;es dans les journaux du syst&egrave;me</li>
