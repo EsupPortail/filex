@@ -2,15 +2,13 @@ package FILEX::Apache::Handler::Get;
 use strict;
 use vars qw($VERSION);
 # Apache Related
-use Apache::Constants qw(:common);
-use Apache::File;
-use Apache::Util;
+use constant MP2 => (exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2);
 
 # FILEX related
-use FILEX::System qw(genUniqId toHtml);
+use FILEX::System;
 use FILEX::DB::Download;
 use FILEX::DB::Upload;
-use FILEX::Tools::Utils qw(tsToGmt hrSize tsToLocal rDns);
+use FILEX::Tools::Utils qw(tsToGmt hrSize tsToLocal rDns toHtml genUniqId);
 
 # Other
 use File::Spec;
@@ -25,10 +23,28 @@ use constant MD5_PASSWORD_FIELD_NAME => "m";
 
 $VERSION = 1.0;
 
-sub handler {
+BEGIN {
+	if (MP2) {
+		require Apache2::Const;
+		Apache2::Const->import(-compile=>qw(OK));
+	} else {
+		require Apache::Constants;
+		Apache::Constants->import(qw(OK));
+		require Apache::File;
+	}
+}
+
+# handler between MP1 && MP2 have changed
+sub handler_mp1($$) { &run; }
+sub handler_mp2 : method { &run; }
+*handler = MP2 ? \&handler_mp2 : \&handler_mp1;
+
+sub run {
+	my $class = shift;
 	# the request object
+	my $r = shift;
 	# CHECK FOR ERRORS !
-	my $S = FILEX::System->new(shift);
+	my $S = FILEX::System->new($r);
 	my $Template = $S->getTemplate(name=>"get");
 	my $db = eval { FILEX::DB::Download->new() };
 	if ($@) {
@@ -51,7 +67,7 @@ sub handler {
 		# start session without authentification
 		$user = $S->beginSession(no_auth=>1);
 		# check if user is an administrator
-		if ( defined($user) && $S->isAdmin($user) && ( $S->isExclude($user) != 1) ) {
+		if ( defined($user) && $user->isAdmin() && ( $S->isExclude($user) != 1) ) {
 			$admin_download = 1;
 		} else {
 			$admin_download = 0;
@@ -86,7 +102,6 @@ sub handler {
 		display($S,$Template);
 	}
 	# file disabled
-	#if ( $upload->getEnable() != 1 || $upload->getDeleted() == 1 ) {
 	# permit download of disabled file if it is an administrative download
 	if ( $upload->getEnable() != 1 && $admin_download != 1 ) {
 		$Template->param(FILEX_HAS_ERROR=>1);
@@ -153,7 +168,7 @@ sub handler {
 			} else {
 				$download_url .= $S->genQueryString(params=>{$fk=>$file_name,$fauto=>1});
 			}
-			$Template->param(FILEX_DOWNLOAD_URL=>$S->toHtml($download_url));
+			$Template->param(FILEX_DOWNLOAD_URL=>toHtml($download_url));
 		}
 		display($S,$Template);
 	}
@@ -163,11 +178,14 @@ sub handler {
 	#warn("Range ? : $range");
 
 	# if download then go
-	my $fh = Apache::File->new();
-	if ( ! $fh->open($source) ) {
-		$Template->param(FILEX_HAS_ERROR=>1);
-		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to open file"));
-		display($S,$Template);
+	my $fh = undef;
+	if ( !MP2 ) {
+		$fh = Apache::File->new();
+		if ( ! $fh->open($source) ) {
+			$Template->param(FILEX_HAS_ERROR=>1);
+			$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to open file"));
+			display($S,$Template);
+		}
 	}
 	# inform that we accept range request
 	# Content-Disposition filename MUST be US-ASCII
@@ -189,11 +207,13 @@ sub handler {
 	               'Content-Length'=>$fstat[7]);
 	# in header_only then return
 	if ( $S->apreq->header_only() ) {
-		# close the file
-		$fh->close();
-		# send header
-		$S->apreq->send_http_header();
-		return OK;
+		if ( !MP2 ) {
+			# close the file
+			$fh->close() if defined($fh);
+			# send header
+			$S->apreq->send_http_header();
+		}
+		return MP2 ? Apache2::Const::OK : Apache::Constants::OK;
 	}
 	
 	my $download_id = genUniqId();
@@ -201,9 +221,13 @@ sub handler {
 	               upload_id=>$upload->getId(),
 	               ip_address=>$S->getRemoteIP()]) or warn(__PACKAGE__,"-> Unable to log current download");
 	# send file
-	$S->apreq->send_fd($fh);
+	if (MP2) {
+		my $res = $S->apreq->sendfile($source);
+	} else {
+		$S->apreq->send_fd($fh);
+	}
 	# check for connection
-	my $bCanceled = ( !$S->isConnected() ) ? 1 : 0;
+	my $bCanceled = $S->isAborted();
 	$upload->addDownloadRecord(
 		upload_id=>$upload->getId(),
 		ip_address=>$S->getRemoteIP(),
@@ -218,14 +242,13 @@ sub handler {
 		warn (__PACKAGE__,"-> Unable to send email !") if ( ! sendMail($S,$upload) );
 	}
 	# close filehandle
-	$fh->close();
-	
+	$fh->close() if (!MP2);
 	# delete current download log
 	# maybe make it in a register_cleanup way ...
 	$db->delCurrentDownload($download_id) or warn(__PACKAGE__,"-> Unable to delete current download log : $download_id");
 
 	# everything done
-	return OK;
+	return MP2 ? Apache2::Const::OK : Apache::Constants::OK;
 }
 
 sub display {
@@ -235,7 +258,7 @@ sub display {
 	$T->param(FILEX_STATIC_FILE_BASE=>$S->getStaticUrl()) if ( $T->query(name=>'FILEX_STATIC_FILE_BASE') );
 	$S->sendHeader("Content-Type"=>"text/html");
 	$S->apreq->print($T->output()) if ( ! $S->apreq->header_only() );
-	exit(OK);
+	exit( MP2 ? Apache2::Const::OK : Apache::Constants::OK );
 }
 
 sub sendMail {

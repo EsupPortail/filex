@@ -33,7 +33,7 @@ sub new {
 
 # check if a given user is monitored
 # require : a username
-# return 1 if excluded
+# return 0 if not watched otherwise email address
 sub isWatched {
 	my $self = shift;
 	my $uid = shift;
@@ -75,7 +75,7 @@ sub isWatched {
 		last if ($bIsWatched);
 	}
 	# return
-	my $mail;
+	my $mail = 0;
 	if ( $bIsWatched ) {
 		$mail = $rules[$wIdx]->{'mail'};
 	}

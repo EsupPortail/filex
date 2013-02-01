@@ -2,35 +2,63 @@ package FILEX::Apache::Handler::Admin;
 use strict;
 use vars qw($VERSION);
 
-# Apache
-use Apache::Constants qw(:common);
-use Apache::Request;
+# Apache Related
+use constant MP2 => (exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2);
 
 # FILEX
 use FILEX::System;
+use FILEX::Tools::Utils qw(toHtml);
 
 # Admins Modules
 use FILEX::Apache::Handler::Admin::Dispatcher;
 
 $VERSION = 1.0;
 
+BEGIN {
+	if (MP2) {
+		require Apache2::Const;
+		Apache2::Const->import(-compile=>qw(OK));
+	} else {
+		require Apache::Constants;
+		Apache::Constants->import(qw(OK));
+	}
+}
+
+# handler between MP1 && MP2 have changed
+sub handler_mp1($$) { &run; }
+sub handler_mp2 : method { &run; }
+*handler = MP2 ? \&handler_mp2 : \&handler_mp1;
+
 # the main handler
-sub handler {
-	my $S; # FILEX::System
+sub run {
+	my $class = shift;
+	my $r = shift;
+	my $S = FILEX::System->new($r);
 	my $DB; # FILEX::DB::Admin
 	my $disp; # the event dispatcher
 	my $main_template; # the Main admin template
 	# Auth
-	$S = FILEX::System->new(shift);
 	my $user = $S->beginSession();
 	# verify if admin
-	if ( !$S->isAdmin($user) ) {
+	if ( !$user->isAdmin() ) {
 		$S->denyAccess();
 	}
 	# create the dispatcher
 	$disp = FILEX::Apache::Handler::Admin::Dispatcher->new($S);
 	# switch menu action
-	my $main_action = $disp->getDefaultDispatch($S->apreq->param($disp->getDispatchName()));
+	my $req_action = $S->apreq->param($disp->getDispatchName());
+	my $main_action = undef;
+	if ( !defined($req_action) ) {
+		my $old_action = $user->getSession()->getParam("main_action"); # get from session
+		if ( defined($old_action) ) {
+			$main_action = $old_action;
+		}
+	} else {
+		$main_action = $req_action;
+	}
+	$main_action = $disp->getDefaultDispatch($main_action);
+	$user->getSession()->setParam("main_action",$main_action); # save to session
+	#$user->getSession()->save();
 	# go action
 	my ($T,$passthru) = $disp->dispatch($main_action);
 	# fill the main template part if required
@@ -40,13 +68,13 @@ sub handler {
 		do_action_menu($S,$main_template,$disp,$main_action); 
 		$main_template->param(FILEX_MAIN_CONTENT=>$T->output());
 		$main_template->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
-		$main_template->param(FILEX_USER_NAME=>$S->toHtml($user->getRealName()));
-		$main_template->param(FILEX_UPLOAD_URL=>$S->toHtml($S->getUploadUrl()));
+		$main_template->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
+		$main_template->param(FILEX_UPLOAD_URL=>toHtml($S->getUploadUrl()));
 	} else {
 		$main_template = $T;
 	}
 	display($S,$main_template);# if $T;
-	return OK;
+	return MP2 ? Apache2::Const::OK : Apache::Constants::OK;
 }
 
 # display
@@ -57,7 +85,7 @@ sub display {
 	$T->param(FILEX_STATIC_FILE_BASE=>$S->getStaticUrl()) if ( $T->query(name=>'FILEX_STATIC_FILE_BASE') );
 	$S->sendHeader("Content-Type"=>"text/html");
 	$S->apreq->print($T->output()) if ( ! $S->apreq->header_only() );
-	exit(OK);
+	exit( MP2 ? Apache2::Const::OK : Apache::Constants::OK );
 }
 
 # do form menu

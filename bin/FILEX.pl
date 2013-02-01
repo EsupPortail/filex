@@ -13,8 +13,7 @@ use File::Spec;
 use POSIX qw(strftime);
 
 # BEGIN
-$FILEX::System::Config::ConfigPath=FILEX_CONFIG_FILE;
-my $config = FILEX::System::Config->new() or die("Unable to load Configuration File : $@");
+my $config = FILEX::System::Config->instance(file=>FILEX_CONFIG_FILE);
 # Purge
 my $purge = eval { FILEX::System::Purge->new(); };
 die($@) if ($@);

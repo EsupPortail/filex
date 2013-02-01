@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="FILEX"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" 
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+	xmlns="http://schemas.xmlsoap.org/wsdl/"
+	targetNamespace="urn:FILEX"
+	xmlns:tns="urn:FILEX">
+
+	<!-- type definition -->
+	<types>
+		<documentation>
+			blah blah blah
+		</documentation>
+		<schema targetNamespace="urn:FILEX"
+			xmlns="http://www.w3.org/2001/XMLSchema">
+			<complexType name="quota">
+				<all>
+					<element name="max_file_size" type="int" minOccurs="1"/>
+					<element name="max_used_space" type="int" minOccurs="1"/>
+				</all>
+			</complexType>
+			<complexType name="resume">
+				<all>
+					<element name="used_space" type="int" minOccurs="1"/>
+					<element name="active_count" type="int" minOccurs="1"/>
+				</all>
+			</complexType>
+		</schema>
+	</types>
+
+	<!-- message part -->
+	<!-- global -->
+	<message name="dummyRequest">
+		<part name="dummy" type="xsd:string"/>
+	</message>
+	<!-- loginLDAP -->
+	<message name="loginLDAPRequest">
+		<part name="username" type="xsd:string"/>
+		<part name="password" type="xsd:string"/>
+	</message>
+	<message name="loginLDAPResponse">
+		<part name="sid" type="xsd:string"/>
+	</message>
+  <!-- getQuota -->
+	<!-- dummy request for getQuota to satisfy request-response model -->
+	<!-- use dummyRequest -->
+	<message name="getQuotaResponse">
+		<part name="quota" type="tns:quota"/>
+	</message>
+	<!-- getResume -->
+	<!-- use dummyRequest -->
+	<message name="getResumeResponse">
+		<part name="resume" type="tns:resume"/>
+	</message>
+	<!-- logout -->
+	<message name="logoutResponse">
+		<part name="result" type="xsd:boolean"/>
+	</message>
+	<!-- port -->
+  <portType name="FILEXPort">
+		<operation name="logout">
+			<input message="tns:dummyRequest"/>
+			<output message="tns:boolean"/>
+		</operation>
+		<!-- loginLDAP -->
+		<operation name="loginLDAP">
+			<input message="tns:loginLDAPRequest"/>
+			<output message="tns:loginLDAPResponse"/>
+		</operation>
+		<!-- getQuota -->
+		<operation name="getQuota">
+			<input message="tns:dummyRequest"/>
+			<output message="tns:getQuotaResponse"/>
+		</operation>
+		<!-- getResume -->
+		<operation name="getResume">
+			<input message="tns:dummyRequest"/>
+			<output message="tns:getResumeResponse"/>
+		</operation>
+  </portType>
+
+	<!-- bindings -->
+  <binding name="FILEXBinding" type="tns:FILEXPort">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<operation name="logout">
+			<soap:operation soapAction="urn:FILEX#logout"/>
+			<input><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></input>
+			<output><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></output>
+		</operation>
+		<operation name="getResume">
+			<soap:operation soapAction="urn:FILEX#getResume"/>
+			<input><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></input>
+			<output><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></output>
+		</operation>
+		<operation name="loginLDAP">
+			<soap:operation soapAction="urn:FILEX#loginLDAP"/>
+			<input><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></input>
+			<output><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></output>
+		</operation>
+		<operation name="getQuota">
+			<soap:operation soapAction="urn:FILEX#getQuota"/>
+			<input><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></input>
+			<output><soap:body use="encoded" namespace="urn:FILEX" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/></output>
+		</operation>
+  </binding>
+
+	<!-- service part -->
+  <service name="FILEXSoap">
+    <documentation>unknown</documentation>
+    <port name="FILEXPort" binding="tns:FILEXBinding">
+      <soap:address location="http://pc401-189.insa-lyon.fr/soap"/>
+    </port>
+  </service>
+
+</definitions>

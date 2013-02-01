@@ -40,7 +40,7 @@ sub isExclude {
 	return 0 if (!$uid || length($uid) <= 0);
 	# list all rules
 	my @rules;
-	if ( ! $self->{'_exclude_'}->list(enable=>1,results=>\@rules) ) {
+	if ( ! $self->{'_exclude_'}->list(enable=>1,expired=>0,results=>\@rules) ) {
 		warn(__PACKAGE__,"-> Unable to list Rules");
 		# exclude all
 		return 1;

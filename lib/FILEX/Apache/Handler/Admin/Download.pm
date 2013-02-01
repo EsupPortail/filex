@@ -6,11 +6,12 @@ use FILEX::Apache::Handler::Admin::base;
 
 use constant SUB_FILE_INFO => 1;
 use constant SUB_USER_INFO => 2;
+use constant SUB_PURGE_QUEUE => 3;
 use constant SUB_ACTION_FIELD_NAME=>"sa";
 use constant FILE_ID_FIELD_NAME=>"id";
 
 use FILEX::DB::Download;
-use FILEX::Tools::Utils qw(tsToLocal hrSize);
+use FILEX::Tools::Utils qw(tsToLocal hrSize toHtml);
 use FILEX::Apache::Handler::Admin::Common qw(doFileInfos);
 
 # require at least
@@ -38,6 +39,10 @@ sub process {
 			return ($inT,1);
 			last SWITCH;
 		}
+		if ( $sub_action == SUB_PURGE_QUEUE ) {
+			$DB->purgeCurrentDownloads();
+			last SWITCH;
+		}
 	}
 	my (@results,@loop);
 	$DB->currentDownloads(\@results);
@@ -46,15 +51,16 @@ sub process {
 		for (my $i=0; $i<= $#results; $i++) {
 			($hsz,$hunit) = hrSize($results[$i]->{'file_size'});
 			push(@loop,{
-				FILEX_FILE_INFO_URL=>$S->toHtml($self->genFileInfoUrl($results[$i]->{'id'})),
-				FILEX_FILE_NAME=>$S->toHtml($results[$i]->{'real_name'}),
+				FILEX_FILE_INFO_URL=>toHtml($self->genFileInfoUrl($results[$i]->{'id'})),
+				FILEX_FILE_NAME=>toHtml($results[$i]->{'real_name'}),
 				FILEX_OWNER=>$results[$i]->{'owner'},
 				FILEX_SIZE=>$hsz." ".$S->i18n->localizeToHtml($hunit),
-				FILEX_START=>$S->toHtml(tsToLocal($results[$i]->{'start_date'})),
+				FILEX_START=>toHtml(tsToLocal($results[$i]->{'start_date'})),
 				FILEX_IP_ADDRESS=>$results[$i]->{'ip_address'}
 			});
 		}
 		$T->param(FILEX_HAS_DOWNLOAD=>1);
+		$T->param(FILEX_PURGE_QUEUE_URL=>toHtml($self->genPurgeQueueUrl()));
 		$T->param(FILEX_DOWNLOAD_LOOP=>\@loop);
 	}
 	return $T;
@@ -70,6 +76,15 @@ sub genFileInfoUrl {
 			$sub_action => SUB_FILE_INFO,
 			$file_id_field => $file_id);
 	return $url;
+}
+
+sub genPurgeQueueUrl {
+	my $self = shift;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString($sub_action => SUB_PURGE_QUEUE);
+	return $url;
+		
 }
 
 sub genCurrentUrl {

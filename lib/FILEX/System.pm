@@ -1,45 +1,47 @@
 package FILEX::System;
 use strict;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-use Exporter;
-@ISA = qw(Exporter);
-@EXPORT = qw();
-@EXPORT_OK = qw(
-	genUniqId
-	toHtml
-);
-%EXPORT_TAGS = (all=>[@EXPORT_OK]);
+use vars qw($VERSION);
 $VERSION = 1.0;
 
 # Apache
-use Apache::Constants qw(:common REDIRECT);
-use Apache::Request;
-use Apache::Cookie;
-use Apache::Util;
+use constant MP2 => (exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2);
 
 # FILEX
 use FILEX::System::Config;
 use FILEX::System::Template;
 use FILEX::System::I18N;
-use FILEX::System::Auth::CAS;
 use FILEX::System::LDAP;
 use FILEX::System::Mail;
-use FILEX::System::Exclude;
-use FILEX::System::Quota;
-use FILEX::System::BigBrother;
+use FILEX::System::Exclude; 
+use FILEX::System::Session;
+use FILEX::System::Cookie;
 use FILEX::DB::System;
 use FILEX::System::User;
-
-# others
-use Data::Uniqid;
-use Apache::Session::File;
-use HTML::Entities ();
+use FILEX::Tools::Utils;
 
 use constant FILEX_CONFIG_NAME=>"FILEXConfig";
 use constant LOGIN_FORM_LOGIN_FIELD_NAME=>"login";
 use constant LOGIN_FORM_PASSWORD_FIELD_NAME=>"password";
 use constant LOGIN_FORM_CAS_TICKET_FIELD_NAME=>"ticket";
 
+BEGIN {
+	if (MP2) {
+		require Apache2::Const;
+		Apache2::Const->import(-compile => qw(OK REDIRECT));
+		require Apache2::ServerRec;
+		require Apache2::URI;
+		require Apache2::Connection;
+		require Apache2::Util;
+		require Apache2::Request;
+		require Apache2::Upload;
+		require APR::Status;
+	} else {
+		require Apache::Constants;
+		Apache::Constants->import(qw(OK REDIRECT));
+		require Apache::Request;
+		require Apache::Util;
+	}
+}
 # first args = Apache object [mandatory]
 # [opt]
 # with_config => path to config file
@@ -61,13 +63,10 @@ sub new {
 		_havecookie_ => 0,
 		_user_ => undef,
 		_session_ => undef,
-		_cas_ => undef,
 		_ldap_ => undef,
 		_mail_ => undef,
 		_systemdb_ => undef,
-		_exclude_=> undef,
-		_watch_=> undef,
-		_quota_=>undef,
+		_exclude_=> undef, 
 		_auth_=>undef,
 	};
 	_INITIALIZE_($self,@_);
@@ -78,35 +77,42 @@ sub _INITIALIZE_ {
 	my $self = shift;
 	my $r = shift;
 	my %ARGZ = @_; # remaining argz
-	die(__PACKAGE__,"-> Require an Apache object") if ( ref($r) ne "Apache" );
+	die(__PACKAGE__,"-> Require an Apache object") if ( ref($r) ne "Apache" && ref($r) ne "Apache2::RequestRec");
 
 	# first initialize config file
-	my $FILEXConfig;
-	if ( ! FILEX::System::Config::isSetup() ) {
-		$FILEXConfig = exists($ARGZ{'with_config'}) ? $ARGZ{'with_config'} : $r->dir_config(FILEX_CONFIG_NAME);
-		$self->{'_config_'} = FILEX::System::Config->new(file=>$FILEXConfig, reload=>1, dieonreload=>1);
-	} else {
-		$self->{'_config_'} = FILEX::System::Config->new();
-	}
-	die(__PACKAGE__,"-> Unable to load Config File : $FILEXConfig") if ! defined($self->{'_config_'});
+	my $FILEXConfig = exists($ARGZ{'with_config'}) ? $ARGZ{'with_config'} : $r->dir_config(FILEX_CONFIG_NAME);
+	$self->{'_config_'} = FILEX::System::Config->instance(file=>$FILEXConfig);
+	
 	# initialize the Apache::Request object
 	if ( exists($ARGZ{'with_upload'}) && $ARGZ{'with_upload'} == 1 ) {
 		my %ReqParams = (
 			DISABLE_UPLOADS => 0,
 			TEMP_DIR => $self->{'_config_'}->getTmpFileDir()
 		);
-		#$ReqParams{'POST_MAX'} = $self->{'_config_'}->getMaxFileSize() if ( $self->{'_config_'}->getMaxFileSize() );
 		# has hook
 		if ( exists($ARGZ{'with_hook'}) && ref($ARGZ{'with_hook'}) eq "HASH" ) {
 			my $with_hook = $ARGZ{'with_hook'};
 			if ( exists($with_hook->{'upload_hook'}) && ref($with_hook->{'upload_hook'}) eq "CODE" ) {
-				$ReqParams{'UPLOAD_HOOK'} = $ARGZ{'with_hook'}->{'upload_hook'};
-				$ReqParams{'HOOK_DATA'} = $ARGZ{'with_hook'}->{'hook_data'};
+				# HOOK_DATA is not implemented une libapreq2 so we need to emulate it
+				my $hook_data = $with_hook->{'hook_data'} || undef;
+				my $hook_code = $with_hook->{'upload_hook'};
+				if (MP2) {
+					if ( defined($hook_data) ) {
+						$hook_code = sub {
+							$with_hook->{'upload_hook'}->(@_,$_[0]->upload_size(),$hook_data);
+						};
+					} 
+					$ReqParams{'UPLOAD_HOOK'} = $hook_code;
+				} else {
+					$ReqParams{'UPLOAD_HOOK'} = $hook_code;
+					$ReqParams{'HOOK_DATA'} = $hook_data if $hook_data;
+				}
 			}
 		}
-		$self->{'_apreq_'} = Apache::Request->new($r,%ReqParams);
+		# on MP2 : set APREQ2_ReadLimit into apache config
+		$self->{'_apreq_'} = MP2 ? Apache2::Request->new($r,%ReqParams) : Apache::Request->new($r,%ReqParams);
 	} else {
-		$self->{'_apreq_'} = Apache::Request->new($r);
+		$self->{'_apreq_'} = MP2 ? Apache2::Request->new($r) : Apache::Request->new($r);
 	}
 	# here the POST occurs
 	$self->{'_apreq_status_'} = $self->{'_apreq_'}->parse();
@@ -120,6 +126,9 @@ sub _INITIALIZE_ {
 
 	# load the i18n module
 	$self->{'_i18n_'} = FILEX::System::I18N->new(inifile=>$self->{'_config_'}->getI18nIniFile());
+
+	# load session module
+	$self->{'_session_'} = FILEX::System::Session->new();
 
 	# set default language for both i18n & template
 	if ( $self->{'_language_'} ) {
@@ -140,8 +149,6 @@ sub _INITIALIZE_ {
 			$self->{'_template_'}->setLang($self->{'_language_'});
 		}
 	}
-	# initialize CAS server
-	$self->{'_cas_'} = FILEX::System::Auth::CAS->new(casUrl=>$self->{'_config_'}->getCasServer());
 	# initialize authentification module
 	my $auth_mod = "FILEX::System::Auth::".$self->{'_config_'}->getAuthModule();
 	# import module
@@ -198,7 +205,7 @@ sub _systemdb {
 	return $self->{'_systemdb_'};
 }
 
-# return exlude object
+# return exclude object
 sub _exclude {
 	my $self = shift;
 	# load on demand
@@ -206,24 +213,6 @@ sub _exclude {
 		$self->{'_exclude_'} = FILEX::System::Exclude->new(ldap=>$self->ldap());
 	}
 	return $self->{'_exclude_'};
-}
-# return bigbrother object
-sub _watch {
-	my $self = shift;
-	# load on demand
-	if ( !$self->{'_watch_'} ) {
-		$self->{'_watch_'} = FILEX::System::BigBrother->new(ldap=>$self->ldap());
-	}
-	return $self->{'_watch_'};
-}
-# return quota object
-sub _quota {
-	my $self = shift;
-	# load on demand
-	if ( !$self->{'_quota_'} ) {
-		$self->{'_quota_'} = FILEX::System::Quota->new(config=>$self->config(),ldap=>$self->ldap());
-	}
-	return $self->{'_quota_'}
 }
 
 # return FILEX::System::Mail object
@@ -253,31 +242,13 @@ sub getUser {
 	return $self->{'_user_'};
 }
 
-# get quota for a user
-# return both MFS & MUS
-sub getQuota {
-	my $self = shift;
-	my $user = shift;
-	warn(__PACKAGE__,"=>require a FILEX::System::User") && return (0,0) if (!defined($user) || ref($user) ne "FILEX::System::User");
-	my $q = $self->_quota();
-	return ( $q ) ? $q->getQuota($user->getId()) : (0,0);
-}
-
-#
-# get User real name
-sub getUserRealName {
-	my $self = shift;
-	my $uid = shift;
-	my $attr = $self->config()->getLdapUsernameAttr();
-	my $res = $self->ldap->getUserAttrs(uid=>$uid,attrs=>[$attr]);
-	$attr = lc($attr);
-	return ($res) ? $res->{$attr}->[0] : "unknown";
-}
 #
 # begin session
 # 
 # with no_auth => 1 then only cookie is read but authentification is not processed
 # with no_login => 1 then the user will not be redirected to authentification form
+#
+# return the logged in user
 sub beginSession {
 	my $self = shift;
 	my %ARGZ = @_;
@@ -289,32 +260,28 @@ sub beginSession {
 	my $noLogin = ( exists($ARGZ{'no_login'}) && defined($ARGZ{'no_login'}) && ($ARGZ{'no_login'}) == 1) ? 1 : 0;
 	# cookie
 	my $ckname = $self->config()->getCookieName();
-	my $cktime = $self->config()->getCookieExpires();
-
-	my $acookie = Apache::Cookie->new($r);
-	my $cookie = $acookie->parse();
+	my $cookie = FILEX::System::Cookie::parse($r->headers_in->{'Cookie'});
 	#
 	# check if we are authenticated
 	#
 
-	# reset username before begin
+	# reset user before begin
 	$self->{'_user_'} = undef;
-	$self->{'_session_'} = undef;
+  # have cookie 
 	if ( $cookie && exists($cookie->{$ckname}) ) {
 		$self->{'_havecookie_'} = 1;
 		my $session_id = $cookie->{$ckname}->value();
-		if ( $self->_loadSession($session_id) ) {
-			# retrieve cookie expire time & username
-			my $cketime = $self->{'_session_'}->{'expire'};
-			my $ckuname = $self->{'_session_'}->{'username'};
-			my $ctime = time;
-			# if cookie expires then re-auth
-			if ( $ctime < $cketime ) {
+		# initialize session
+		if ( $self->{'_session_'}->load($session_id) ) {
+			# if session has expired then re-auth
+			if ( ! $self->{'_session_'}->isExpired() ) {
 				# user's login
-				$self->{'_user_'} = FILEX::System::User->new(uid=>$ckuname,ldap=>$self->ldap());
+				$self->{'_user_'} = FILEX::System::User->new(uid=>$self->{'_session_'}->getParam('username'),
+					ldap=>$self->ldap(),
+					session=>$self->{'_session_'});
 				$isValid = 1 if ( defined($self->{'_user_'}) );
 			} else {
-				$self->_dropSession();
+				$self->{'_session_'}->drop();
 			}
 		}
 	}
@@ -340,12 +307,13 @@ sub beginSession {
 			if ( defined($user) && length($user) > 0 ) {
 				$self->{'_user_'} = FILEX::System::User->new(uid=>$user,ldap=>$self->ldap());
 				if ( defined($self->{'_user_'}) ) {
-					# get current time for expiration
-					my $cketime = time + $cktime;
-					if ( $self->_startSession() ) {
-						$self->{'_session_'}->{'expire'} = $cketime;
-						$self->{'_session_'}->{'username'} = $user;
-						$self->{'_cookie_'} = _genCookie($r,-name=>$ckname,-value=>$self->{'_session_'}->{'_session_id'});
+					# start a new session
+					if ( $self->{'_session_'}->start() ) {
+						# set username
+						$self->{'_session_'}->setParam(username=>$user);
+						$self->{'_user_'}->setSession($self->{'_session_'});
+						# set cookie
+						$self->{'_cookie_'} = FILEX::System::Cookie::generate($self->config(),-value=>$self->{'_session_'}->getSid());
 						$isValid = 1;
 					}
 				} else {
@@ -359,7 +327,20 @@ sub beginSession {
 	# if valid then check for exclude
 	#
 	if ( $isValid ) {
-		my ($bIsExclude,$excludeReason) = $self->isExclude($self->{'_user_'});
+		# if have a session 
+		my ($bIsExclude,$excludeReason);
+		# from session
+		if ( ref($self->{'_session_'}) ) {
+			$bIsExclude =	$self->{'_session_'}->getParam("is_exclude");
+			$excludeReason = $self->{'_session_'}->getParam("exclude_reason");
+		} 
+		if ( !defined($bIsExclude) ) {
+			($bIsExclude,$excludeReason) = $self->isExclude($self->{'_user_'}) if !defined($bIsExclude);
+			if ( ref($self->{'_session_'}) ) { 
+				$self->{'_session_'}->setParam(is_exclude=>$bIsExclude,1);
+				$self->{'_session_'}->setParam(exclude_reason=>$excludeReason,1);
+			}
+		}
 		if ( $bIsExclude ) {
 			$isValid = undef;
 			warn(__PACKAGE__,"-> user [".$self->{'_user_'}->getId()."] is Excluded !");
@@ -378,62 +359,6 @@ sub beginSession {
 	} else {
 		$self->_doLogin($err_mesg);
 	}
-}
-
-sub _loadSession {
-	my $self = shift;
-	my $session_id = shift;
-	return undef if ( !defined($session_id) );
-	if ( defined($self->{'_session_'}) ) {
-		warn(__PACKAGE__," => loading the session while a current one exists; droping session !");
-		tied(%{$self->{'_session_'}})->delete;
-	}
-	$self->{'_session_'} = {};
-	eval {
-		tie %{$self->{'_session_'}},'Apache::Session::File',$session_id,{
-			Directory=>$self->config()->getSessionDirectory(),
-			LockDirectory=>$self->config()->getSessionLockDirectory()
-		};
-	};
-	if ($@) {
-		warn(__PACKAGE__," => Unable to load session $session_id : ",$@);
-		$self->{'_session_'} = undef;
-		return undef;
-	}
-	return 1;
-}
-
-# drop the current session
-sub _dropSession {
-	my $self = shift;
-	if ( !defined($self->{'_session_'}) || ref($self->{'_session_'}) ne "HASH") {
-		warn(__PACKAGE__," => _dropSession called but no session defined !");
-		return undef;
-	}
-	tied(%{$self->{'_session_'}})->delete;
-	$self->{'_session_'} = undef;
-	$self->{'_dropcookie_'} = 1;
-}
-
-# start a new session
-sub _startSession {
-	my $self = shift;
-	if ( defined($self->{'_session_'}) ) {
-		warn(__PACKAGE__," => starting a new session while a current one exists; droping session");
-		tied(%{$self->{'_session_'}})->delete;
-	}
-	$self->{'_session_'} = {};
-	eval {
-		tie %{$self->{'_session_'}},'Apache::Session::File',undef,{
-			Directory=>$self->config()->getSessionDirectory(),
-			LockDirectory=>$self->config()->getSessionLockDirectory()
-		};
-	};
-	if ($@) {
-		warn(__PACKAGE__," => Unable to start new session : ",$@);
-		return undef;
-	}
-	return 1;
 }
 
 # require : param=> ARRAY_REF, results=>HASH_REF
@@ -497,9 +422,10 @@ sub _require {
 # require a apache Object
 sub _initLanguage {
 	my $r = shift;
-	my $aclang = $r->header_in("Accept-Language");
+# TODO : voir $r->content_languages || "Content-Language"
+	my $aclang = MP2 ? $r->headers_in->{"Accept-Language"} : $r->header_in("Accept-Language");
 	# check for accept-language
-	$aclang = $r->header_in("accept-language") if (! $aclang);
+	$aclang = (MP2 ? $r->headers_in->{"Accept-Language"} : $r->header_in("accept-language")) if (! $aclang);
 	my @lang = split(',',$aclang) if $aclang;
 	# remove q
 	for (my $i = 0; $i <= $#lang; $i++) {
@@ -529,18 +455,6 @@ sub isExclude {
 	return 1;
 }
 
-sub isWatched {
-	my $self = shift;
-	my $user = shift;
-	warn(__PACKAGE__,"=> require a FILEX::System::User") && return undef if (!defined($user) || (ref($user) ne "FILEX::System::User"));
-	# check if usemail and watchuser
-	if ( $self->config()->needEmailNotification() && $self->config()->useBigBrother() ) {
-		my $watch = $self->_watch();
-		return ($watch) ? $watch->isWatched($user->getId()) : undef;
-	} 
-	return undef;
-}
-
 # here we quit the application
 sub _redirectAuth {
 	my $self = shift;
@@ -548,22 +462,24 @@ sub _redirectAuth {
 	my $r = $self->apreq();
 	# if we have cookie then destroy it
 	if ( $self->{'_havecookie_'} == 1 ) {
-		my $dcookie = _genCookie($r,-name=>$self->config()->getCookieName(),
-			-value=>"",
-			-expires=>"-1Y");
+		my $dcookie = FILEX::System::Cookie::generate($self->config(),-value=>"",-expires=>"-1Y");
 		$r->err_headers_out->add("Set-Cookie",$dcookie);
 	}
-	$r->header_out(Location=>$redirect_url);
-	$r->status(REDIRECT);
-	$r->send_http_header();
-	exit(OK);
+	if ( MP2 ) {
+		$r->headers_out->add("Location",$redirect_url);
+		$r->status(Apache2::Const::REDIRECT);
+		#$r->content-type();
+	} else {
+		$r->header_out(Location=>$redirect_url);
+		$r->status(Apache::Constants::REDIRECT);
+		$r->send_http_header();
+	}
+	exit( MP2 ? Apache2::Const::OK : Apache::Constants::OK );
 }
 
 sub _doLogin {
 	my $self = shift;
 	my $mesg = shift;
-	#$self->{'_dropcookie_'} = 1;
-	$self->_dropSession();
 	# load template
 	my $t = $self->getTemplate(name=>"login");
 	# fill template
@@ -578,16 +494,13 @@ sub _doLogin {
 	}
 	$self->sendHeader('Content-Type'=>"text/html");
 	$self->apreq->print($t->output()) if ( $t && !$self->apreq->header_only() );
-	exit(OK);
+	exit( MP2 ? Apache2::Const::OK : Apache::Constants::OK );
 }
 
 sub denyAccess {
 	my $self = shift;
 	my $reason = shift;
 	my $r = $self->apreq();
-	# if we have a cookie then destroy it
-	#$self->{'_dropcookie_'} = 1;
-	$self->_dropSession();
 	# load access deny template
 	my $t = $self->getTemplate(name=>"access_deny");
 	# fill template
@@ -596,18 +509,11 @@ sub denyAccess {
 	$t->param(SYSTEMEMAIL=>$self->config()->getSystemEmail());
 	# reason
 	if ( defined($reason) && length($reason) > 0 ) {
-		$t->param(REASON=>$self->toHtml($reason));
+		$t->param(REASON=>FILEX::Tools::Utils::toHtml($reason));
 	}
 	$self->sendHeader('Content-Type'=>"text/html");
 	$r->print($t->output()) if ( $t && ! $r->header_only() );
-	exit(OK);
-}
-
-# create a new cookie en return has string
-sub _genCookie {
-	my $r = shift;
-	my $c = Apache::Cookie->new($r,@_);
-	return $c->as_string;
+	exit( MP2 ? Apache2::Const::OK : Apache::Constants::OK );
 }
 
 # mandatory : content-type
@@ -615,7 +521,10 @@ sub sendHeader {
 	my $self = shift;
 	my $r = $self->apreq();
 	$self->prepareHeader(@_);
-	$r->send_http_header();
+	# save session if needed
+	$self->{_session_}->save() if ( $self->{_session_} );
+	# only on mod_perl 1.0
+	$r->send_http_header() if (!MP2);
 }
 
 # common header params +
@@ -630,16 +539,25 @@ sub prepareHeader {
 	# put cookie if needed
 	if ( $no_cookie != 1 ) {
 		if ( defined($self->{'_cookie_'}) && $self->{'_dropcookie_'} != 1 ) {
-			$r->header_out("Set-Cookie",$self->{'_cookie_'});
+			if ( MP2 ) {
+				$r->headers_out->add("Set-Cookie",$self->{'_cookie_'});
+			} else {
+				$r->header_out("Set-Cookie",$self->{'_cookie_'});
+			}
 		} elsif ( $self->{'_dropcookie_'} == 1 && $self->{'_havecookie_'} == 1 ) {
 			# destroy cookie
-			$r->header_out("Set-Cookie",_genCookie(
-				$r,-name=>$self->config()->getCookieName(),
+			if ( MP2 ) {
+				$r->headers_out->add("Set-Cookie",FILEX::System::Cookie::generate($self->config(),
+				-value=>"",
+				-expires=>"-1Y"));
+			} else {
+				$r->header_out("Set-Cookie",FILEX::System::Cookie::generate($self->config(),
 				-value=>"",
 				-expires=>"-1Y")); 
+			}
 		}
 	}
-	# set content-type
+	# st content-type
 	my $ct = delete($ARGZ{'Content-Type'});
 	$ct = 'text/html' if ( !$ct );
 	$r->content_type($ct);
@@ -650,21 +568,35 @@ sub prepareHeader {
 		# http://forum.java.sun.com/thread.jsp?forum=45&thread=233446
 		# http://jira.atlassian.com/browse/JRA-1738
 		# http://bugs.php.net/bug.php?id=16173
-		$r->header_out("Expires","Thu 7 Nov 1974 8:00:00 GMT");
-		$r->header_out("Pragma","no-cache") if !_isHttps($r);
-		$r->header_out("Cache-control","public") if !_isHttps($r);
+		if ( MP2 ) {
+			$r->headers_out->add("Expires","Thu 7 Nov 1974 8:00:00 GMT");
+			$r->headers_out->add("Pragma","no-cache") if !_isHttps($r);
+			$r->headers_out->add("Cache-control","public") if !_isHttps($r);
+		} else {
+			$r->header_out("Expires","Thu 7 Nov 1974 8:00:00 GMT");
+			$r->header_out("Pragma","no-cache") if !_isHttps($r);
+			$r->header_out("Cache-control","public") if !_isHttps($r);
+		}
 	} else {
-		$r->no_cache(1);
+		if ( MP2 ) {
+			$r->headers_out->add("Pragma","no-cache");
+		} else {
+			$r->no_cache(1);
+		}
 	}
 	# the rest
 	while ( my ($k,$v) = each(%ARGZ) ) {
-		$r->header_out($k,$v);
+		if ( MP2 ) {
+			$r->headers_out->add($k,$v);
+		} else {
+			$r->header_out($k,$v);
+		}
 	}
 }
 
 sub isIE {
 	my $self = shift;
-	my $user_agent = $self->apreq->header_in("User-Agent");
+	my $user_agent = MP2 ? $self->apreq->headers_in->{"User-Agent"} : $self->apreq->header_in("User-Agent");
 	return ( $user_agent =~ /msie/i ) ? 1 : 0;
 }
 
@@ -675,13 +607,14 @@ sub getMail {
 	return $self->ldap->getMail(@_);
 }
 
-# check if admin
-sub isAdmin {
+sub getUserRealName {
 	my $self = shift;
-	my $user = shift;
-	warn(__PACKAGE__,"=> isAdmin require a FILEX::System::User object") && return 0 if ( !defined($user) || (ref($user) ne "FILEX::System::User") );
-	my $sdb = $self->_systemdb();
-	return ($sdb) ? $sdb->isAdmin($user->getId()) : 0;
+	my $uid = shift;
+	my $attr = $self->config()->getLdapUsernameAttr();
+	my $res = $self->ldap()->getUserAttrs(uid=>$uid, attrs=>[$attr]);
+ 	$attr = lc($attr);
+  my $rn = ($res) ? $res->{$attr}->[0] : "unknown";
+	return $rn;
 }
 
 sub getUsedDiskSpace {
@@ -690,46 +623,33 @@ sub getUsedDiskSpace {
 	return ($sdb) ? $sdb->getUsedDiskSpace() : undef;
 }
 
-sub getUserMaxFileSize {
+# check if we can upload on system switch user's params
+sub isSpaceRemaining {
 	my $self = shift;
-	my $user = shift;
-	warn(__PACKAGE__,"=>require a FILEX::System::User") && return 0 if (!defined($user) || ref($user) ne "FILEX::System::User");
-	my ($quota_max_file_size,$quota_max_used_space) = $self->getQuota($user);
-	my $current_user_space = $user->getDiskSpace();
-	return $self->getMaxFileSizeQuick($quota_max_file_size,$quota_max_used_space,$current_user_space);
+	my $user = shift || $self->getUser();
+	# 
+	my $max_file_size = $user->getMaxFileSize();
+	#
+	my $max_disk_space = $self->config->getMaxDiskSpace();
+	my $max_disk_space_limit = $self->config->getMaxDiskSpaceLimit();
+	if ( $max_disk_space ) {
+		my $current_used_space = $self->getUsedDiskSpace();
+		# check if there is a max_file_size
+		if ( $max_file_size > 0 ) {
+			return 0 if ( $max_disk_space < ($current_used_space + $max_file_size) );
+		} else {
+			# we can't upload if the remaining space < max_disk_space_limit
+      return 0 if ( $max_disk_space_limit && (($current_used_space/$max_disk_space)*100) >= $max_disk_space );
+		}
+		return 1;
+	}
+	return 1;
 }
-
-#
-# return :
-# 0 => quota exceed or upload is disabled
-# <0 => no quota to apply
-# >0 => max upload size
-#
-sub getMaxFileSizeQuick {
-	my $self = shift;
-	my $quota_max_file_size = shift || 0;
-	my $quota_max_used_space = shift || 0; 
-	my $current_user_space = shift || 0;
-	# if ( quota_max_file_size == 0 || quota_max_used_space == 0 ) then disable
-	return 0 if ( $quota_max_file_size == 0 || $quota_max_used_space == 0 );
-	# if $quota_max_used_space <= $current_user_space then no more upload
-	# since quota_max_used_space == -1 if unlimited it's always < current_user_space 
-	# because the minimal value of current_user_space is ZERO
-	return 0 if (  $quota_max_used_space <= $current_user_space && $quota_max_used_space != -1 );
-	# if quota_max_used_space == unlimited ( < 0 ) then return the max permitted file size
-	return $quota_max_file_size if ( $quota_max_used_space < 0 );
-	# now we have a remaining space
-	my $remaining_space = $quota_max_used_space - $current_user_space;
-	# if quota_max_file_size == unlimited ( < 0 ) then return the remaining space 
-	return $remaining_space if ( $quota_max_file_size < 0 || $quota_max_file_size >= $remaining_space );
-	# otherwise return the quota_max_file_size
-	return $quota_max_file_size;
-}
-
 # send email
 # from
 # to 
 # content
+# subject
 # type
 # encoding
 # charset
@@ -761,7 +681,15 @@ sub getCurrentUrl {
 	$url .= $self->apreq->uri();
 	if ( $with_qs ) {
 		# rebuild the query string because we don't need the tichet in !
-		my %args = $self->apreq->args();
+		my %args = ();
+		if ( MP2 ) {
+			my $tmpArgs = FILEX::Tools::Utils::qsParams($self->apreq->args());
+			foreach my $k (keys %{$tmpArgs}) {
+				$args{$k} = $tmpArgs->{$k};
+			}
+		} else {
+			%args = $self->apreq->args();
+		}
 		my $key = LOGIN_FORM_CAS_TICKET_FIELD_NAME;
 		delete($args{$key}) if exists($args{$key});
 		my $qs = $self->genQueryString(params=>\%args);
@@ -782,11 +710,6 @@ sub getServerUrl {
 	return $url;
 }
 
-# generate UniqId's via Data::Uniqid
-sub genUniqId {
-	return Data::Uniqid::luniqid();
-}
-
 # generate query string
 # require a hash ref
 sub genQueryString {
@@ -798,7 +721,11 @@ sub genQueryString {
 	my ($k,$v,$tmp);
 	while ( ($k,$v) = each(%{$ARGZ{'params'}}) ) {
 		# escape parmeter name and parameter value
-		$tmp = Apache::Util::escape_uri($k)."=".Apache::Util::escape_uri($v);
+		if ( MP2 ) {
+			$tmp = Apache2::Util::escape_path($k,$self->apreq()->pool())."=".Apache2::Util::escape_path($v,$self->apreq()->pool());
+		} else {
+			$tmp = Apache::Util::escape_uri($k)."=".Apache::Util::escape_uri($v);
+		}
 		push(@res,$tmp);
 	}
 	return join($separator,@res);
@@ -807,35 +734,35 @@ sub genQueryString {
 sub getManageUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config()->getUriManage());
+	$url .= (MP2) ? Apache2::Util::escape_path($self->config()->getUriManage(),$self->apreq->pool()) : Apache::Util::escape_uri($self->config()->getUriManage());
 	return $url;
 }
 
 sub getUploadUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config()->getUriUpload());
+	$url .= (MP2) ? Apache2::Util::escape_path($self->config()->getUriUpload(),$self->apreq->pool()) : Apache::Util::escape_uri($self->config()->getUriUpload());
 	return $url;
 }
 
 sub getMeterUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config()->getUriMeter());
+	$url .= (MP2) ? Apache2::Util::escape_path($self->config()->getUriMeter(), $self->apreq->pool()) : Apache::Util::escape_uri($self->config()->getUriMeter());
 	return $url;
 }
 
 sub getAdminUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config()->getUriAdmin());
+	$url .= (MP2) ? Apache2::Util::escape_path($self->config()->getUriAdmin(),$self->apreq->pool()) : Apache::Util::escape_uri($self->config()->getUriAdmin());
 	return $url;
 }
 
 sub getGetUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config()->getUriGet());
+	$url .= (MP2) ? Apache2::Util::escape_path($self->config()->getUriGet(), $self->apreq->pool()) : Apache::Util::escape_uri($self->config()->getUriGet());
 	return $url;
 }
 
@@ -844,15 +771,8 @@ sub getStaticUrl {
 	my $url = $self->getServerUrl();
 	my $static_uri = $self->config()->getUriStatic();
 	$static_uri .= "/" if ( $static_uri !~ /.*\/^/ );
-	$url .= Apache::Util::escape_uri($static_uri);
+	$url .= (MP2) ? Apache2::Util::escape_path($static_uri, $self->apreq->pool()) : Apache::Util::escape_uri($static_uri);
 	return $url;
-}
-
-# encode string to html entities
-sub toHtml {
-	my $str = shift;
-	$str = shift if (ref($str) eq "FILEX::System");
-	return HTML::Entities::encode_entities($str);
 }
 
 # check if a a proxy request
@@ -862,7 +782,7 @@ sub isBehindProxy {
 	my ($count,$line);
 	$count = 0;
 	foreach my $hkey (@headers) {
-		$line = $self->apreq->header_in($hkey);
+		$line = (MP2) ? $self->apreq->headers_in->{$hkey} : $self->apreq->header_in($hkey);
 		$count += 1 if ( defined($line) && length($line) );
 	}
 	return ( $count ) ? 1 : 0;
@@ -889,7 +809,7 @@ sub getProxyInfos {
 	my @headers = ('X-Forwarded-For','Via','Client-ip','Forwarded');
 	my $line;
 	foreach my $hkey (@headers) {
-		$line = $self->apreq->header_in($hkey);
+		$line = (MP2) ? $self->apreq->headers_in->{$hkey} : $self->apreq->header_in($hkey);
 		push(@proxy_infos,"$hkey = $line") if ( defined($line) && length($line) );
 	}
 	$infos = join("\n",@proxy_infos);
@@ -898,25 +818,36 @@ sub getProxyInfos {
 # get the user_agent string
 sub getUserAgent {
 	my $self = shift;
-	return $self->apreq->header_in('User-Agent');
+	return (MP2) ? $self->apreq->headers_in->{'User-Agent'} : $self->apreq->header_in('User-Agent');
 }
 
 # check if the user it it's "cancel" button
-sub isConnected {
+sub isAborted {
 	my $self = shift;
 	# IsClientConnected? Might already be disconnected for busy
 	# site, if a user hits stop/reload
 	# see : http://perl.apache.org/docs/1.0/guide/snippets.html#Detecting_a_Client_Abort
-	my $conn = $self->apreq->connection;
-	my $is_connected = $conn->aborted ? undef : 1;
-	if ($is_connected) {
-		my $fileno = $conn->fileno;
-		if (defined $fileno) {
-			my $s = IO::Select->new($fileno);
-			$is_connected = $s->can_read(0) ? undef : 1;
+	my $conn = $self->apreq->connection();
+	my $is_aborted = $conn->aborted() ? 1 : 0;
+	if ( ! $is_aborted ) {
+		if ( MP2 ) {
+			$is_aborted = APR::Status::is_EOF($self->apreq()->body_status());
+			#APR::Status::is_ECONNABORTED($self->apreq()->body_status());
+			#my $cs = $conn->client_socket();
+			#if ( $cs ) {
+			#	$is_aborted = ($cs->poll($conn->pool(), 1, APR::Const::POLLIN) == APR::Const::TIMEUP) ? 1 : 0;
+			#} else {
+			#	$is_aborted = 1;
+			#}
+		} else {
+			my $fileno = $conn->fileno;
+			if (defined $fileno) {
+				my $s = IO::Select->new($fileno);
+				$is_aborted = $s->can_read(0) ? 1 : 0;
+			}
 		}
 	}
-	return $is_connected;
+	return $is_aborted;
 }
 
 1;

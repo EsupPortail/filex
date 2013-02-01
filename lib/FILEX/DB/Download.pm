@@ -73,7 +73,25 @@ sub currentDownloads {
 	return 1;
 }
 
+sub purgeCurrentDownloads {
+	my $self = shift;
+	my $dbh = $self->_dbh();
+	my $strQuery = "DELETE from current_download";
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$dbh->commit();
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery, string=>$dbh->errstr(),code=>$dbh->err);
+		warn(__PACKAGE__,"=> Database error : $@ : $strQuery");
+		return undef;
+	}
+	return 1;
+}
+
 # current non expired files
+# deprecated
 sub currentFiles {
 	my $self = shift;
 	my %ARGZ = @_;

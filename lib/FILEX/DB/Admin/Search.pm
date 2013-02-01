@@ -11,7 +11,7 @@ BEGIN {
 		J_OP => [ qw(J_OP_AND J_OP_OR) ],
 		T_OP => [ qw(T_OP_EQ T_OP_NEQ T_OP_LT T_OP_GT T_OP_LTE T_OP_GTE T_OP_LIKE T_OP_NLIKE) ],
 		S_OR => [ qw(S_O_ASC S_O_DESC) ],
-		S_FI => [ qw(S_F_NAME S_F_OWNER S_F_SIZE S_F_UDATE S_F_EDATE S_F_COUNT) ],
+		S_FI => [ qw(S_F_NAME S_F_OWNER S_F_SIZE S_F_UDATE S_F_EDATE S_F_COUNT S_F_ENABLE) ],
 		B_OP => [ qw(B_OP_TRUE B_OP_FALSE) ]
 	);
 	Exporter::export_ok_tags('J_OP','T_OP','S_FI','S_OR','B_OP');
@@ -38,6 +38,7 @@ use constant S_F_SIZE => 'size';
 use constant S_F_UDATE => 'upload_date';
 use constant S_F_EDATE => 'expire_date';
 use constant S_F_COUNT => 'download_count';
+use constant S_F_ENABLE => 'enable';
 # sort order
 use constant S_O_ASC => 'asc';
 use constant S_O_DESC => 'desc';
@@ -45,8 +46,10 @@ use constant S_O_DESC => 'desc';
 my %SEARCH_FIELDS = (
 	real_name => { quote=>1, query_left=>"u.real_name" },
 	owner => { quote=>1, query_left=>"u.owner" },
+	owner_uniq_id => { quote=>1, query_left=>"u.owner_uniq_id" },
 	upload_date => { quote=>0, query_left=>"TO_DAYS(u.upload_date)", query_right=>"TO_DAYS(FROM_UNIXTIME(\%V))"},
 	expire_date => { quote=>0, query_left=>"TO_DAYS(u.expire_date)", query_right=>"TO_DAYS(FROM_UNIXTIME(\%V))"},
+	expire_date_now => { quote => 0, query_left=>"u.expire_date", query_right=>"NOW()" },
 	enable => { quote=>0, query_left=>"u.enable" }
 );
 
@@ -56,18 +59,20 @@ my %SORT_NAME = (
 	size => "u.file_size",
 	upload_date => "u.upload_date",
 	expire_date => "u.expire_date",
-	download_count => "download_count"
+	download_count => "download_count",
+	enable => "u.enable"
 );
 
 my @JOIN_OPERATORS = (J_OP_AND,J_OP_OR );
 my @TEST_OPERATORS = (T_OP_EQ,T_OP_NEQ,T_OP_LT,T_OP_LTE,T_OP_GT,T_OP_GTE,T_OP_LIKE,T_OP_NLIKE);
-my @SORT_FIELDS = (S_F_NAME,S_F_OWNER,S_F_SIZE,S_F_UDATE,S_F_EDATE,S_F_COUNT);
+my @SORT_FIELDS = (S_F_NAME,S_F_OWNER,S_F_SIZE,S_F_UDATE,S_F_EDATE,S_F_COUNT,S_F_ENABLE);
 my @SORT_ORDER = (S_O_ASC,S_O_DESC);
 
 # fields => {field=>,test=>,join=>,value=>}
 # search on
 # real_name
 # owner
+# owner_uniq_id
 # upload_date
 # expire_date
 # results => ARRAY REF
@@ -86,13 +91,14 @@ sub search {
 	my $results = $ARGZ{'results'};
 	my $dbh = $self->_dbh();
 	my $strQueryBegin = "SELECT u.*, ".
-	               "UNIX_TIMESTAMP(upload_date) AS ts_upload_date, ".
-	               "UNIX_TIMESTAMP(expire_date) AS ts_expire_date, ".
-                 "COUNT(g.upload_id) - SUM(g.admin_download) AS download_count ".
+	               "UNIX_TIMESTAMP(u.upload_date) AS ts_upload_date, ".
+	               "UNIX_TIMESTAMP(u.expire_date) AS ts_expire_date, ".
+                 "COUNT(g.upload_id) - SUM(g.admin_download) AS download_count, ".
+								 "NOW() > u.expire_date AS expired ".
 	               "FROM upload AS u ".
 	               "LEFT JOIN get AS g ON u.id = g.upload_id ";
 
-	# retrun if no fields set
+	# return if no fields set
 	return 1 if ($#$search_fields < 0 );
 	# build the query 
 	my (@clause,@strClause,$strField,$strJoin,$strTest,$strValue);

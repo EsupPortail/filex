@@ -12,6 +12,7 @@ $VERSION = 1.0;
 # rorder
 # enable
 # reason
+# expire_days
 sub add {
 	my $self = shift;
 	my %ARGZ = @_;
@@ -20,6 +21,8 @@ sub add {
 	                    code=>-1) && return undef if ( !exists($ARGZ{'rule_id'}) || !$self->checkUInt($ARGZ{'rule_id'}) );
 	delete($ARGZ{'rorder'}) if ( exists($ARGZ{'rorder'}) && !$self->checkInt($ARGZ{'rorder'}) );
 	$ARGZ{'enable'} = 1 if ( exists($ARGZ{'enable'}) && !$self->checkBool($ARGZ{'enable'}) );
+	delete($ARGZ{'expire_days'}) if (exists($ARGZ{'expire_days'}) && !$self->checkInt($ARGZ{'expire_days'}));
+	$ARGZ{'expire_days'} = abs($ARGZ{'expire_days'}) if (exists($ARGZ{'expire_days'}));
 	my $dbh = $self->_dbh();
 	my %fields = (
 		'rule_id' => $ARGZ{'rule_id'},
@@ -27,6 +30,7 @@ sub add {
 	);
 	$fields{'rorder'} = $ARGZ{'rorder'} if exists($ARGZ{'rorder'});
 	$fields{'enable'} = $ARGZ{'enable'} if exists($ARGZ{'enable'});
+	$fields{'expire_days'} = $ARGZ{'expire_days'} if exists($ARGZ{'expire_days'});
 	# description
 	if ( exists($ARGZ{'description'}) && $self->checkStrLength($ARGZ{'description'},0,51) ) {
 		$fields{'description'} = $dbh->quote($ARGZ{'description'});
@@ -68,6 +72,7 @@ sub modify {
 		description => { check => sub { $self->checkStrLength(shift,-1,51); }, quote=>1},
 		reason => { check => sub { $self->checkStrLength(shift,-1,256); }, quote=>1},
 		rule_id => 	{ check => sub { $self->checkUInt(shift); }, quote=>0},
+		expire_days => { check => sub { $self->checkUInt(shift); }, quote=>0}
 	);
 	my $dbh = $self->_dbh();
 	my (@strSet);
@@ -113,7 +118,7 @@ sub get {
 	                    string=>"Require a results hashref",
 	                    code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "HASH");
 	my $dbh = $self->_dbh();
-	my $strQuery = "SELECT *,UNIX_TIMESTAMP(create_date) AS ts_create_date FROM exclude WHERE id = $ARGZ{'id'}";
+	my $strQuery = "SELECT *,UNIX_TIMESTAMP(create_date) AS ts_create_date, UNIX_TIMESTAMP(DATE_ADD(create_date,INTERVAL expire_days DAY)) AS ts_expire_date FROM exclude WHERE id = $ARGZ{'id'}";
 	my $res = $ARGZ{'results'};
 	eval {
 		my $sth = $dbh->prepare($strQuery);
@@ -133,6 +138,7 @@ sub get {
 
 # list excludes (with underlying rule)
 # enable => 1 (opt)
+# expired => 0 | 1
 # results => ARRAY REF
 sub list {
 	my $self = shift;
@@ -142,12 +148,15 @@ sub list {
 	                    code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY" );
 	my $res = $ARGZ{'results'};
 	my $enable = ( exists($ARGZ{'enable'}) && defined($ARGZ{'enable'}) ) ? 1 : 0;
+	my $expired = ( exists($ARGZ{'expired'}) && defined($ARGZ{'expired'}) && $ARGZ{'expired'} =~ /^0$/ ) ? 0 : 1;
 	my $dbh = $self->_dbh();
-	my $strQuery = "SELECT e.*, UNIX_TIMESTAMP(create_date) AS ts_create_date, ".
+	my $strQuery = "SELECT e.*, UNIX_TIMESTAMP(e.create_date) AS ts_create_date, ".
+								 "UNIX_TIMESTAMP(DATE_ADD(e.create_date,INTERVAL e.expire_days DAY)) AS ts_expire_date, ".
                  "r.name AS rule_name, r.exp AS rule_exp, r.type AS rule_type ".
                  "FROM exclude e,rules r ".
                  "WHERE  e.rule_id = r.id ";
 	$strQuery .= "AND e.enable=1 " if ( $enable) ;
+	$strQuery .= "AND (e.expire_days = 0 OR DATE_ADD(e.create_date, INTERVAL e.expire_days DAY) > NOW()) " if ( !$expired );
 	$strQuery .= "ORDER BY e.rorder ASC";
 	eval {
 		my $sth = $dbh->prepare($strQuery);

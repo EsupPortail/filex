@@ -12,13 +12,14 @@
 	<div class="logo">
 		<h1><span>FileX</span> [ <TMPL_VAR NAME="FILEX_USER_NAME"> ]</h1>
 	</div>
-	<p class="gobackfilex"><a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
 	<TMPL_IF NAME="FILEX_HAS_ERROR">
 	<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>
 	<TMPL_ELSE>
 	<div class="admenu">
-		<form method="post" action="<TMPL_VAR NAME='FILEX_FORM_MENU_ACTION'>">
-			<p>Actions : <select name="<TMPL_VAR NAME='FILEX_FORM_SELECT_FIELD_NAME'>" id="Select">
+	<p class="gobackfilex"><a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
+		<form method="post" action="<TMPL_VAR NAME='FILEX_FORM_MENU_ACTION'>" name="forSelAction">
+			<p><label for="idmnact">Actions : </label> 
+				<select class="Field" name="<TMPL_VAR NAME='FILEX_FORM_SELECT_FIELD_NAME'>" id="idmnact" onchange="javascript:document.forms['forSelAction'].submit();">
 				<TMPL_LOOP NAME="FILEX_ACTION_MENU_LOOP">
 				<option <TMPL_IF NAME="FILEX_FORM_MENU_OPT_SELECTED">selected</TMPL_IF> value="<TMPL_VAR NAME='FILEX_FORM_MENU_OPT_VALUE'>"><TMPL_VAR NAME='FILEX_FORM_MENU_OPT_LABEL'></option>
 				</TMPL_LOOP>
@@ -28,8 +29,8 @@
 	<hr>
 	<div class="main">
 	<TMPL_VAR NAME="FILEX_MAIN_CONTENT">
-	</div>
 	<p class="gobackfilex"><a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
+	</div>
 	<hr>
 	</TMPL_IF>
 	<div class="footer">

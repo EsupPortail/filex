@@ -14,6 +14,7 @@ use constant USER_ID_FIELD_NAME=>"id";
 use constant STATE_FIELD_NAME=>"state";
 
 use FILEX::DB::Admin::UsrAdmin;
+use FILEX::Tools::Utils qw(toHtml);
 
 sub process {
 	my $self = shift;
@@ -67,7 +68,7 @@ sub process {
 	}
 	if ( $b_err ) {
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->toHtml($errstr));
+		$T->param(FILEX_ERROR=>toHtml($errstr));
 	}
 	my (@results,@loop,$delurl,$stateurl,$state);
 	$DB->listUsers(\@results);
@@ -78,11 +79,11 @@ sub process {
 			$stateurl = $self->genActivateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 );
 			push(@loop, {
 					FILEX_ADMIN_UID=>$results[$i]->{'uid'},
-					FILEX_ADMIN_INFOS=>$S->toHtml($S->getUserRealName($results[$i]->{'uid'})),
+					FILEX_ADMIN_INFOS=>toHtml($S->getUserRealName($results[$i]->{'uid'})),
 					FILEX_ADMIN_MAIL=>$S->getMail($results[$i]->{'uid'}),
 					FILEX_ADMIN_STATE=>( $state ) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable"),
-					FILEX_REMOVE_URL=>$S->toHtml($delurl),
-					FILEX_STATE_URL=>$S->toHtml($stateurl)
+					FILEX_REMOVE_URL=>toHtml($delurl),
+					FILEX_STATE_URL=>toHtml($stateurl)
 			});
 			$T->param(FILEX_HAS_ADMINS=>1);
 			$T->param(FILEX_ADMINS_LOOP=>\@loop);

@@ -19,7 +19,7 @@ use constant BB_ID_FIELD_NAME=>"bb_id";
 use constant BB_STATE_FIELD_NAME=>"bb_state";
 
 use FILEX::DB::Admin::BigBrother;
-use FILEX::Tools::Utils qw(tsToLocal hrSize unit2idx round unit2byte unitLabel unitLength);
+use FILEX::Tools::Utils qw(tsToLocal hrSize unit2idx round unit2byte unitLabel unitLength toHtml);
 
 sub process {
 	my $self = shift;
@@ -130,7 +130,7 @@ sub process {
 	$T->param(FILEX_SUB_ACTION_ID=>$form_sub_action);
 	if ( $b_err ) { 
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->toHtml($errstr));
+		$T->param(FILEX_ERROR=>toHtml($errstr));
 	}
 	# already defined rules
 	my (@results,@exclude_loop,$state,$hrsize,$hrunit);
@@ -140,14 +140,14 @@ sub process {
 			my $record = {};
 			$record->{'FILEX_BB_DATE'} = tsToLocal($results[$i]->{'ts_create_date'});
 			$record->{'FILEX_BB_ORDER'} = $results[$i]->{'norder'};
-			$record->{'FILEX_BB_DESCRIPTION'} = $S->toHtml($results[$i]->{'description'}||'');
+			$record->{'FILEX_BB_DESCRIPTION'} = toHtml($results[$i]->{'description'}||'');
 			$record->{'FILEX_BB_STATE'} = ($results[$i]->{'enable'} == 1) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable");
-			$record->{'FILEX_BB_RULE'} = $S->toHtml($results[$i]->{'rule_name'});
-			$record->{'FILEX_BB_MAIL'} = $S->toHtml($results[$i]->{'mail'});
+			$record->{'FILEX_BB_RULE'} = toHtml($results[$i]->{'rule_name'});
+			$record->{'FILEX_BB_MAIL'} = toHtml($results[$i]->{'mail'});
 			$state = $results[$i]->{'enable'};
-			$record->{'FILEX_STATE_URL'} = $S->toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
-			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
-			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
+			$record->{'FILEX_STATE_URL'} = toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
+			$record->{'FILEX_REMOVE_URL'} = toHtml($self->genRemoveUrl($results[$i]->{'id'}));
+			$record->{'FILEX_MODIFY_URL'} = toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@exclude_loop,$record);
 		}
 		$T->param(FILEX_HAS_BB=>1);

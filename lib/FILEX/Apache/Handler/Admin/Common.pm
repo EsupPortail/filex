@@ -11,7 +11,7 @@ use Exporter;
 
 use FILEX::DB::Upload;
 use FILEX::DB::Admin::Helpers;
-use FILEX::Tools::Utils qw(tsToGmt hrSize tsToLocal);
+use FILEX::Tools::Utils qw(tsToGmt hrSize tsToLocal toHtml);
 # for rules creation
 use FILEX::DB::Admin::Rules;
 use FILEX::DB::Admin::Exclude;
@@ -55,10 +55,10 @@ sub doFileInfos {
 	#$T->param(FILE_ID_VALUE=>$file_id);
 	# go back
 	if ( exists($ARGZ{'go_back'}) && defined($ARGZ{'go_back'}) ) {
-		$T->param(GO_BACK_URL=>$S->toHtml($ARGZ{'go_back'}));
+		$T->param(GO_BACK_URL=>toHtml($ARGZ{'go_back'}));
 	}
 	# user name
-	$T->param(FILEX_USER_NAME=>$S->toHtml($S->getUser()->getRealName()));
+	$T->param(FILEX_USER_NAME=>toHtml($S->getUser()->getRealName()));
 	$T->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	# form url
 	#$T->param(FILEX_FORM_ACTION_URL=>$S->toHtml($ARGZ{'url'}));
@@ -134,7 +134,7 @@ sub doFileInfos {
 			# disable owner
 			my $disableOwner = $S->apreq->param(FIELD_DISABLE_USER_NAME);
 			if ( defined($disableOwner) && $disableOwner =~ /^1$/ ) {
-				if ( ! autoExclude($upload->getOwner()) ) {
+				if ( ! autoExclude($upload->getOwner(),$S) ) {
 					warn(__PACKAGE__,"=> unable to create exclude rule for : ",$upload->getOwner());
 				}
 			}
@@ -205,11 +205,11 @@ sub doFileInfos {
 	# fill
 	$T->param(FILEX_RENEW_COUNT=>$upload->getRenewCount());
 	$T->param(FILEX_MAX_RENEW_COUNT=>$S->config->getRenewFileExpire());
-	$T->param(FILEX_FILE_NAME=>$S->toHtml($upload->getRealName()));
+	$T->param(FILEX_FILE_NAME=>toHtml($upload->getRealName()));
 	my ($fsz,$funit) = hrSize($upload->getFileSize());
 	$T->param(FILEX_FILE_SIZE=>$fsz." ".$S->i18n->localizeToHtml("$funit"));
-	$T->param(FILEX_FILE_DATE=>$S->toHtml(tsToLocal($upload->getUploadDate())));
-	$T->param(FILEX_FILE_EXPIRE=>$S->toHtml(tsToLocal($upload->getExpireDate())));
+	$T->param(FILEX_FILE_DATE=>toHtml(tsToLocal($upload->getUploadDate())));
+	$T->param(FILEX_FILE_EXPIRE=>toHtml(tsToLocal($upload->getExpireDate())));
 	$T->param(FILEX_FILE_COUNT=>$upload->getDownloadCount());
 
 	#
@@ -302,7 +302,7 @@ sub doFileInfos {
 	#
 	# get download address
 	#
-	$T->param(FILEX_GET_ADDRESS=>$S->toHtml(genGetUrl($S,$upload->getFileName()))) if ($bIsExpired != 1);
+	$T->param(FILEX_GET_ADDRESS=>toHtml(genGetUrl($S,$upload->getFileName()))) if ($bIsExpired != 1);
 
 	# Administrative mode display
 	if ( $mode == ADMIN_MODE ) {
@@ -325,16 +325,16 @@ sub doFileInfos {
 		# user agent
 		my $user_agent = $upload->getUserAgent();
 		if ( defined($user_agent) ) {
-			$T->param(FILEX_USER_AGENT=>$S->toHtml($user_agent));
+			$T->param(FILEX_USER_AGENT=>toHtml($user_agent));
 		} else {
 			$T->param(FILEX_USER_AGENT=>$S->i18n->localizeToHtml("unknown"));
 		}
 		# upload address
-		$T->param(FILEX_UPLOAD_ADDRESS=>$S->toHtml($upload->getIpAddress()));
+		$T->param(FILEX_UPLOAD_ADDRESS=>toHtml($upload->getIpAddress()));
 		# if file has not expired
 		if ($bIsExpired != 1) {
 			# administrative download address
-			$T->param(FILEX_ADMIN_GET_ADDRESS=>$S->toHtml(genGetUrl($S,$upload->getFileName(),1)));
+			$T->param(FILEX_ADMIN_GET_ADDRESS=>toHtml(genGetUrl($S,$upload->getFileName(),1)));
 			# enable / disable
 			# form parameter name
 			$T->param(FILEX_FORM_STATE_NAME=>FIELD_STATE_NAME);
@@ -359,7 +359,7 @@ sub doFileInfos {
 	my $bValidateButton = ( $mode == ADMIN_MODE || $bIsExpired != 1 ) ? 1 : 0;
 	if ( $bValidateButton == 1 ) {
 		$T->param(FILEX_WITH_SUBMIT=>1);
-		$T->param(FILEX_FORM_ACTION_URL=>$S->toHtml($ARGZ{'url'}));
+		$T->param(FILEX_FORM_ACTION_URL=>toHtml($ARGZ{'url'}));
 		$T->param(FILEX_FORM_SUBMIT_NAME=>FIELD_SUBMIT_NAME);
 		$T->param(SUB_ACTION_FIELD_NAME=>$ARGZ{'sub_action_field_name'});
 		$T->param(SUB_ACTION_VALUE=>$ARGZ{'sub_action_value'});
@@ -384,16 +384,16 @@ sub doFileInfos {
 			$dl_record->{'FILEX_DOWNLOAD_ADMIN_MODE'} = 1;
 			if ( $log[$l]->{'use_proxy'} == 1 ) {
 				$dl_record->{'FILEX_DOWNLOAD_USE_PROXY'} = 1;
-				$dl_record->{'FILEX_DOWNLOAD_PROXY_INFOS'} = $S->toHtml($log[$l]->{'proxy_infos'});
+				$dl_record->{'FILEX_DOWNLOAD_PROXY_INFOS'} = toHtml($log[$l]->{'proxy_infos'});
 			}
 			if ( defined($log[$l]->{'user_agent'}) && length($log[$l]->{'user_agent'}) > 0 ) {
-				$dl_record->{'FILEX_DOWNLOAD_USER_AGENT'} = $S->toHtml($log[$l]->{'user_agent'});
+				$dl_record->{'FILEX_DOWNLOAD_USER_AGENT'} = toHtml($log[$l]->{'user_agent'});
 			} else {
 				$dl_record->{'FILEX_DOWNLOAD_USER_AGENT'} = $S->i18n->localizeToHtml("unknown");
 			}
 		}
-		$dl_record->{'FILEX_DOWNLOAD_ADDRESS'} = $S->toHtml($log[$l]->{'ip_address'});
-		$dl_record->{'FILEX_DOWNLOAD_DATE'} = $S->toHtml(tsToLocal($log[$l]->{'ts_date'}));
+		$dl_record->{'FILEX_DOWNLOAD_ADDRESS'} = toHtml($log[$l]->{'ip_address'});
+		$dl_record->{'FILEX_DOWNLOAD_DATE'} = toHtml(tsToLocal($log[$l]->{'ts_date'}));
 		$dl_record->{'FILEX_DOWNLOAD_STATE'} = ( $log[$l]->{'canceled'} ) ? $S->i18n->localizeToHtml("yes") : $S->i18n->localizeToHtml("no");
 		push(@download_loop,$dl_record);
 		$T->param(FILEX_DOWNLOAD_LOOP=>\@download_loop);
@@ -420,6 +420,7 @@ sub genGetUrl {
 # return 1 or undef on error
 sub autoExclude {
 	my $uid = shift;
+	my $system = shift;
 	return undef && warn(__PACKAGE__,"autoExclude : Require a user id !") if !defined($uid); 
 	# create the Rule
 	my $rule = eval { FILEX::DB::Admin::Rules->new(); };
@@ -466,9 +467,16 @@ sub autoExclude {
 			return undef;
 		}
 	}
+	my $expire_days = $system->config->getExcludeExpireDays();
 	# add this new exclude rule only if this rule is not already linked
 	if ( $excludeExists == -1 ) {
-		if ( !$exclude->add(rule_id=>$rule_id,enable=>1,description=>"AUTO created exclude rule for : $uid") ) {
+		my %args = (
+			rule_id=>$rule_id,
+			enable=>1,
+			description=>"AUTO created exclude rule for : $uid"
+		);
+		$args{'expire_days'} = $expire_days if ( $expire_days );
+		if ( !$exclude->add(%args) ) {
 			warn(__PACKAGE__,"=> autoExclude : unable to create Exclude rule : ",$exclude->getLastErrorString());
 			if ( $bIsNewRule ) { # delete only if a new rule
 				warn(__PACKAGE__,"=> autoExclude : removing last create rule : ",$rule_id);
@@ -478,7 +486,25 @@ sub autoExclude {
 		}
 	} else {
 		warn(__PACKAGE__,"=> autoExclude : the rule [ $rule_id ] is already linked [ $excludeExists ] ... skipping");
+		return 1;
 	}
+	# here we can send email to the excluded user
+	return 1 if (!$system->config->needEmailNotification() || !$system->config->getOnExcludeNotify());
+
+	# get email for the given uid
+	my $email = $system->getMail($uid);
+	warn(__PACKAGE__,"=> autoExclude : unable to retrieve mail for [ $uid ] skipping sending notification !") && return 1 if ( !$email );
+	# prepare message
+	my $t_msg = $system->getTemplate(name=>"mail_excluded");
+	warn(__PACKAGE__,"=> autoExclude : unable to retrieve template [ mail_excluded ] skipping !") && return 1 if ( !$t_msg );
+	$t_msg->param(EXCLUDE_DAYS=>$expire_days) if ($expire_days);
+	$t_msg->param(FILEX_SYSTEM_EMAIL=>$system->config->getSystemEmail());
+	# send message
+	$system->sendMail(from=>$system->config->getSystemEmail(),
+		to=>$email,
+		content=>$t_msg->output(),
+		subject=>$system->i18n->localize("mail excluded subject"),
+		charset=>"ISO-8859-1");
 	return 1;
 }
 

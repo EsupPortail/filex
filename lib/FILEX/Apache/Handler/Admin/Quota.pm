@@ -22,7 +22,7 @@ use constant QUOTA_ID_FIELD_NAME=>"quota_id";
 use constant QUOTA_STATE_FIELD_NAME=>"quota_state";
 
 use FILEX::DB::Admin::Quota;
-use FILEX::Tools::Utils qw(tsToLocal hrSize unit2idx round unit2byte unitLabel unitLength);
+use FILEX::Tools::Utils qw(tsToLocal hrSize unit2idx round unit2byte unitLabel unitLength toHtml);
 
 sub process {
 	my $self = shift;
@@ -176,7 +176,7 @@ sub process {
 	$T->param(FILEX_SUB_ACTION_ID=>$form_sub_action);
 	if ( $b_err ) { 
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->toHtml($errstr));
+		$T->param(FILEX_ERROR=>toHtml($errstr));
 	}
 	# already defined rules
 	my (@results,@exclude_loop,$state,$hrsize,$hrunit);
@@ -186,17 +186,17 @@ sub process {
 			my $record = {};
 			$record->{'FILEX_QUOTA_DATE'} = tsToLocal($results[$i]->{'ts_create_date'});
 			$record->{'FILEX_QUOTA_ORDER'} = $results[$i]->{'qorder'};
-			$record->{'FILEX_QUOTA_DESCRIPTION'} = $S->toHtml($results[$i]->{'description'}||'');
+			$record->{'FILEX_QUOTA_DESCRIPTION'} = toHtml($results[$i]->{'description'}||'');
 			$record->{'FILEX_QUOTA_STATE'} = ($results[$i]->{'enable'} == 1) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable");
-			$record->{'FILEX_QUOTA_RULE'} = $S->toHtml($results[$i]->{'rule_name'});
+			$record->{'FILEX_QUOTA_RULE'} = toHtml($results[$i]->{'rule_name'});
 			($hrsize,$hrunit) = hrSize($results[$i]->{'max_file_size'});
 			$record->{'FILEX_QUOTA_MAX_FILE_SIZE'} = "$hrsize ".$S->i18n->localizeToHtml($hrunit);
 			($hrsize,$hrunit) = hrSize($results[$i]->{'max_used_space'});
 			$record->{'FILEX_QUOTA_MAX_USED_SPACE'} = "$hrsize ".$S->i18n->localizeToHtml($hrunit);
 			$state = $results[$i]->{'enable'};
-			$record->{'FILEX_STATE_URL'} = $S->toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
-			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
-			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
+			$record->{'FILEX_STATE_URL'} = toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
+			$record->{'FILEX_REMOVE_URL'} = toHtml($self->genRemoveUrl($results[$i]->{'id'}));
+			$record->{'FILEX_MODIFY_URL'} = toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@exclude_loop,$record);
 		}
 		$T->param(FILEX_HAS_QUOTA=>1);

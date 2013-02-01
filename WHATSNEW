@@ -1,3 +1,17 @@
+v1.7
+1- Fonctionne avec Apache 2
+2- nouveau module de gestion des sessions
+2.1- Mise en cache des paramètres de session LDAP de l'utilisateur => moins de requêtes
+2.2- nouvelle directive de configuration dans FILEX.ini : 
+	=> SessionCacheTimeout : durée de vie des données dans le cache de session (en seconde)
+3- envois automatique d'un message lors de l'exclusion d'un utilisateur (templates/mail_excluded_fr.tmpl)
+3.2- nouvelle directive de configuration dans FILEX.ini :
+	=> OnExcludeNotify = [0 | 1] si 1 alors un message sera envoyé à l'utilisateur 
+	   lors de son exclusion (seulement à partir du module de propriété d'un fichier)
+	=> ExcludeExpireDays : nombre de jours par défaut pour la validité d'une exclusion 
+	   lors de la création automatique d'une exclusion. Si 0 alors l'exclusion sera valide indéfiniment
+4 - divers améliorations dans l'interface grace à la nouvelle gestion de session
+
 v1.6b
 1- correction du module d'affichage des propriétés d'un fichier en mode administrateur :
 	si le fichier était désactivé, alors il n'était pas possible de valider le formulaire

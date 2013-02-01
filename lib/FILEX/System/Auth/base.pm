@@ -14,8 +14,7 @@ sub new {
 		_config_ => undef,
 		_error_ => undef,
 	};
-	$self->{'_config_'} = FILEX::System::Config->new();
-	warn(__PACKAGE__,"-> Unable to load config !") && return undef if !defined($self->{'_config_'});
+	$self->{'_config_'} = FILEX::System::Config->instance();
 	bless($self,$class);
 	return $self;
 }

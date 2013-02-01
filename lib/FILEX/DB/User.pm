@@ -75,6 +75,27 @@ sub getActiveCount {
 	return $res;
 }
 
+# check if user is admin
+sub isAdmin {
+	my $self = shift;
+	my $uid = shift;
+	return undef if !$uid;
+	my $dbh = $self->_dbh();
+	my $strQuery = "SELECT COUNT(1) FROM usr_admin WHERE uid = ".$self->_dbh->quote($uid)." AND enable = 1";
+	my ($res);
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$res = $sth->fetchrow();
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
+		return undef;
+	}
+	return $res;
+}
+
 1;
 =pod
 

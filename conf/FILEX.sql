@@ -176,6 +176,7 @@ CREATE TABLE exclude (
 	enable BOOL DEFAULT 1,
 	rorder INT DEFAULT 1,
   create_date DATETIME NOT NULL,
+	expire_days INT UNSIGNED DEFAULT 0,
 	PRIMARY KEY (id),
 	INDEX idx_rule_id (rule_id),
 	CONSTRAINT fk_rule_exclude_id FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE

@@ -17,9 +17,10 @@ use constant EXCLUDE_RULE_RORDER_FIELD_NAME=>"exclude_rorder";
 use constant EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME=>"exclude_id";
 use constant EXCLUDE_RULE_EXCLUDE_STATE_FIELD_NAME=>"exclude_state";
 use constant EXCLUDE_RULE_REASON_FIELD_NAME=>"exclude_rule_reason";
+use constant EXCLUDE_RULE_EXPIRE_DAYS_FIELD_NAME=>"expire_days";
 
 use FILEX::DB::Admin::Exclude;
-use FILEX::Tools::Utils qw(tsToLocal);
+use FILEX::Tools::Utils qw(tsToLocal toHtml);
 
 sub process {
 	my $self = shift;
@@ -33,6 +34,7 @@ sub process {
 	$T->param(FILEX_EXCLUDE_RULE_RORDER_FIELD_NAME=>EXCLUDE_RULE_RORDER_FIELD_NAME);
 	$T->param(FILEX_EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME=>EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME);
 	$T->param(FILEX_EXCLUDE_RULE_REASON_FIELD_NAME=>EXCLUDE_RULE_REASON_FIELD_NAME);
+	$T->param(FILEX_EXCLUDE_RULE_EXPIRE_DAYS_FIELD_NAME=>EXCLUDE_RULE_EXPIRE_DAYS_FIELD_NAME);
 	$T->param(FILEX_MAIN_ACTION_FIELD_NAME=>$self->getDispatchName());
 	$T->param(FILEX_MAIN_ACTION_ID=>$self->getActionId());
 	$T->param(FILEX_SUB_ACTION_FIELD_NAME=>SUB_ACTION_FIELD_NAME);
@@ -54,7 +56,8 @@ sub process {
 			if ( ! $exclude_DB->add(description=>$S->apreq->param(EXCLUDE_RULE_DESCRIPTION_FIELD_NAME),
 				reason=>$S->apreq->param(EXCLUDE_RULE_REASON_FIELD_NAME),
 				rule_id=>$S->apreq->param(EXCLUDE_RULE_ID_FIELD_NAME),
-				rorder=>$S->apreq->param(EXCLUDE_RULE_RORDER_FIELD_NAME)) ) {
+				rorder=>$S->apreq->param(EXCLUDE_RULE_RORDER_FIELD_NAME),
+				expire_days=>$S->apreq->param(EXCLUDE_RULE_EXPIRE_DAYS_FIELD_NAME)) ) {
 				$errstr = ($exclude_DB->getLastErrorCode() == 1062) ? $S->i18n->localize("rule already exists") : $exclude_DB->getLastErrorString();
 				$b_err = 1;
 			}
@@ -92,6 +95,7 @@ sub process {
 				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_ID=>$hid);
 				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_RORDER=>$hexclude{'rorder'});
 				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_REASON=>$hexclude{'reason'});
+				$T->param(FILEX_EXCLUDE_FORM_EXPIRE_DAYS=>$hexclude{'expire_days'});
 				$selected_rule = $hexclude{'rule_id'};
 				$form_sub_action = SA_MODIFY;
 			}
@@ -103,12 +107,15 @@ sub process {
 					description=>$S->apreq->param(EXCLUDE_RULE_DESCRIPTION_FIELD_NAME),
 					reason=>$S->apreq->param(EXCLUDE_RULE_REASON_FIELD_NAME),
 					rule_id=>$S->apreq->param(EXCLUDE_RULE_ID_FIELD_NAME),
-					rorder=>$S->apreq->param(EXCLUDE_RULE_RORDER_FIELD_NAME)) ) {
+					rorder=>$S->apreq->param(EXCLUDE_RULE_RORDER_FIELD_NAME),
+					expire_days=>$S->apreq->param(EXCLUDE_RULE_EXPIRE_DAYS_FIELD_NAME)) ) {
 				$b_err = 1;
 				$errstr = ( $exclude_DB->getLastErrorCode() == 1062 ) ? $S->i18n->localize("rule already exists") : $exclude_DB->getLastErrorString();
 			}
 			last SWITCH;
 		}
+		# no such action
+		$T->param(FILEX_EXCLUDE_FORM_EXPIRE_DAYS=>$S->config->getExcludeExpireDays());
 	}
 	$form_sub_action = SA_ADD if (!defined($form_sub_action));
 	#
@@ -129,7 +136,7 @@ sub process {
 	$T->param(FILEX_SUB_ACTION_ID=>$form_sub_action);
 	if ( $b_err ) { 
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->toHtml($errstr));
+		$T->param(FILEX_ERROR=>toHtml($errstr));
 	}
 	# already defined rules
 	my (@results,@exclude_loop,$state);
@@ -138,14 +145,18 @@ sub process {
 		for (my $i=0; $i<=$#results; $i++) {
 			my $record = {};
 			$record->{'FILEX_EXCLUDE_DATE'} = tsToLocal($results[$i]->{'ts_create_date'});
+			$record->{'FILEX_EXCLUDE_EXPIRE_DAYS'} = $results[$i]->{'expire_days'};
+			my $now = time();
+			my $exclude_expired = (($results[$i]->{'ts_expire_date'} != $results[$i]->{'ts_create_date'})&&($results[$i]->{'ts_expire_date'}<$now)) ? 1 : 0;
+			$record->{'FILEX_EXCLUDE_EXPIRED'} = ($exclude_expired) ? $S->i18n->localizeToHtml("yes") : $S->i18n->localizeToHtml("no");
 			$record->{'FILEX_EXCLUDE_ORDER'} = $results[$i]->{'rorder'};
-			$record->{'FILEX_EXCLUDE_DESCRIPTION'} = $S->toHtml($results[$i]->{'description'}||'');
+			$record->{'FILEX_EXCLUDE_DESCRIPTION'} = toHtml($results[$i]->{'description'}||'');
 			$record->{'FILEX_EXCLUDE_STATE'} = ($results[$i]->{'enable'} == 1) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable");
-			$record->{'FILEX_EXCLUDE_RULE'} = $S->toHtml($results[$i]->{'rule_name'});
+			$record->{'FILEX_EXCLUDE_RULE'} = toHtml($results[$i]->{'rule_name'});
 			$state = $results[$i]->{'enable'};
-			$record->{'FILEX_STATE_URL'} = $S->toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
-			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
-			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
+			$record->{'FILEX_STATE_URL'} = toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
+			$record->{'FILEX_REMOVE_URL'} = toHtml($self->genRemoveUrl($results[$i]->{'id'}));
+			$record->{'FILEX_MODIFY_URL'} = toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@exclude_loop,$record);
 		}
 		$T->param(FILEX_HAS_EXCLUDE=>1);

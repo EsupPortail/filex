@@ -20,7 +20,7 @@ sub new {
 		_ldap_ => undef,
 		_quota_ => undef,
 	};
-	$self->{'_config_'} = FILEX::System::Config->new();
+	$self->{'_config_'} = FILEX::System::Config->instance();
 	# ldap
 	if ( exists($ARGZ{'ldap'}) && ref($ARGZ{'ldap'}) eq "FILEX::System::LDAP" ) {
 		$self->{'_ldap_'} = $ARGZ{'ldap'};

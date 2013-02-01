@@ -49,14 +49,14 @@
 			<h2><label for="upload">Veuillez s&eacute;lectionner le document &agrave; d&eacute;poser</label></h2>
 			<TMPL_IF NAME="FILEX_HAS_MAX_FILE_SIZE"><p>Taille de fichier maximale : <TMPL_VAR NAME="FILEX_MAX_FILE_SIZE"></TMPL_IF></p>
 			<p><label for="ctl01">Expiration du fichier : </label>
-			<select name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_DAY_KEEP_NAME'>" id="ctl01">
+			<select name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_DAY_KEEP_NAME'>" id="ctl01" class="Field">
 				<TMPL_LOOP NAME="FILEX_EXPIRE_LOOP"><option value="<TMPL_VAR NAME='FILEX_EXPIRE_VALUE'>" <TMPL_IF NAME="FILEX_EXPIRE_SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="FILEX_EXPIRE_VALUE"></option></TMPL_LOOP>
 			</select> <label for="ctl01">Jours</label></p>
-			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_DELIVERY_NAME'>" value="1" id="ctl02"><label for="ctl02">Recevoir un avis de r&eacute;ception &agrave; chaque t&eacute;l&eacute;chargement</label></p>
-			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_RESUME_NAME'>" value="1" id="ctl03"><label for="ctl03">Recevoir un r&eacute;capitulatif des t&eacute;l&eacute;chargement lorsque le fichier aura expir&eacute;</label></p>
-			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_NEED_PASSWORD_NAME'>" value="1" id="ctl04"><label for="ctl04">Utiliser un mot de passe pour le t&eacute;l&eacute;chargement :</label> <input class="Field" type="password" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_PASSWORD_NAME'>" size="15" maxlength="<TMPL_VAR NAME='FILEX_MAX_PASSWORD_LENGTH'>"><br>
+			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_DELIVERY_NAME'>" class="Field" value="1" id="ctl02"><label for="ctl02">Recevoir un avis de r&eacute;ception &agrave; chaque t&eacute;l&eacute;chargement</label></p>
+			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_RESUME_NAME'>" class="Field" value="1" id="ctl03"><label for="ctl03">Recevoir un r&eacute;capitulatif des t&eacute;l&eacute;chargement lorsque le fichier aura expir&eacute;</label></p>
+			<p><input type="checkbox" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_NEED_PASSWORD_NAME'>" class="Field" value="1" id="ctl04"><label for="ctl04">Utiliser un mot de passe pour le t&eacute;l&eacute;chargement :</label> <input class="Field" type="password" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_PASSWORD_NAME'>" size="15" maxlength="<TMPL_VAR NAME='FILEX_MAX_PASSWORD_LENGTH'>"><br>
 <span class="notes">Le mot de passe doit avoir une longueur comprise entre <strong><TMPL_VAR NAME="FILEX_MIN_PASSWORD_LENGTH"></strong> et <strong><TMPL_VAR NAME="FILEX_MAX_PASSWORD_LENGTH"></strong> caract&egrave;res</span></p>
-			<input id="upload" type="file" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_UPLOAD_NAME'>"> 
+			<input id="upload" type="file" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_UPLOAD_NAME'>" class="Field"> 
 			<input type="hidden" name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_OLD_DLID_NAME'>" value="<TMPL_VAR NAME='FILEX_OLD_DLID'>">
 			<input class="Submit" type="submit" value="Envoyer">
 		</form>

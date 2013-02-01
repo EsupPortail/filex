@@ -1,38 +1,33 @@
 package FILEX::Apache::Handler::Admin::CurrentFiles;
 use strict;
-use vars qw(@ISA %ORDER_FIELDS);
+use vars qw(@ISA);
 use FILEX::Apache::Handler::Admin::base;
 @ISA = qw(FILEX::Apache::Handler::Admin::base);
 
 use constant SUB_FILE_INFO=>1;
-use constant SUB_SORT=>2;
-use constant SUB_SORT_BY=>"by";
-use constant SUB_SORT_ORDER=>"order";
 use constant SUB_ACTION_FIELD_NAME=>"sa";
 use constant FILE_ID_FIELD_NAME=>"id";
 
+use constant SORT_VALIDATE_FIELD_NAME => "go";
+use constant SORT_FIELD_NAME => "sort";
+use constant SORT_O_FIELD_NAME => "order";
+
 use constant MAX_NAME_SIZE=>30;
 
-use FILEX::DB::Download;
-use FILEX::Tools::Utils qw(tsToLocal hrSize);
+use FILEX::DB::Admin::Search qw(:J_OP :T_OP :S_FI :S_OR);
+use FILEX::Tools::Utils qw(tsToLocal hrSize toHtml);
 use FILEX::Apache::Handler::Admin::Common qw(doFileInfos);
 
-%ORDER_FIELDS = (
-	fileowner => "owner",
-	filename => "real_name",
-	filesize => "file_size",
-	uploaddate => "upload_date",
-	expiredate => "expire_date",
-	diskname => "file_name",
-	dlcount => "download_count"
-);
+my @SORT_FIELDS = (S_F_NAME,S_F_OWNER,S_F_SIZE,S_F_UDATE,S_F_EDATE,S_F_COUNT,S_F_ENABLE);
+my @SORT_ORDER = (S_O_ASC,S_O_DESC);
 
 sub process {
 	my $self = shift;
 	my $S = $self->sys();
+	my $session = $S->getUser()->getSession();
 	my $T = $S->getTemplate(name=>"admin_current_files");
 	my ($order_by, $order);
-	my $DB = eval { FILEX::DB::Download->new(); };
+	my $DB = eval { FILEX::DB::Admin::Search->new(); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
 		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
@@ -52,22 +47,54 @@ sub process {
 			return ($inT,1);
 			last SWITCH;
 		}
-		if ( $sub_action == SUB_SORT ) {
-			$order_by = $S->apreq->param(SUB_SORT_BY) || "no sort";
-			$order = $S->apreq->param(SUB_SORT_ORDER);
-			$order = ( defined($order) ) ? $order : 0;
-			last SWITCH;
-		}
-		$order_by = "no sort";
-		$order = 0;
 	}
 
-	my (@results,%cfParams);
-	if ( defined($order_by) && grep($order_by eq $_,keys(%ORDER_FIELDS)) ) {
-		$cfParams{'orderby'} = $ORDER_FIELDS{$order_by};
-		$cfParams{'order'} = $order;
+	my $sort_params;
+	if ( defined($S->apreq->param(SORT_VALIDATE_FIELD_NAME)) ) {
+		$sort_params = {};
+		$sort_params->{sort_value} = $S->apreq->param(SORT_FIELD_NAME); 
+		$sort_params->{sort_order} = $S->apreq->param(SORT_O_FIELD_NAME);
+		# store to cache
+		$session->setParam("sort_params",$sort_params);
+	} else {
+		# get from cache
+		$sort_params = $session->getParam("sort_params");
+		if (!$sort_params || ref($sort_params) ne "HASH") {
+			$sort_params = {}; 
+			$sort_params->{sort_value} = S_F_UDATE;
+			$sort_params->{sort_order} = S_O_ASC;
+			$session->setParam("sort_params",$sort_params);
+		}
 	}
-	if ( !$DB->currentFiles(results=>\@results,%cfParams) ) {
+	# fill template
+	$T->param(FILEX_SORT_FORM_ACTION=>$S->getCurrentUrl());
+	$T->param(FILEX_MAIN_ACTION_FIELD_NAME=>$self->getDispatchName());
+	$T->param(FILEX_MAIN_ACTION_ID=>$self->getActionId());
+	$T->param(FILEX_SORT_VALIDATE_FIELD_NAME=>SORT_VALIDATE_FIELD_NAME);
+
+	# sort field
+	$T->param(FILEX_SORT_FIELD_NAME=>SORT_FIELD_NAME);
+	$T->param(FILEX_SORT_O_FIELD_NAME=>SORT_O_FIELD_NAME);
+	my ($sort_value,$sort_order,@query_opts);
+	$sort_value = $sort_params->{sort_value};
+	# check for errors
+	if ( !grep($sort_value eq $_,@SORT_FIELDS) ) {
+		$sort_value = S_F_UDATE;
+	} else {
+		push(@query_opts,("sort",$sort_value));
+	}
+	$sort_order = $sort_params->{sort_order};
+	# check for errors
+	if ( !grep($sort_order eq $_,@SORT_ORDER) ) {
+		$sort_order = S_O_ASC;
+	} else {
+		push(@query_opts,("order",$sort_order));
+	}
+	makeSortLoop($S,$T,"FILEX_SORT_LOOP",$sort_value);
+	makeSortOrderLoop($S,$T,"FILEX_SORT_O_LOOP",$sort_order);
+
+	my @results;
+	if ( !$DB->search(fields=>[{field=>"expire_date_now",test=>T_OP_GT,'join'=>J_OP_AND,value=>""}],results=>\@results,@query_opts) ) {
 		$T->param(FILEX_HAS_ERROR=>1);
 		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
 		return $T;
@@ -77,44 +104,31 @@ sub process {
 	$T->param(FILEX_FILE_COUNT=>$#results+1);
 	my ($hrsize, $hrunit) = hrSize($S->getUsedDiskSpace());
 	$T->param(FILEX_USED_DISK_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
-	$T->param(FILEX_SORT_NAME_ASC_URL=>$S->toHtml($self->genSortUrl("filename",0)));
-	$T->param(FILEX_SORT_NAME_DESC_URL=>$S->toHtml($self->genSortUrl("filename",1)));
-	$T->param(FILEX_SORT_OWNER_ASC_URL=>$S->toHtml($self->genSortUrl("fileowner",0)));
-	$T->param(FILEX_SORT_OWNER_DESC_URL=>$S->toHtml($self->genSortUrl("fileowner",1)));
-	$T->param(FILEX_SORT_SIZE_ASC_URL=>$S->toHtml($self->genSortUrl("filesize",0)));
-	$T->param(FILEX_SORT_SIZE_DESC_URL=>$S->toHtml($self->genSortUrl("filesize",1)));
-	$T->param(FILEX_SORT_UPLOAD_ASC_URL=>$S->toHtml($self->genSortUrl("uploaddate",0)));
-	$T->param(FILEX_SORT_UPLOAD_DESC_URL=>$S->toHtml($self->genSortUrl("uploaddate",1)));
-	$T->param(FILEX_SORT_EXPIRE_ASC_URL=>$S->toHtml($self->genSortUrl("expiredate",0)));
-	$T->param(FILEX_SORT_EXPIRE_DESC_URL=>$S->toHtml($self->genSortUrl("expiredate",1)));
-	$T->param(FILEX_SORT_DISK_ASC_URL=>$S->toHtml($self->genSortUrl("diskname",0)));
-	$T->param(FILEX_SORT_DISK_DESC_URL=>$S->toHtml($self->genSortUrl("diskname",1)));
-	$T->param(FILEX_SORT_DOWNLOAD_COUNT_ASC_URL=>$S->toHtml($self->genSortUrl("dlcount",0)));
-	$T->param(FILEX_SORT_DOWNLOAD_COUNT_DESC_URL=>$S->toHtml($self->genSortUrl("dlcount",1)));
 	my (@files_loop,$file_owner);
 	for ( my $i = 0; $i <= $#results; $i++ ) {
 		my $record = {};
 		($hrsize,$hrunit) = hrSize($results[$i]->{'file_size'});
-		$record->{'FILEX_FILE_INFO_URL'} = $S->toHtml($self->genFileInfoUrl($results[$i]->{'id'}));
+		$record->{'FILEX_FILE_INFO_URL'} = toHtml($self->genFileInfoUrl($results[$i]->{'id'}));
 		if ( length($results[$i]->{'real_name'}) > 0 ) {
 			if ( length($results[$i]->{'real_name'}) > MAX_NAME_SIZE ) {
-				$record->{'FILEX_FILE_NAME'} = $S->toHtml( substr($results[$i]->{'real_name'},0,MAX_NAME_SIZE-3)."..." );
+				$record->{'FILEX_FILE_NAME'} = toHtml( substr($results[$i]->{'real_name'},0,MAX_NAME_SIZE-3)."..." );
 			} else {
-				$record->{'FILEX_FILE_NAME'} = $S->toHtml($results[$i]->{'real_name'});
+				$record->{'FILEX_FILE_NAME'} = toHtml($results[$i]->{'real_name'});
 			}
 		} else {
 			$record->{'FILEX_FILE_NAME'} = "???";
 		}
-		$record->{'FILEX_LONG_FILE_NAME'} = $S->toHtml($results[$i]->{'real_name'});
+		$record->{'FILEX_LONG_FILE_NAME'} = toHtml($results[$i]->{'real_name'});
 		$record->{'FILEX_FILE_SIZE'} = "$hrsize ".$S->i18n->localizeToHtml($hrunit);
 		$file_owner = $results[$i]->{'owner'};
 		# BEGIN - INSA
 		#my $student_type = $self->isStudent($file_owner);
 		#$file_owner .= " ($student_type)" if defined($student_type);
 		# END - INSA
-		$record->{'FILEX_FILE_OWNER'} = $S->toHtml($file_owner);
-		$record->{'FILEX_UPLOAD_DATE'} = $S->toHtml(tsToLocal($results[$i]->{'ts_upload_date'}));
-		$record->{'FILEX_EXPIRE_DATE'} = $S->toHtml(tsToLocal($results[$i]->{'ts_expire_date'}));
+		$record->{'FILEX_FILE_OWNER'} = toHtml($file_owner);
+		$record->{'FILEX_ENABLE'} = $S->i18n->localizeToHtml($results[$i]->{'enable'}?"yes":"no");
+		$record->{'FILEX_UPLOAD_DATE'} = toHtml(tsToLocal($results[$i]->{'ts_upload_date'}));
+		$record->{'FILEX_EXPIRE_DATE'} = toHtml(tsToLocal($results[$i]->{'ts_expire_date'}));
 		$record->{'FILEX_DOWNLOAD_COUNT'} = $results[$i]->{'download_count'} || 0;
 		$record->{'FILEX_DISK_NAME'} = $results[$i]->{'file_name'};
 		push(@files_loop,$record);
@@ -154,19 +168,32 @@ sub genCurrentUrl {
 	return $url;
 }
 
-sub genSortUrl {
-	my $self = shift;
-	my $order_by = shift;
-	my $order = shift;
-	my $sub_action = SUB_ACTION_FIELD_NAME;
-	my $sub_sort_by = SUB_SORT_BY;
-	my $sub_sort_order = SUB_SORT_ORDER;
-	my $url = $self->sys->getCurrentUrl();
-	$url .= "?".$self->genQueryString(
-			$sub_action => SUB_SORT,
-			$sub_sort_by => $order_by,
-			$sub_sort_order => $order
-	);
+sub makeSortLoop {
+	my $system = shift;
+	my $template = shift;
+	my $loop_name = shift;
+	my $selected_value = shift;
+	my @loop;
+	for (my $i=0; $i <= $#SORT_FIELDS; $i++) {
+		my $s = { VALUE=>$SORT_FIELDS[$i], TEXT=>$system->i18n->localizeToHtml($SORT_FIELDS[$i]) };
+		$s->{'SELECTED'} = 1 if ( defined($selected_value) && ($SORT_FIELDS[$i] eq $selected_value) );
+		push(@loop,$s);
+	}
+	$template->param($loop_name=>\@loop);
+}
+
+sub makeSortOrderLoop {
+	my $system = shift;
+	my $template = shift;
+	my $loop_name = shift;
+	my $selected_value = shift;
+	my @loop;
+	for (my $i=0; $i <=$#SORT_ORDER; $i++) {
+		my $s = { VALUE=>$SORT_ORDER[$i], TEXT=>$system->i18n->localizeToHtml($SORT_ORDER[$i]) };
+		$s->{'SELECTED'} = 1 if ( defined($selected_value) && ($SORT_ORDER[$i] eq $selected_value) );
+		push(@loop,$s);
+	}
+	$template->param($loop_name=>\@loop);
 }
 
 1;

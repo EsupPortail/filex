@@ -234,5 +234,5 @@ div.manage p {
 }
 
 /* for forms */
-input.Field { padding: 0pt;  border: 1px solid #aaa; margin: 2pt; vertical-align: middle; }
+.Field { padding: 0pt;  border: 1px solid #aaa; margin: 2pt; vertical-align: middle; }
 input.Submit { padding: 0pt; margin: 2pt;  border: 1px solid #aaa; vertical-align: middle; }

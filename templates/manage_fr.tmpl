@@ -16,17 +16,34 @@
 	<TMPL_ELSE>
 	<div class="main">
 	<p class="gobackfilex"><a href="help.html" title="Aide" target="_blank">Aide</a> | <a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
+	<form method="post" action="<TMPL_VAR NAME='FILEX_MANAGE_FORM_ACTION'>">
+		<input type="checkbox" name="<TMPL_VAR NAME='FILEX_MANAGE_HIDE_EXPIRED_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_MANAGE_HIDE_EXPIRED_CHECKED">checked</TMPL_IF> id="idhideexp" class="Field"><label for="idhideexp">Cacher les fichiers expir&eacute;s</label><br>
+		<!-- sort -->
+		<label for="idsorton">Trier par : </label>
+		<select name="<TMPL_VAR NAME='FILEX_MANAGE_SORT_FIELD_NAME'>" id="idsorton" class="Field">
+		<TMPL_LOOP NAME="FILEX_MANAGE_SORT_LOOP">
+			<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+		</TMPL_LOOP>
+		</select>
+		<label for="idsortorder">Ordre : </label>
+		<select name="<TMPL_VAR NAME='FILEX_MANAGE_SORT_O_FIELD_NAME'>" id="idsortorder" class="Field">
+		<TMPL_LOOP NAME="FILEX_MANAGE_SORT_O_LOOP">
+			<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+		</TMPL_LOOP>
+		</select>
+		<input type="submit" name="<TMPL_VAR NAME='FILEX_MANAGE_VALIDATE_FIELD_NAME'>" value="Valider" class="Submit">
+	</form>
 	<TMPL_IF NAME="FILEX_HAS_FILES">
-	<p>Par d&eacute;faut, vos fichiers sont tri&eacute;s de mani&egrave;re d&eacute;croissante sur la date de d&eacute;pose.<br>Vous pouvez les trier selon diff&eacute;rent crit&egrave;res en cliquant sur <strong>+</strong> ou <strong>-</strong> dans les ent&ecirc;tes de colonnes.</p>
+	<p>Par d&eacute;faut, vos fichiers sont tri&eacute;s de mani&egrave;re d&eacute;croissante sur la date de d&eacute;pose.</p>
 	<table class="infos" cellpadding="0" cellspacing="0" width="100%" summary="Liste de vos fichiers">
 		<caption>Liste de vos fichiers (<TMPL_VAR NAME="FILEX_FILE_COUNT">), Espace Utilis&eacute; : <TMPL_VAR NAME="FILEX_USED_SPACE"><TMPL_IF NAME="FILEX_HAVE_QUOTA"> / <strong><TMPL_VAR NAME="FILEX_MAX_USED_SPACE"></strong></TMPL_IF></caption>
 		<thead>
 			<tr>
-				<th><a href="<TMPL_VAR NAME='FILEX_SORT_NAME_ASC_URL'>" title="Trier par Nom de fichier">+</a> Nom <a href="<TMPL_VAR NAME='FILEX_SORT_NAME_DESC_URL'>" title="Trier par Nom de fichier">-</a></th>
-				<th><a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_ASC_URL'>" title="Trier par Taille">+</a> Taille <a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_DESC_URL'>" title="Trier par Taille">-</a></th>
-				<th><a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_DATE_ASC_URL'>" title="Trier par date de D&eacute;pose">+</a> D&eacute;pos&eacute; le <a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_DATE_DESC_URL'>" title="Trier par date de D&eacute;pose">-</a></th>
-				<th><a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_DATE_ASC_URL'>" title="Trier par date d'expiration">+</a> Expire le <a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_DATE_DESC_URL'>" title="Trier par date d'expiration">-</a></th>
-				<th><a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_ASC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">+</a> T&eacute;l&eacute;charg&eacute; <a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_DESC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">-</a></th>
+				<th>Nom</th>
+				<th>Taille</th>
+				<th>D&eacute;pos&eacute; le</th>
+				<th>Expire le</th>
+				<th>T&eacute;l&eacute;charg&eacute;</th>
 			</tr>
 		</thead>
 		<tbody>

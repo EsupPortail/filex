@@ -24,8 +24,7 @@ sub new {
 	};
 	
 	# first initialize config
-	$self->{'_CONFIG_'} = FILEX::System::Config->new();
-	die(__PACKAGE__," -> Unable to initialize Config") if !defined($self->{'_CONFIG_'});
+	$self->{'_CONFIG_'} = FILEX::System::Config->instance();
 
 	my $dbname = $self->{'_CONFIG_'}->getDBName();
 	my $dbuser = $self->{'_CONFIG_'}->getDBUsername();

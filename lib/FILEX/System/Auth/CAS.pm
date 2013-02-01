@@ -347,7 +347,8 @@ sub validatePT {
     my $service = shift;
     my $ticket = shift;
 		my $url = $self->getServerProxyValidateURL($service, $ticket);
-		$url =~ s/%26/&/gc;
+		#$url =~ s/%26/&/gc;
+		$url =~ s/%26/&/g;
     #my $xml = $self->callCAS($self->getServerProxyValidateURL($service, $ticket));
     my $xml = $self->callCAS($url);
 

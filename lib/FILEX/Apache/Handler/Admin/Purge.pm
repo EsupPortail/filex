@@ -8,7 +8,7 @@ use constant SUB_PURGE_ALL => 1;
 use constant SUB_ACTION_FIELD_NAME => "sa";
 
 use FILEX::System::Purge;
-use FILEX::Tools::Utils qw(tsToLocal hrSize rDns);
+use FILEX::Tools::Utils qw(tsToLocal hrSize rDns toHtml);
 
 sub process {
 	my $self = shift;
@@ -29,13 +29,14 @@ sub process {
 			if ( $#errors >= 0 ) {
 warn($#errors);
 				$T->param(FILEX_HAS_PURGE_ERROR=>1);
-				$T->param(FILEX_PURGE_ERROR=>$S->toHtml(join("<br>",@errors)));
+				$T->param(FILEX_PURGE_ERROR=>toHtml(join("<br>",@errors)));
 			}
 			last SWITCH;
 		}
 	}
 	# fill template
 	my (@results,@loop,$fsz,$funit);
+	splice(@results);
 	if ( ! $Purge->getExpiredFiles(\@results) ) {
 		$T->param(FILEX_HAS_ERROR=>1);
 		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$Purge->getLastError()));
@@ -44,15 +45,15 @@ warn($#errors);
 		for (my $i=0; $i <=$#results; $i++) {
 			($fsz,$funit) = hrSize($results[$i]->{'file_size'});
 			push(@loop, {
-					FILEX_FILE_NAME=>$S->toHtml($results[$i]->{'real_name'}),
+					FILEX_FILE_NAME=>toHtml($results[$i]->{'real_name'}),
 					FILEX_OWNER=>$results[$i]->{'owner'},
 					FILEX_SIZE=>$fsz." ".$S->i18n->localizeToHtml($funit),
-					FILEX_UPLOAD_DATE=>$S->toHtml(tsToLocal($results[$i]->{'ts_upload_date'})),
-					FILEX_EXPIRE_DATE=>$S->toHtml(tsToLocal($results[$i]->{'ts_expire_date'}))
+					FILEX_UPLOAD_DATE=>toHtml(tsToLocal($results[$i]->{'ts_upload_date'})),
+					FILEX_EXPIRE_DATE=>toHtml(tsToLocal($results[$i]->{'ts_expire_date'}))
 				}
 			);
 		}
-		$T->param(FILEX_PURGE_ALL_URL=>$S->toHtml($self->genPurgeAllUrl()));
+		$T->param(FILEX_PURGE_ALL_URL=>toHtml($self->genPurgeAllUrl()));
 		$T->param(FILEX_HAS_PURGE=>1);
 		$T->param(FILEX_PURGE_LOOP=>\@loop);
 	}
@@ -64,7 +65,7 @@ sub purgeAll {
 	my $Purge = shift;
 	my $errors = shift;
 	my $S = $self->sys();
-	my @res;
+	my @res = ();
 	if ( !$Purge->getExpiredFiles(\@res) ) {
 		push(@$errors,$S->i18n->localize("database error")." : ".$Purge->getLastError());
 		return undef;

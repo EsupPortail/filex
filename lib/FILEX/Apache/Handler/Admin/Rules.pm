@@ -16,6 +16,7 @@ use constant RULES_RULE_EXP_FIELD_NAME=>"rule_exp";
 use constant RULES_RULE_ID_FIELD_NAME=>"rule_id";
 
 use FILEX::DB::Admin::Rules qw(getRuleTypes getRuleTypeName);
+use FILEX::Tools::Utils qw(toHtml);
 
 sub process {
 	my $self = shift;
@@ -110,7 +111,7 @@ sub process {
 	$T->param(FILEX_SUB_ACTION_ID=>$form_sub_action);
 	if ( $b_err ) { 
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->toHtml($errstr));
+		$T->param(FILEX_ERROR=>toHtml($errstr));
 	}
 	# already defined rules
 	my (@results,@rules_loop,$state);
@@ -119,14 +120,14 @@ sub process {
 		for (my $i=0; $i<=$#results; $i++) {
 			my $record = {};
 			$record->{'FILEX_RULE_TYPE'} = getRuleTypeName($results[$i]->{'type'});
-			$record->{'FILEX_RULE_NAME'} = $S->toHtml($results[$i]->{'name'});
-			$record->{'FILEX_RULE_EXP'} = $S->toHtml($results[$i]->{'exp'});
+			$record->{'FILEX_RULE_NAME'} = toHtml($results[$i]->{'name'});
+			$record->{'FILEX_RULE_EXP'} = toHtml($results[$i]->{'exp'});
 			$state = $results[$i]->{'enable'};
-			$record->{'FILEX_RULE_LINK_EX'} = $S->toHtml(($results[$i]->{'exclude'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
-			$record->{'FILEX_RULE_LINK_QT'} = $S->toHtml(($results[$i]->{'quota'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
-			$record->{'FILEX_RULE_LINK_SP'} = $S->toHtml(($results[$i]->{'big_brother'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
-			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
-			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
+			$record->{'FILEX_RULE_LINK_EX'} = toHtml(($results[$i]->{'exclude'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
+			$record->{'FILEX_RULE_LINK_QT'} = toHtml(($results[$i]->{'quota'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
+			$record->{'FILEX_RULE_LINK_SP'} = toHtml(($results[$i]->{'big_brother'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
+			$record->{'FILEX_REMOVE_URL'} = toHtml($self->genRemoveUrl($results[$i]->{'id'}));
+			$record->{'FILEX_MODIFY_URL'} = toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@rules_loop,$record);
 		}
 		$T->param(FILEX_HAS_RULES=>1);

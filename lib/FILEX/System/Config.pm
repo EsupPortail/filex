@@ -1,8 +1,9 @@
 package FILEX::System::Config;
 use strict;
-use vars qw($VERSION);
+use vars qw($VERSION $FILE);
 use Config::IniFiles;
 use File::stat;
+use base qw(Class::Singleton);
 
 # some constants
 use constant DBSECTION => "Database";
@@ -14,79 +15,47 @@ use constant SMTPSECTION => "Smtp";
 use constant ADMSECTION => "Admin";
 
 $VERSION = 1.1;
+$FILE = undef;
 
-# the unique configuration path
-our $ConfigPath = undef;
-our $Reload = undef;
-our $DieOnReload = undef;
-# 
-my $_ref_counter = 0;
-my $_self = undef;
-
-# maybe reload on SIGUP (Config::IniFiles->Reload)
-# Die on error
-# parameters :
-# 	file=>config filename
-# 	reload=>0|1 reload if file change
-# 	dieonreload=>0|1 die on reload or continue with in memory config file
-sub new {
+sub _new_instance {
 	my $this = shift;
 	my $class = ref($this) || $this;
-	# check if our Unique instance is defined
-	if ( !defined($FILEX::System::Config::_self) ) {
-		$FILEX::System::Config::_self = {
-			_config_path_ => \$ConfigPath,
-			_ref_counter_ => \$_ref_counter,
-			_config_ => undef,
-			_cmtime_ => undef,
-			_reload_ => \$Reload,
-			_dieonreload_ => \$DieOnReload,
-		};
-		# initialize 
-		return undef if ( !_INITIALIZE_($FILEX::System::Config::_self,@_) );
-		bless($FILEX::System::Config::_self,$class);
-	}
-	${$FILEX::System::Config::_self->{'_ref_counter_'}} ++;
-	return $FILEX::System::Config::_self;
+	my $self = {
+		_config_path_ => undef,
+		_config_ => undef
+	};
+	# init
+	_initialize_($self,@_);
+	bless($self,$class);
+	return $self;
 }
 
 # initialize structure
-sub _INITIALIZE_ {
+sub _initialize_ {
 	my $self = shift;
 	my %ARGZ = @_;
-	if ( !defined($FILEX::System::Config::ConfigPath) && !exists($ARGZ{'file'}) ) {
-		warn (__PACKAGE__,"-> Require a Configuration file");
-		return undef;
-	}
+	die(__PACKAGE__,"-> Require a Configuration file") if (  !defined($FILE) && !exists($ARGZ{'file'}) );
 	# override globals
-	${$self->{'_config_path_'}} = $ARGZ{'file'} if exists($ARGZ{'file'});
-	${$self->{'_reload_'}} = 1 if (exists($ARGZ{'reload'}) && $ARGZ{'reload'} == 1);
-	${$self->{'_dieonreload_'}} = 1 if ( exists($ARGZ{'dieonreload'}) && $ARGZ{'dieonreload'} == 1 );
+	$self->{'_config_path_'} = exists($ARGZ{'file'}) ? $ARGZ{'file'} : $FILE;
 	# create new Config::IniFile
-	$self->{'_config_'} = new Config::IniFiles(-file=>${$self->{'_config_path_'}},-reloadwarn=>1);
-	# die on error
-	if ( !defined($self->{'_config_'}) ) {
-		warn (__PACKAGE__,"-> Unable to Read Config File : ",${$self->{'_config_path_'}});
-		return undef;
-	}
+	$self->{'_config_'} = new Config::IniFiles(-file=>$self->{'_config_path_'},-reloadwarn=>1) or 
+		die(__PACKAGE__,"=> Unable to Read Config File : ",$self->{'_config_path_'});
 	# check values
-	if ( ! _VALIDATE_($self->{'_config_'}) ) {
-		warn (__PACKAGE__,"-> Config File : ",${$self->{'_config_path_'}}," contains error !");
-		return undef;
-	}
+	die(__PACKAGE__,"-> Config File : ",$self->{'_config_path_'}," contains error !") 
+		if ! _validate_($self->{'_config_'});
 	# stat the file
-	my $st = stat(${$self->{'_config_path_'}});
- 	if ( ! $st ) {
-		warn(__PACKAGE__,"-> Unable to stat ",${$self->{'_config_path_'}});
-		return undef;
-	}
+	#my $st = stat(${$self->{'_config_path_'}});
+ 	#if ( ! $st ) {
+	#	warn(__PACKAGE__,"-> Unable to stat ",${$self->{'_config_path_'}});
+	#	return undef;
+	#}
 	# mtime is gmt
-	$self->{'_cmtime_'} = $st->mtime();
-	return 1;
+	#$self->{'_cmtime_'} = $st->mtime();
+	#return 1;
 }
 
 # Validate INI Files
-sub _VALIDATE_ {
+sub _validate_ {
 	my $config = shift;
 	my $tst_value;
 	# Validate Database Section
@@ -302,6 +271,11 @@ sub _VALIDATE_ {
 		return undef;
 	}
 	return 1;
+}
+
+sub getConfigFile {
+	my $self = shift;
+	return $self->{'_config_path_'};
 }
 
 # Reload Configuration File if needed
@@ -533,7 +507,6 @@ sub getCookieName {
 	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"CookieName");
 }
-
 # retrieve cookie expiration time
 sub getCookieExpires {
 	my $self = shift;
@@ -542,7 +515,12 @@ sub getCookieExpires {
 	my $cktime = $self->{'_config_'}->val(SYSSECTION,"CookieExpires",1800);
 	return ($cktime =~ /^[0-9]+$/) ? $cktime : 1800;
 }
-
+sub getCookiePath {
+	my $self = shift;
+	# default to "/"
+	my $ckpath = $self->{'_config_'}->val(SYSSECTION,"CookiePath","/");
+	return $ckpath;
+}
 # the template directory
 sub getTemplateIniFile {
 	my $self = shift;
@@ -573,7 +551,7 @@ sub isSameDevice {
 sub getCacheRoot {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(CASECTION,"CacheRoot");
+	return $self->{_config_}->val(CASECTION,"CacheRoot");
 }
 
 # get cache namespace for IPC
@@ -581,7 +559,7 @@ sub getCacheRoot {
 sub getCacheNamespace {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(CASECTION,"Namespace","FILEX");
+	return $self->{_config_}->val(CASECTION,"Namespace","FILEX");
 }
 
 # get default expire time 
@@ -589,7 +567,7 @@ sub getCacheNamespace {
 sub getCacheDefaultExpire {
 	my $self = shift;
 	#$self->_reload();
-	return abs(int($self->{'_config_'}->val(CASECTION,"DefaultExpire",3600)));
+	return abs(int($self->{_config_}->val(CASECTION,"DefaultExpire",3600)));
 }
 
 # get autopure interval
@@ -597,176 +575,186 @@ sub getCacheDefaultExpire {
 sub getCacheAutoPurge {
 	my $self = shift;
 	#$self->_reload();
-	return abs(int($self->{'_config_'}->val(CASECTION,"AutoPurge",60)));
+	return abs(int($self->{_config_}->val(CASECTION,"AutoPurge",60)));
 }
 
 # get Ldap server url
 sub getLdapServerUrl {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"ServerUrl");
+	return $self->{_config_}->val(LDAPSECTION,"ServerUrl");
 }
 
 # get Ldap BindDN
 sub getLdapBindDn {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"BindDn");
+	return $self->{_config_}->val(LDAPSECTION,"BindDn");
 }
 
 # get Ldap bind password
 sub getLdapBindPassword {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"BindPassword");
+	return $self->{_config_}->val(LDAPSECTION,"BindPassword");
 }
 
 # get ldap search base
 sub getLdapSearchBase {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"SearchBase");
+	return $self->{_config_}->val(LDAPSECTION,"SearchBase");
 }
 
 # get ldap uid attr
 sub getLdapUidAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"UidAttr");
+	return $self->{_config_}->val(LDAPSECTION,"UidAttr");
 }
 
 # get ldap username attr
 sub getLdapUsernameAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"UsernameAttr");
+	return $self->{_config_}->val(LDAPSECTION,"UsernameAttr");
 }
 # get ldap uniq id attr
 sub getLdapUniqAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"UniqAttr",undef);
+	return $self->{_config_}->val(LDAPSECTION,"UniqAttr",undef);
 }
 # get ldap unid id attr mode
 sub getLdapUniqAttrMode {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"UniqAttrMode",0);
+	return $self->{_config_}->val(LDAPSECTION,"UniqAttrMode",0);
 }
 # get ldap mail attr
 sub getLdapMailAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"MailAttr");
+	return $self->{_config_}->val(LDAPSECTION,"MailAttr");
 }
 
 # get ldap group query
 sub getLdapGroupQuery {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(LDAPSECTION,"GroupQuery");
+	return $self->{_config_}->val(LDAPSECTION,"GroupQuery");
 }
 
 # get System Email
 sub getSystemEmail {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(SYSSECTION,"SystemEmail");
+	return $self->{_config_}->val(SYSSECTION,"SystemEmail");
 }
 
 # get File expiration default
 sub getDefaultFileExpire {
 	my $self = shift;
 	#$self->_reload();
-	return abs(int($self->{'_config_'}->val(SYSSECTION,"DefaultFileExpire",$self->getMaxFileExpire())));
+	return abs(int($self->{_config_}->val(SYSSECTION,"DefaultFileExpire",$self->getMaxFileExpire())));
 }
 
 sub getMaxFileExpire {
 	my $self = shift;
 	#$self->_reload();
-	return abs(int($self->{'_config_'}->val(SYSSECTION,"MaxFileExpire",7)));
+	return abs(int($self->{_config_}->val(SYSSECTION,"MaxFileExpire",7)));
 }
 
 sub getMinFileExpire {
 	my $self = shift;
 	#$self->_reload();
-	return abs(int($self->{'_config_'}->val(SYSSECTION,"MinFileExpire",1)));
+	return abs(int($self->{_config_}->val(SYSSECTION,"MinFileExpire",1)));
 }
 
 sub getRenewFileExpire {
 	my $self = shift;
 	#$self->_reload();
-	return abs(int($self->{'_config_'}->val(SYSSECTION,"RenewFileExpire",0)));
+	return abs(int($self->{_config_}->val(SYSSECTION,"RenewFileExpire",0)));
+}
+
+sub getSessionCacheTimeout() {
+	my $self = shift;
+	return abs(int($self->{_config_}->val(SYSSECTION,"SessionCacheTimeout",900)));
+}
+
+sub getOnExcludeNotify() {
+	my $self = shift;
+	return abs(int($self->{_config_}->val(SYSSECTION,"OnExcludeNotify",0)));
+}
+
+sub getExcludeExpireDays() {
+	my $self = shift;
+	return abs(int($self->{_config_}->val(SYSSECTION,"ExcludeExpireDays",0)));
 }
 
 sub getUriGet {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"get");
+	return $self->{_config_}->val(URISECTION,"get");
 }
 
 sub getUriUpload {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"upload");
+	return $self->{_config_}->val(URISECTION,"upload");
 }
 
 sub getUriMeter {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"meter");
+	return $self->{_config_}->val(URISECTION,"meter");
 }
 
 sub getUriAdmin {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"admin");
+	return $self->{_config_}->val(URISECTION,"admin");
 }
 
 sub getUriManage {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"manage");
+	return $self->{_config_}->val(URISECTION,"manage");
 }
 
 sub getUriStatic {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"static");
+	return $self->{_config_}->val(URISECTION,"static");
 }
 
 sub getUriManageXml {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"managexml");
+	return $self->{_config_}->val(URISECTION,"managexml",undef);
 }
 
-sub useUriManageXml {
+sub getUriSoap {
 	my $self = shift;
-	#$self->_reload();
-	return $self->{'_config_'}->val(URISECTION,"useManageXml",0);
+	return $self->{_config_}->val(URISECTION,"soap",undef);
 }
-
 # admin
 sub getAdminModules {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(ADMSECTION,"Modules");
+	return $self->{_config_}->val(ADMSECTION,"Modules");
 }
 
 sub getAdminDefault {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(ADMSECTION,"Default");
+	return $self->{_config_}->val(ADMSECTION,"Default");
 }
+
 sub getAdminModuleRouteParameter {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{'_config_'}->val(ADMSECTION,"ModuleRouteParameter");
-}
-
-sub isSetup {
-	return( defined($FILEX::System::Config::ConfigPath) ) ? 1 : 0;
+	return $self->{_config_}->val(ADMSECTION,"ModuleRouteParameter");
 }
 
 1;

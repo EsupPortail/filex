@@ -18,7 +18,7 @@ sub new {
 		_last_error_ => undef,
 	};
 	# initialize
-	$self->{'_config_'}	= FILEX::System::Config->new() or die("Unable to load config file !");
+	$self->{'_config_'}	= FILEX::System::Config->instance();
 	$self->{'_db_'} = eval { FILEX::DB::Purge->new(); }; 
 	die($@) if ($@);
 

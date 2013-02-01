@@ -46,49 +46,61 @@ Utiliser une version de MySQL avec le support des tables InnoDB.
 
 3.2 Apache + mod_perl
 
-FileX fonctionne dans l'environnement apache 1.3.x + mod_perl 1.x. Le système n'a
-pas été testé sous Apache 2 + mod_perl 2. Un portage est envisagé.
+FileX fonctionne dans l'environnement apache 1.3.x + mod_perl 1.x et apache 2.x+
+mod_perl 2x.
 
 3.3 Modules PERL
 
 Les modules suivants sont nécessaires :
 
+ [MODPERL 1]
   Apache::Constants
-  Apache::Cookie
   Apache::File
   Apache::Request
   Apache::Util
-	Apache::Session
+
+ [MODPERL 2]
+  Apache2::Connection
+  Apache2::Const
+  Apache2::RequestRec
+  Apache2::ServerRec
+  Apache2::Upload
+  Apache2::URI
+  Apache2::Util
+  Apache2::ServerUtil
+  APR::Status
+
+  Apache::Session::File
+  Class::Singleton
   Cache::FileCache
+  CGI::Cookie
+  CGI::Util
+  Exporter
   Config::IniFiles
-  Crypt::Blowfish
-  Crypt::CBC
+  Data::Dumper
   Data::Uniqid
   DBI
-  DBD::mysql
+  Digest::MD5
   Encode
-  Exporter
   File::Spec
   File::stat
+  Getopt::Std
   HTML::Entities
   HTML::Template
   IO::Select
   IO::Socket::SSL
   LWP::UserAgent
   MIME::Entity
-  MIME::Words
-  Net::DNS
-  Net::LDAP
-  Net::SMTP
-  Socket
-  Time::HiRes
+
+Vous pouvez vérifier si ces modules sont présents en untilisant le script "check-requirement.pl" 
+disponible dans le répertoire "bin" de la distribution.
 
 4. INSTALLATION
 
 Le paquetage contient les répertoires suivants :
 
 /FILEX
-  /bin         -> contient l'utilitaire FILEX.pl de purge des fichiers expirés
+  /bin         -> contient l'utilitaire FILEX.pl de purge des fichiers expirés + divers scripts
   /conf        -> les différents fichiers de configuration
   /lib         -> les librairies PERL
   /doc         -> documentation
@@ -123,26 +135,38 @@ Note: n'oubliez pas d'activer les tables InnoDB !
 Tout d'abord, activer le module PERL. Si vous avez compilé se module sous le
 forme de DSO :
 
-LoadModule perl_module libexec/libperl.so
-AddModule mod_perl.c
+[Apache 1x]
+	# si mod_perl est une librairie dynamique
+	LoadModule perl_module libexec/libperl.so
+	AddModule mod_perl.c
 
-Si mod_perl est compilé en statique :
+	# Si mod_perl est compilé en statique 
+	AddModule mod_perl.c
 
-AddModule mod_perl.c
+[Apache 2x]
+	# si mod_perl est une librairie dynamique
+	LoadModule perl_module libexec/mod_perl.so
 
-Utilisez l'utilitaire - genhttp.pl - du répertoire [doc] pour générer la 
+Utilisez l'utilitaire - genhttp.pl - du répertoire [bin] pour générer la 
 configuration nécessaire à l'intégration de FileX dans apache et recopiez la
 sortie dans le fichier de configuration d'apache.
 
 Usage :
 
-genhttp.pl -l /chemin/vers/les/librairies/FileX -c /chemin/vers/FILEX.ini
+genhttpd-conf.pl -a [1|2] -l /chemin/vers/les/librairies/FileX -c /chemin/vers/FILEX.ini
+
+avec :
+	-a : version d'apache (1 ou 2)
+	-l : chemin vers les librairies FILEX
+	-c : chemin vers le fichier de configuratil FILEX
 
 dans notre cas :
 
-genhttp.pl -l /usr/local/FILEX/lib -c /usr/local/FILEX/conf/FILEX.ini
+genhttpd-conf.pl -v 1 -l /usr/local/FILEX/lib -c /usr/local/FILEX/conf/FILEX.ini
 
 configuration produite :
+
+[Apache 1x]
 
 <IfModule mod_perl.c>
 	# Positionner le chemin vers les librairies FILEX
@@ -151,6 +175,17 @@ configuration produite :
 	</PERL>
 	# positionner le chemin vers le fichier de configuration
 	PerlSetEnv FILEXConfig /usr/local/FILEX/conf/FILEX.ini
+	# configurer les différents handlers
+	PerlModule FILEX::HttpConfig
+</IfModule>
+
+[Apache 2x]
+
+<IfModule perl_module>
+	# Positionner le chemin vers les librairies FILEX
+	PerlSwitches -I/usr/local/FILEX/lib
+	# positionner le chemin vers le fichier de configuration
+  	PerlSetEnv FILEXConfig /usr/local/FILEX/conf/FILEX.ini
 	# configurer les différents handlers
 	PerlModule FILEX::HttpConfig
 </IfModule>

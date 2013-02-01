@@ -3,11 +3,12 @@ use strict;
 use vars qw($VERSION);
 
 #use Apache::Request;
-use Apache::Constants qw(:common);
+#use Apache::Constants qw(:common);
+use constant MP2 => (exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2);
 
 # FILEX related
-use FILEX::System qw(toHtml);
-use FILEX::Tools::Utils qw(hrSize);
+use FILEX::System;
+use FILEX::Tools::Utils qw(hrSize toHtml);
 
 use POSIX qw(ceil);
 use Cache::FileCache;
@@ -16,9 +17,24 @@ use constant DLID_FIELD_NAME => "dlid";
 use constant INI_FIELD_NAME => "ini";
 
 $VERSION = 1.0;
+BEGIN {
+	if (MP2) {
+		require Apache2::Const;
+		Apache2::Const->import(-compile=>qw(OK));
+	} else {
+		require Apache::Constants;
+		Apache::Constants->import(qw(OK));
+	}
+}
+
+# handler between MP1 && MP2 have changed
+sub handler_mp1($$) { &run; }
+sub handler_mp2 : method { &run; }
+*handler = MP2 ? \&handler_mp2 : \&handler_mp1;
 
 # param : uid => upload id
-sub handler {
+sub run {
+	my $class = shift;
 	my $r = shift; # Apache object
 	my $S = FILEX::System->new($r); # FILEX::System object
 	my $template = $S->getTemplate(name=>"meter");
@@ -30,7 +46,7 @@ sub handler {
 	my $max_file_size = 0;
 	# if authenticated, retrieve the user max file size
 	# retrive <0 or 0 or >0
-	$max_file_size = $S->getUserMaxFileSize($user) if defined($user);
+	$max_file_size = $user->getMaxFileSize() if defined($user);
 
 	my $end = undef;
 	my %dl_info;
@@ -68,7 +84,7 @@ sub handler {
 		}
 		# else wait
 		sleep 1;
-		last if ! $S->isConnected();
+		last if $S->isAborted();
 	}
 	if ( $pb ) {
 		$template->param(FILEX_HAS_ERROR=>1);
@@ -148,7 +164,7 @@ sub handler {
 		$template->param(FILEX_NOB_ERROR_DESC=>$S->i18n->localizeToHtml("too large desc"));
 	}
 	display($S,$template,$url);
-	return OK;
+	return (MP2) ? Apache2::Const::OK : Apache::Constants::OK;
 }
 
 sub display {
@@ -164,7 +180,7 @@ sub display {
 		$s->sendHeader("Content-Type"=>"text/html");
 	}
 	$s->apreq->print($t->output());
-	exit(OK);
+	exit( (MP2) ? Apache2::Const::OK : Apache::Constants::OK);
 }
 
 sub genUrl {

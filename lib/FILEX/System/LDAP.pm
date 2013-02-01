@@ -1,5 +1,6 @@
 package FILEX::System::LDAP;
 use strict;
+use FILEX::System::Config;
 use vars qw($VERSION);
 use Net::LDAP;
 
@@ -22,13 +23,29 @@ sub new {
 		_bind_ => undef,
 	};
 
-	$self->{'_config_'} = FILEX::System::Config->new();
-	if ( !defined($self->{'_config_'}) ) {
-		warn(__PACKAGE__,"-> unable to initialize config !");
-		return undef;
+	$self->{'_config_'} = FILEX::System::Config->instance();
+
+	bless($self,$class);
+	return $self;
+}
+
+sub DESTROY {
+	my $self = shift;
+	if ( ref($self) && ref($self->{'_ldap_'}) ) {
+		$self->{'_ldap_'}->unbind() && $self->{'_ldap_'}->disconnect();
 	}
+}
+
+sub _connect {
+	my $self = shift;
 	# attempt to connect
-	$self->{'_ldap_'} = Net::LDAP->new($self->{'_config_'}->getLdapServerUrl()) or die $@;
+	if ( !defined($self->{'_ldap_'}) ) {
+		$self->{'_bind_'} = undef;
+		$self->{'_ldap_'} = Net::LDAP->new($self->{'_config_'}->getLdapServerUrl()) 
+			or die(__PACKAGE__," => unable to connect to ldap server : ",$@);
+	}
+	# already binded ?
+	return 1 if (defined($self->{'_bind_'}) && $self->{'_bind_'} == 1);
 	# attempt to bind
 	my $mesg;
 	my $binddn = $self->{'_config_'}->getLdapBindDn();
@@ -42,20 +59,15 @@ sub new {
 	}
 
 	# error binding
-	die $mesg->error() if ( $mesg->is_error() );
+	die(__PACKAGE__," => unable to bind to ldap server : ",$mesg->error()) if ($mesg->is_error());
 	$self->{'_bind_'} = 1;
-	bless($self,$class);
-	return $self;
-}
-
-sub DESTROY {
-	my $self = shift;
-	$self->{'_ldap_'}->unbind() if ( ref($self) && $self->{'_bind_'} && ref($self->{'_ldap_'}) );
+	return 1;
 }
 
 # get the underlying LDAP object
 sub srv {
 	my $self = shift;
+	$self->_connect();
 	return $self->{'_ldap_'};
 }
 
@@ -209,7 +221,7 @@ sub inQuery {
   $searchArgz{'attrs'} = [$uidAttr];
   my $mesg = $ldap->search(%searchArgz);
   if ( $mesg->is_error() || $mesg->code() ) {
-    warn(__PACKAGE__,"-> LDAP error : ",$mesg->error());
+    warn(__PACKAGE__,"-> LDAP error : ",$mesg->error()," => $filter");
     return undef;
   }
 	# return count

@@ -2,15 +2,13 @@ package FILEX::Apache::Handler::ManageXml;
 use strict;
 use vars qw($VERSION %ORDER_FIELDS);
 
-# Apache
-use Apache::Constants qw(:common);
-use Apache::Request;
+# Apache Related
+use constant MP2 => (exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2);
 
 # FILEX
 use FILEX::System;
 use FILEX::DB::Manage;
 use FILEX::Tools::Utils qw(hrSize tsToLocal);
-use FILEX::Apache::Handler::Admin::Common qw(doFileInfos);
 use XML::LibXML;
 use Encode;
 
@@ -32,11 +30,27 @@ use constant MAX_NAME_SIZE => 50;
 	dlcount => "download_count"
 );
 
-sub handler {
-	my $S; # FILEX::System
+BEGIN {
+	if (MP2) {
+		require Apache2::Const;
+		Apache2::Const->import(-compile=>qw(OK));
+	} else {
+		require Apache::Constants;
+		Apache::Constants->import(qw(OK));
+	}
+}
+
+# handler between MP1 && MP2 have changed
+sub handler_mp1($$) { &run; }
+sub handler_mp2 : method { &run; }
+*handler = MP2 ? \&handler_mp2 : \&handler_mp1;
+
+sub run {
+	my $class = shift;
+	my $r = shift;
 	my $DB; # FILEX::DB::Manage
 	my ($order_by,$order);
-	$S = FILEX::System->new(shift);
+	my $S = FILEX::System->new($r);
 	# Auth
 	my $user = $S->beginSession(no_login=>1);
 	# create document
@@ -76,7 +90,7 @@ sub handler {
 		display($S,$document);
 	}
 	# get quota for user
-	my ($quota_max_file_size,$quota_max_used_space) = $S->getQuota($user);
+	my ($quota_max_file_size,$quota_max_used_space) = $user->getQuota();
 	#  get current used space for user	
 	my $current_used_space = $user->getDiskSpace();
 	my ($hrsize,$hrunit);
@@ -122,7 +136,7 @@ sub handler {
 	$root_elem->appendChild($uploads_elem);
 	# exit
 	display($S,$document);
-	return OK;
+	return (MP2) ? Apache2::Const::OK : Apache::Constants::OK;
 }
 
 # display
@@ -132,7 +146,7 @@ sub display {
 	# base for static include
 	$S->sendHeader("Content-Type"=>"text/xml",no_cookie=>1);
 	$S->apreq->print($D->toString()) if ( ! $S->apreq->header_only() );
-	exit(OK);
+	exit( (MP2) ? Apache2::Const::OK : Apache::Constants::OK );
 }
 
 sub createSort {
