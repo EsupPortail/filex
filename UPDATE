@@ -1,49 +1,17 @@
-Mise à jour de la version 1.1 vers 1.2
+Mise à jour de la version 1.2 vers 1.2a
 
-* Mise à jour de la base de donnée :
+Recopier simplement les fichiers :
 
-Un seul champ a été ajouté dans la base de donnée pour la gestion des renouvellements de durée de vie des fichiers.
+lib/FILEX/Apache/Handler/Upload.pm
+lib/FILEX/System.pm
+templates/upload_end_fr.tmpl
 
-connectez vous à la base et effectuez la modification suivante :
+dans les répertoire approriés
 
-ALTER TABLE upload ADD COLUMN with_password BOOL NOT NULL DEFAULT 0;
-ALTER TABLE upload ADD COLUMN password VARCHAR(32) DEFAULT NULL;
-
-* Mise à jour de FILEX
-
-On considère que la version 1.1 est installé dans /usr/local/FILEX.
-
-- faite un backup de votre fichier de configuration FILEX.ini
-- écraser le contenu de la version 1.1 avec la version 1.2 (ou alors remplacer les fichiers ci-dessous)
-- modifier votre fichier de configuration pour prendre en charge les nouvelles fonctionnalités :
-
-	[System]
-	....
-	#
-	# Taille minimum des mots de passe de téléchargement
-	# par défaut : 4
-	#
-	MinPasswordLength=4
-	#
-	# Taille maximum des mots de passe de téléchargement
-	# par défaut : 30
-	#
-	MaxPasswordLength=30
-	....
 
 * Les fichiers modifiés :
 
-conf/FILEX.sql
-conf/i18n.ini
-templates/mail_upload_fr.tmpl
-templates/upload_fr.tmpl
-templates/get_fr.tmpl
-templates/upload_end_fr.tmpl
-templates/admin_fileinfo_fr.tmpl
-lib/FILEX/System/Config.pm
+
 lib/FILEX/System.pm
-lib/FILEX/DB/Upload.pm
-lib/FILEX/Apache/Handler/Admin/Common.pm
-lib/FILEX/Apache/Handler/Get.pm
 lib/FILEX/Apache/Handler/Upload.pm
-static/styles/filex.css
+templates/upload_end_fr.tmpl

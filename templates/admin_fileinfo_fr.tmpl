@@ -32,10 +32,12 @@
 <input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_ACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_ACTIVATE_CHECKED">checked</TMPL_IF>>Activ&eacute; 
 <input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_DESACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_DESACTIVATE_CHECKED">checked</TMPL_IF>>D&eacute;sactiv&eacute;
 			</TMPL_IF>
+<TMPL_IF NAME="FILEX_CAN_EXPIRE">
 			<li><strong>Mot de passe : </strong>
 <input name="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_VALUE_ACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_USE_PASSWORD_ACTIVATE_CHECKED">checked</TMPL_IF>>Oui <input name="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_VALUE_DESACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_USE_PASSWORD_DESACTIVATE_CHECKED">checked</TMPL_IF>>Non 
 <input type="password" size="15" class="Field" name="<TMPL_VAR NAME='FILEX_FORM_PASSWORD_NAME'>" maxlength="<TMPL_VAR NAME='FILEX_MAX_PASSWORD_LENGTH'>"><br>
 <span class="notes">Le mot de passe doit avoir une longueur comprise entre <strong><TMPL_VAR NAME="FILEX_MIN_PASSWORD_LENGTH"></strong> et <strong><TMPL_VAR NAME="FILEX_MAX_PASSWORD_LENGTH"></strong> caract&egrave;res</span></span>
+</TMPL_IF>
 			<li><strong>Expir&eacute; : </strong>
 			<TMPL_IF NAME="FILEX_CAN_EXPIRE">
 <br><input name="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_VALUE_YES'>">Oui 

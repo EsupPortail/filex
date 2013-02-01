@@ -1,1 +1,22 @@
-Possibilité d'ajouter un mot de passe pour le téléchargement.
+* patch d'un bug important lors de l'upload de fichier : 
+  le serveur pouvait partir en boucle infinie dans la situation ou le 
+  répertoire de stockage temporaire n'était pas sur la même partition
+  que le répertoire de stockage (je n'avais pas testé cette partie !!!)
+
+  Note : il est préférable de positionner le répertoire de stockage temporaire
+  (TmpFileDir) sur la même partition que le répertoire de stockage (FileRepository)
+  car dans ce cas la re-copie de fichier s'effectue par un "hard-link" ce qui est
+  beaucoup plus rapide (quasi instantané). 
+  Sinon, un boucle (la fameuse !) lit le fichier source (temporaire) et écrit dans 
+  le fichier destination (stockage) ce qui peut être très long dans le cas de fichier
+  de plusieurs méga.
+  
+* petit patch sur la template de fin de dépose de fichier :
+  le lien à envoyer n'est plus affiché en gras (<strong>) mais sous la forme
+  d'un lien standard. Le problème était que certain client de messagerie au
+  moment du copier collé inséraient une '*' de part et d'autre du lien. 
+  Il s'agit en fait d'une méthode pour avoir un pseudo-formatage des emails
+  en mode texte.
+
+* les paramètres d'Url sont séparés maintenant par des "&amp;" ce qui est conforme
+  au recommendation du W3C.

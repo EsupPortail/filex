@@ -168,7 +168,7 @@ CREATE TABLE exclude (
   create_date DATETIME NOT NULL,
 	PRIMARY KEY (id),
 	INDEX idx_rule_id (rule_id),
-	CONSTRAINT fk_rule_id FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
+	CONSTRAINT fk_rule_exclude_id FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
 ) Type=InnoDB;
 
 --
@@ -194,7 +194,7 @@ CREATE TABLE quota (
 	max_used_space BIGINT NOT NULL DEFAULT 0,
 	PRIMARY KEY (id),
 	INDEX idx_rule_id (rule_id),
-	CONSTRAINT fk_rule_id FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
+	CONSTRAINT fk_rule_quota_id FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
 ) Type=InnoDB;
 
 

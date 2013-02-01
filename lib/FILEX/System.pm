@@ -706,7 +706,7 @@ sub genQueryString {
 		$tmp = Apache::Util::escape_uri($k)."=".Apache::Util::escape_uri($v);
 		push(@res,$tmp);
 	}
-	return join("&",@res);
+	return join("&amp;",@res);
 }
 
 sub getManageUrl {

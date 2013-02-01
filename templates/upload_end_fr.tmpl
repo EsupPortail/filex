@@ -13,9 +13,9 @@
 		<h1><span>FileX</span> [ <TMPL_VAR NAME="FILEX_USER_NAME"> ]</h1>
 	</div>
 	<div class="main">
-		<p>Le fichier <strong><TMPL_VAR NAME="FILEX_FILE_NAME"></strong> &agrave; &eacute;t&eacute; d&eacute;pos&eacute;.</p>
+		<p>Le fichier <strong><TMPL_VAR NAME="FILEX_FILE_NAME"></strong> a &eacute;t&eacute; d&eacute;pos&eacute;.</p>
 		<p>Pour qu'un utilisateur t&eacute;l&eacute;charge votre fichier, envoyez lui cette adresse :</p>
-		<p><strong><TMPL_VAR NAME="FILEX_GET_URL"></strong></p>
+		<p><a href="<TMPL_VAR NAME='FILEX_GET_URL'>" title="envoyez cette adresse"><TMPL_VAR NAME="FILEX_GET_URL"></a></p>
 		<TMPL_IF NAME="FILEX_HAS_PASSWORD">
 		<p>Mot de passe pour t&eacute;l&eacute;charger le fichier : <strong><TMPL_VAR NAME="FILEX_PASSWORD"></strong></p>
 		</TMPL_IF>

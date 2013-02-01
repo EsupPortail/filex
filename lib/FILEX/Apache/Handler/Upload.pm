@@ -384,9 +384,10 @@ sub storeFile {
 		$upload->link($path) or return undef;
 	} else {
 		# loop on input file handle
-		my $out_fh = Apache::File->new($path) or return undef;
-		my ($br,$buffer);
-		while ( $br = read($upload->fh(), $buffer, 1024) ) {
+		my $out_fh = Apache::File->new(">$path") or warn(__PACKAGE__,"=> unable to open $path for writing : $!") && return undef;
+		my ($in_fh,$buffer);
+		$in_fh = $upload->fh();
+		while ( read($in_fh, $buffer, 1024) ) {
 			print $out_fh $buffer;
 		}
 		$out_fh->close();
