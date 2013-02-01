@@ -17,10 +17,10 @@ use File::Spec;
 use Encode;
 use MIME::Words;
 
-use constant FILEX_CONFIG_NAME => "FILEXConfig";
-
-use constant FIELD_FILE_NAME => "k";
-use constant FIELD_AUTO_MODE => "auto";
+use constant FILE_FIELD_NAME => "k";
+use constant AUTO_MODE_FIELD_NAME => "auto";
+use constant PASSWORD_FIELD_NAME => "pwd";
+use constant MD5_PASSWORD_FIELD_NAME => "m";
 
 $VERSION = 1.0;
 
@@ -37,8 +37,9 @@ sub handler {
 	}
 	
 	# get parameters
-	my $file_name = $S->apreq->param(FIELD_FILE_NAME);
-	my $auto_mode = $S->apreq->param(FIELD_AUTO_MODE) || 0;
+	my $file_name = $S->apreq->param(FILE_FIELD_NAME);
+	my $auto_mode = $S->apreq->param(AUTO_MODE_FIELD_NAME) || 0;
+	my $password = $S->apreq->param(PASSWORD_FIELD_NAME);
 
 	$Template->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	# no filename to download then show it
@@ -83,7 +84,20 @@ sub handler {
 		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("disk file not found"));
 		display($S,$Template);
 	}
-	
+
+	# verify if we have a password	
+	my $bPasswordFailed = 0;
+	if ( $upload->needPassword() ) {
+		# reset the automatic download flag
+		$auto_mode = 0;
+		if ( defined($password) ) {
+			if ( $upload->verifyPassword($password) ) {
+				$auto_mode = 1;
+			} else {
+				$bPasswordFailed = 1;
+			}
+		}
+	}
 	# everything is ok
 	if ( $auto_mode != 1 ) {
 		$Template->param(FILEX_HAS_FILE=>1);
@@ -93,12 +107,25 @@ sub handler {
 		$Template->param(FILEX_FILE_PUBLISHED_DATE=>toHtml(tsToGmt($upload->getUploadDate())." (GMT)"));
 		$Template->param(FILEX_FILE_EXPIRE_DATE=>toHtml(tsToGmt($upload->getExpireDate()). " (GMT)"));
 		$Template->param(FILEX_FILE_OWNER=>$S->getMail($upload->getOwner()));
-		# enable auto download
-		$Template->param(FILEX_CAN_DOWNLOAD=>1);
-		my $fk = FIELD_FILE_NAME;
-		my $fauto = FIELD_AUTO_MODE;
-		my $download_url = $S->getCurrentUrl()."?".$S->genQueryString({$fk=>$file_name,$fauto=>1});
-		$Template->param(FILEX_DOWNLOAD_URL=>$download_url);
+		# password failed !
+		if ( $bPasswordFailed ) {
+			$Template->param(FILEX_HAS_ERROR=>1);
+			$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("invalid password"));
+		}
+		if ( $upload->needPassword() ) {
+			$Template->param(FILEX_HAS_PASSWORD=>1);
+			$Template->param(FILEX_FORM_GET_ACTION=>$S->getCurrentUrl());
+			$Template->param(FILEX_FORM_PASSWORD_FIELD_NAME=>PASSWORD_FIELD_NAME);
+			$Template->param(FILEX_FORM_FILE_FIELD_NAME=>FILE_FIELD_NAME);
+			$Template->param(FILEX_FILE_FIELD_VALUE=>$file_name);
+		} else {
+			# enable auto download
+			$Template->param(FILEX_AUTO_DOWNLOAD=>1);
+			my $fk = FILE_FIELD_NAME;
+			my $fauto = AUTO_MODE_FIELD_NAME;
+			my $download_url = $S->getCurrentUrl()."?".$S->genQueryString({$fk=>$file_name,$fauto=>1});
+			$Template->param(FILEX_DOWNLOAD_URL=>$download_url);
+		}
 		display($S,$Template);
 	}
 	# oki we can push the file

@@ -52,17 +52,25 @@ Les options suivantes sont disponibles lors de la dépose d'un fichier :
 
 =item Expiration du fichier
 
-le fichier ne serra plus disponible au téléchargement après le nombre de jour sélectionné.
+Le fichier ne serra plus disponible au téléchargement après le nombre de jour sélectionné.
 
 =item Recevoir un avis de réception à chaque téléchargement
 
-recevoir un e-mail de confirmation à chaque téléchargement du fichier.
+Recevoir un e-mail de confirmation à chaque téléchargement du fichier.
 
 =item Recevoir un récapitulatif des téléchargements lorsque le fichier aura expiré
 
-recevoir un e-mail détaillant les téléchargements du fichier lorsque celui-ci arrivera à expiration.
+Recevoir un e-mail détaillant les téléchargements du fichier lorsque celui-ci arrivera à expiration.
+
+=item Utiliser un mot de passe pour le téléchargement
+
+Vous pouvez définir un mot de passe qui sera demandé à chaque téléchargement de votre fichier.
+
+B<Pensez à faire parvenir le mot de passe aux personnes devant téléchager votre fichier.>
 
 =back
+
+Toutes ces options sont modifiables ultérieurement via la I<Gestion de vos fichiers>.
 
 =head1 Gestion de vos fichiers
 
@@ -80,21 +88,28 @@ Les options suivantes sont modifiable si le fichier B<n'a pas expiré> :
 
 =over 1
 
+=item Mot de passe
+
+Cette option vous permet de définir (ou supprimer) un mot de passe pour le téléchargement de votre fichier.
+Sélectionnez B<non> pour ne pas avoir à utiliser de mot de passe pour télécharger votre fichier ou B<oui> et saisissez un mot de passe dans le champ de droite; soit pour créer un nouveau mot de passe, ou mettre à jour un précédemment défini.
+
+B<N'oubliez pas de faire parvenir ce mot de passe aux personnes devant télécharger votre fichier>
+
 =item Augmenter la durée de vie du fichier de
 
-cette option, si elle est active ou si vous n'avez pas dépassé le nombre de renouvellement permit, vous permet de prolonger la durée de vie de votre fichier de B<n> jours.
+Cette option, si elle est active ou si vous n'avez pas dépassé le nombre de renouvellement permit, vous permet de prolonger la durée de vie de votre fichier de B<n> jours.
 
 =item Expiré  
 
-sélectionnez non si vous voulez faire expirer le fichier. Il ne serra alors plus disponible au téléchargement et sera supprimé du système. B<Cette action est définitive>.
+Sélectionnez B<non> si vous voulez faire expirer le fichier. Il ne serra alors plus disponible au téléchargement et sera supprimé du système. B<Cette action est définitive>.
 
 =item Recevoir un message à chaque téléchargement 
 
-sélectionnez oui ou non pour recevoir ou ne plus recevoir l'e-mail de confirmation de téléchargement de fichier.
+Sélectionnez B<oui> ou B<non> pour recevoir ou ne plus recevoir l'e-mail de confirmation de téléchargement de fichier.
 
 =item Recevoir un récapitulatif lorsque le fichier sera supprimé 
 
-sélectionnez oui ou non pour recevoir un e-mail détaillant les téléchargements du fichier lorsque celui-ci arrivera à expiration.
+Sélectionnez B<oui> ou B<non> pour recevoir un e-mail détaillant les téléchargements du fichier lorsque celui-ci arrivera à expiration.
 
 =back
 

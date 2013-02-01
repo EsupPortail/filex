@@ -2,9 +2,10 @@ package FILEX::DB::Upload;
 use strict;
 use vars qw($VERSION @ISA);
 use FILEX::DB::base;
+use Digest::MD5 qw(md5_hex);
 
 @ISA = qw(FILEX::DB::base);
-$VERSION = 1.1;
+$VERSION = 1.2;
 
 # the constructor
 # without values, create a new upload entry
@@ -41,6 +42,8 @@ sub new {
 			use_proxy => undef,
 			proxy_infos => undef,
 			renew_count => undef,
+			with_password => undef,
+			password => undef,
 		}
 	};
 	my %ARGZ = @_;
@@ -166,6 +169,25 @@ sub _update {
 			push(@fields,"expire_date=FROM_UNIXTIME($value)");
 		}
 	}
+	# need password
+	# TODO : voir si nécéssaire de ne pas positionner le flag with_password
+	# si problème sur password ! dans _create aussi
+	$value = $self->{'_UPLOAD_'}->{'fields'}->{'with_password'};
+	if ( defined($value) ) {
+		if ( !$self->checkBool($value) ) {
+			$self->setLastError(string=>"[ with_password ] invalid field format",code=>-3,query=>$value);
+		} else {
+			push(@fields,"with_password=$value");
+			if ( $value ) {
+				$value = $self->{'_UPLOAD_'}->{'fields'}->{'password'};
+				if ( !$self->checkStrLength($value,0,50) ) {
+          $self->setLastError(string=>"[ password ] invalid field format",code=>-3,query=>"$value");
+        } else {
+        	push(@fields,"password=".$dbh->quote($value));
+        }
+			}
+		}
+	}
 	# renew_count (if expire_change)
 	if ( $self->{'_UPLOAD_'}->{'expire_change'} ) {
 		push(@fields,"renew_count=renew_count+1");
@@ -200,7 +222,7 @@ sub _create {
 	return 1 if ($self->{'_UPLOAD_'}->{'data_change'} == 0);
 	# real_name
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'real_name'};
-	if ( !defined($value) || ! $self->checkStrLength($value,0,256) ) {
+	if ( !defined($value) || ! $self->checkStrLength($value,0,255) ) {
 		$self->setLastError(string=>"[ real_name ] must exists or invalid field format",code=>-2,query=>"$value");
 		return undef;
 	} else {
@@ -209,7 +231,7 @@ sub _create {
 	}
 	# file_name
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'file_name'};
-  if ( !defined($value) || !$self->checkStrLength($value,0,256) ) {
+  if ( !defined($value) || !$self->checkStrLength($value,0,255) ) {
     $self->setLastError(string=>"[ file_name ] must exists or invalid field format",code=>-2,query=>"$value");
     return undef;
   } else {
@@ -227,7 +249,7 @@ sub _create {
   }
 	# owner
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'owner'};
-  if ( !defined($value) || !$self->checkStrLength($value,0,256) ) {
+  if ( !defined($value) || !$self->checkStrLength($value,0,255) ) {
     $self->setLastError(string=>"[ owner ] must exists or invalid field format",code=>-2,query=>"$value");
     return undef;
   } else {
@@ -257,7 +279,7 @@ sub _create {
 	# content_type (not mandatory)
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'content_type'};
 	if ( defined($value) ) {
-		if ( !$self->checkStrLength($value,0,256) ) {
+		if ( !$self->checkStrLength($value,0,255) ) {
 			$self->setLastError(string=>"[ content_type ] invalid field format",code=>-3,query=>"$value");
 		} else {
 			push(@fields,"content_type");
@@ -287,13 +309,37 @@ sub _create {
 	# proxy_info (not mandatory)
 	$value = $self->{'_UPLOAD_'}->{'fields'}->{'proxy_infos'};
 	if ( defined($value) ) {
-		if ( !$self->checkStrLength($value,0,256) ) {
+		if ( !$self->checkStrLength($value,0,255) ) {
 			$self->setLastError(string=>"[ proxy_infos ] invalid field format",code=>-3,query=>"$value");
 		} else {
 			push(@fields,"proxy_infos");
 			push(@values,$dbh->quote($value));
 		}
 	}
+	# password (not mandatory)
+	$value = $self->{'_UPLOAD_'}->{'fields'}->{'with_password'};
+	if ( defined($value) ) {
+		if ( !$self->checkBool($value) ) {
+			$self->setLastError(string=>"[ with_password ] invalid field format",code=>-3,query=>"$value");
+		} else {
+			push(@fields,"with_password");
+			push(@values,$value);
+			# go for the real password
+			# TODO
+			if ( $value ) {
+				$value = $self->{'_UPLOAD_'}->{'fields'}->{'password'};
+				if ( defined($value) ) {
+					if ( !$self->checkStrLength($value,0,50) ) {
+						$self->setLastError(string=>"[ password ] invalid field format",code=>-3,query=>"$value");
+					} else {
+						push(@fields,"password");
+						push(@values,$dbh->quote($value));
+					}
+				}
+			}
+		}
+	}
+	
 	# upload_date && expire_date
 	my ($def_days,$u_date,$exp_date,$res_up,$res_exp);
 	$def_days = $self->_config->getDefaultFileExpire();
@@ -505,6 +551,36 @@ sub getGetResume {
 	my $self = shift;
 	return $self->{'_UPLOAD_'}->{'fields'}->{'get_resume'};
 }
+
+# set the password for file download
+# without args, unset the password
+sub setPassword {
+	my $self = shift;
+	my $password = shift;
+	# password exists then set it
+	if ( defined($password) && length($password) ) {
+		$self->{'_UPLOAD_'}->{'fields'}->{'with_password'} = 1;
+		$self->{'_UPLOAD_'}->{'fields'}->{'password'} = md5_hex($password);
+	} else {
+		$self->{'_UPLOAD_'}->{'fields'}->{'with_password'} = 0;
+		$self->{'_UPLOAD_'}->{'fields'}->{'password'} = undef;
+	}
+	$self->{'_UPLOAD_'}->{'data_change'} ++;
+}
+
+sub verifyPassword {
+	my $self = shift;
+	my $password = shift;
+	return 1 if ( ! $self->needPassword() );
+	return 1 if ( $self->{'_UPLOAD_'}->{'fields'}->{'password'} eq md5_hex($password) );
+	return 0;
+}
+
+sub needPassword {
+	my $self = shift;
+	return $self->{'_UPLOAD_'}->{'fields'}->{'with_password'};
+}
+
 
 # set only if new
 sub setIpAddress {

@@ -16,6 +16,9 @@
 		<p>Le fichier <strong><TMPL_VAR NAME="FILEX_FILE_NAME"></strong> &agrave; &eacute;t&eacute; d&eacute;pos&eacute;.</p>
 		<p>Pour qu'un utilisateur t&eacute;l&eacute;charge votre fichier, envoyez lui cette adresse :</p>
 		<p><strong><TMPL_VAR NAME="FILEX_GET_URL"></strong></p>
+		<TMPL_IF NAME="FILEX_HAS_PASSWORD">
+		<p>Mot de passe pour t&eacute;l&eacute;charger le fichier : <strong><TMPL_VAR NAME="FILEX_PASSWORD"></strong></p>
+		</TMPL_IF>
 		<p>Votre fichier sera automatiquement supprim&eacute; du serveur dans <strong><TMPL_VAR NAME="FILEX_DAY_KEEP"></strong> jours.</p>
 		<TMPL_IF NAME="FILEX_HAS_ERROR"><p class=error><TMPL_VAR NAME="FILEX_ERROR"></p></TMPL_IF>
 		<p>Informations :

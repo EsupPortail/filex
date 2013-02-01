@@ -331,7 +331,6 @@ sub _doProcessAuthParam {
 	my $result = $ARGZ{'result'} if ( exists($ARGZ{'result'}) && ref($ARGZ{'result'}) eq "HASH" ) or warn(__PACKAGE__,"-> _doProcessAuthParam(param=>ARRAY_REF,result=>HASH_REF}") && return undef;
 	# counter for mandatory auth parameters.
 	my $mandatory = 0;
-warn("processing auth");
 	# loop on param
 	while ( my $key = shift(@$param) ) {
 		if ( $key eq "currenturl" ) {

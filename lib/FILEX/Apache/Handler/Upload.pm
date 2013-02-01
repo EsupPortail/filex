@@ -27,6 +27,10 @@ use constant RESUME_FIELD_NAME => "getresume";
 use constant OLD_DLID_FIELD_NAME => "odlid";
 # download id field
 use constant DLID_FIELD_NAME => "dlid";
+# use password id field
+use constant NEED_PASSWORD_FIELD_NAME => "withpwd";
+# password id field
+use constant PASSWORD_FIELD_NAME => "pwd";
 
 $VERSION = 1.0;
 
@@ -111,6 +115,10 @@ sub handler {
 	$t_begin->param(FILEX_FORM_UPLOAD_RESUME_NAME=>RESUME_FIELD_NAME);
 	$t_begin->param(FILEX_FORM_UPLOAD_UPLOAD_NAME=>UPLOAD_FIELD_NAME);
 	$t_begin->param(FILEX_FORM_UPLOAD_OLD_DLID_NAME=>OLD_DLID_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_NEED_PASSWORD_NAME=>NEED_PASSWORD_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_PASSWORD_NAME=>PASSWORD_FIELD_NAME);
+	$t_begin->param(FILEX_MIN_PASSWORD_LENGTH=>$S->config->getMinPasswordLength());
+	$t_begin->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
 	$t_begin->param(FILEX_MAX_DAY_KEEP=>$S->config->getMaxFileExpire());
 	$t_begin->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	$t_begin->param(FILEX_USER_NAME=>$S->toHtml($S->getUserRealName($username)));
@@ -243,7 +251,9 @@ sub handler {
 	$upload_infos{'getdelivery'} = 0 if ($upload_infos{'getdelivery'} !~ /^[0-1]$/);
 	$upload_infos{'getresume'} = $S->apreq->param(RESUME_FIELD_NAME) || 0;
 	$upload_infos{'getresume'} = 0 if ($upload_infos{'getresume'} !~ /^[0-1]$/);
-
+	$upload_infos{'wpwd'} = $S->apreq->param(NEED_PASSWORD_FIELD_NAME) || 0;
+	$upload_infos{'wpwd'} = 0 if ( $upload_infos{'wpwd'} !~ /^[0-1]$/);
+	$upload_infos{'password'} = $S->apreq->param(PASSWORD_FIELD_NAME);
 	# process upload
 	$upload_infos{'real_filename'} = normalize($Upload->filename());
 	$upload_infos{'file_name'} = genUniqId(); # "filesystem" filename
@@ -280,6 +290,17 @@ sub handler {
 	$record->setExpireDays($upload_infos{'daykeep'});
 	$record->setGetDelivery($upload_infos{'getdelivery'});
 	$record->setGetResume($upload_infos{'getresume'});
+	# set password if checked and password is ok
+	if ( $upload_infos{'wpwd'} == 1 ) {
+		if ( defined($upload_infos{'password'}) ) {
+			# strip whitespace 
+			$upload_infos{'password'} =~ s/\s//g;
+			my $pwd_length = length($upload_infos{'password'});
+			# set password only if in valid range
+			$record->setPassword($upload_infos{'password'}) if ( $pwd_length >= $S->config->getMinPasswordLength() && 
+			                                                     $pwd_length <= $S->config->getMaxPasswordLength() );
+		}
+	}
 	# create the new record
 	if ( ! $record->save() ) {
 		warn(__PACKAGE__,"-> Unable to save record ...");
@@ -289,7 +310,8 @@ sub handler {
 	}
 	# send email if needed
 	if ( $S->config->needEmailNotification() ) {
-		if ( ! sendMail($S,$record) ) {
+		# password is stored as an md5 string so we need the clear text one
+		if ( ! sendMail($S,$record,$upload_infos{'password'}) ) {
 			$t_end->param(FILEX_HAS_ERROR=>1);
 			$t_end->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to send email"));
 		}
@@ -302,6 +324,10 @@ sub handler {
 	$t_end->param(FILEX_GET_URL=>genGetUrl($S,$record->getFileName()));
 	$t_end->param(FILEX_DAY_KEEP=>$upload_infos{'daykeep'});
 	$t_end->param(FILEX_UPLOAD_URL=>$S->getUploadUrl());
+	if ( $record->needPassword() ) {
+		$t_end->param(FILEX_HAS_PASSWORD=>1);
+		$t_end->param(FILEX_PASSWORD=>toHtml($upload_infos{'password'}));
+	}
 	display($S,$t_end);
 	return OK;
 }
@@ -371,6 +397,7 @@ sub storeFile {
 sub sendMail {
 	my $s = shift;
 	my $record = shift;
+	my $password = shift;
 	# load template
 	my $t = $s->getTemplate(name=>"mail_upload") or return undef;
 	# fill template
@@ -383,6 +410,10 @@ sub sendMail {
 	$t->param(FILEX_SYSTEM_EMAIL=>$s->config->getSystemEmail());
 	$t->param(FILEX_GET_DELIVERY=>$s->i18n->localize($record->getGetDelivery() ? "yes" : "no"));
 	$t->param(FILEX_GET_RESUME=>$s->i18n->localize($record->getGetResume() ? "yes" : "no"));
+	if ( $record->needPassword() ) {
+		$t->param(FILEX_HAS_PASSWORD=>1);
+		$t->param(FILEX_PASSWORD=>$password);
+	}
 	# now it time to send email
 	my $to = $s->getMail($s->getAuthUser());
 	return undef if !length($to);

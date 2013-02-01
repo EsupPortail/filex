@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 	<base href="<TMPL_VAR NAME='FILEX_STATIC_FILE_BASE'>">
-	<TMPL_IF NAME="FILEX_CAN_DOWNLOAD"><meta http-equiv="refresh" content="5; URL=<TMPL_VAR NAME='FILEX_DOWNLOAD_URL'>"></TMPL_IF>
+	<TMPL_IF NAME="FILEX_AUTO_DOWNLOAD"><meta http-equiv="refresh" content="5; URL=<TMPL_VAR NAME='FILEX_DOWNLOAD_URL'>"></TMPL_IF>
   <title>FileX</title>
 	<link href="styles/filex.css" rel="stylesheet" type="text/css">
 </head>
@@ -23,7 +23,20 @@
 			<li><strong>Disponible jusqu'au :</strong> <TMPL_VAR NAME="FILEX_FILE_EXPIRE_DATE">
 			<li><strong>Publi&eacute; par :</strong> <a href="mailto:<TMPL_VAR NAME='FILEX_FILE_OWNER'>"><TMPL_VAR NAME="FILEX_FILE_OWNER"></a>
 		</ul>
+		<TMPL_IF NAME="FILEX_HAS_PASSWORD">
+		<form method="post" action="<TMPL_VAR NAME='FILEX_FORM_GET_ACTION'>">
+		<p>
+			<label for="ctl01">
+				<strong>Ce fichier n&eacute;cessite un mot de passe pour &ecirc;tre t&eacute;l&eacute;charg&eacute; :</strong>
+			</label> 
+			<input type="password" size="15" class="Field" id="ctl01" name="<TMPL_VAR NAME='FILEX_FORM_PASSWORD_FIELD_NAME'>"> 
+			<input type="hidden" name="<TMPL_VAR NAME='FILEX_FORM_FILE_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_FILE_FIELD_VALUE'>">
+			<input type="submit" value="Valider" class="Submit">
+		</p>
+		</form>
+		<TMPL_ELSE>
 		<p>Si le t&eacute;l&eacute;chargement ne commence pas automatiquement dans 5 secondes, <a href="<TMPL_VAR NAME='FILEX_DOWNLOAD_URL'>">suivez ce lien</a></p>
+		</TMPL_IF>
 		<p><strong>Note :</strong><br>
 		le nom de fichier que vous proposera votre navigateur au t&eacute;l&eacute;chargement peut &ecirc;tre diff&eacute;rent du vrai nom du fichier.
 		</p>

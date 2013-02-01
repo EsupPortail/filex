@@ -300,6 +300,24 @@ sub _reload {
 	return 1;
 }
 
+# MinPasswordLength 
+sub getMinPasswordLength {
+	my $self = shift;
+	$self->_reload();
+	my $value = int($self->{'_config_'}->val(SYSSECTION,"MinPasswordLength",4));
+	$value = 4 if ($value <= 0 || $value > 30);
+	return $value;
+}
+
+#MaxPasswordLength
+sub getMaxPasswordLength {
+	my $self = shift;
+	$self->_reload();
+	my $value = int($self->{'_config_'}->val(SYSSECTION,"MaxPasswordLength",4));
+	$value = 30 if ( $value <= 0 || $value > 30);
+	return $value;
+}
+
 # Which authentification module to use
 sub getAuthModule {
 	my $self = shift;

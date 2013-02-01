@@ -67,6 +67,16 @@ p.meter {
 	text-align: center ! important;
 }
 
+.notes {
+	font-size: smaller ;
+	color: red;
+	font-style: italic;
+	padding: 0pt;
+	padding: 0;
+	margin: 0;
+	padding-left: 5pt;
+}
+
 p.stats {
 	font-size: 10pt ! important;
 	text-align: left ! important;

@@ -17,6 +17,8 @@ use constant FIELD_EXPIRE_NAME => "expire";
 use constant FIELD_RESUME_NAME => "resume";
 use constant FIELD_DELIVERY_NAME => "delivery";
 use constant FIELD_RENEW_NAME => "renew";
+use constant FIELD_USE_PASSWORD_NAME => "upwd";
+use constant FIELD_PASSWORD_NAME => "pwd";
 use constant ADMIN_MODE => 1;
 
 # require : FILEX::System + upload id
@@ -101,6 +103,33 @@ sub doFileInfos {
 			}
 		}
 	}
+	# password
+	my $use_password = $S->apreq->param(FIELD_USE_PASSWORD_NAME);
+	if ( defined($use_password) ) {
+		if ( $use_password == 0 ) {
+			# disable password only if enabled
+			$upload->setPassword() if ( $upload->needPassword() );
+			$changes++;
+		}
+		if ( $use_password == 1 ) {
+			my $password = $S->apreq->param(FIELD_PASSWORD_NAME);
+			# strip whitespace
+			$password =~ s/\s//g if defined($password);
+			my $bSetPassword = 1;
+			if ( $upload->needPassword() ) {
+				# password already set && no new password then nothing
+				$bSetPassword = 0 if ( !defined($password) || !length($password) );
+			} 
+			if ( $bSetPassword ) {
+				# check for password length
+				if ( defined($password) && ( length($password) >= $S->config->getMinPasswordLength() && 
+				     length($password) <= $S->config->getMaxPasswordLength() ) ) {
+					$upload->setPassword($password);
+					$changes++;
+				}
+			}
+		}
+	}
 	if ( $changes && !$upload->save() ) {
 		$T->param(FILEX_HAS_ERROR=>1);
 		$T->param(FILEX_ERROR=>$upload->getLastErrorString());
@@ -145,6 +174,18 @@ sub doFileInfos {
 		$T->param(FILEX_FORM_EXPIRE_VALUE_NO=>0);
 	} else {
 		$T->param(FILEX_EXPIRED=>$S->i18n->localizeToHtml("yes"));
+	}
+	# password
+	$T->param(FILEX_FORM_USE_PASSWORD_NAME=>FIELD_USE_PASSWORD_NAME);
+	$T->param(FILEX_FORM_PASSWORD_NAME=>FIELD_PASSWORD_NAME);
+	$T->param(FILEX_FORM_USE_PASSWORD_VALUE_ACTIVATE=>1);
+	$T->param(FILEX_FORM_USE_PASSWORD_VALUE_DESACTIVATE=>0);
+	$T->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
+	$T->param(FILEX_MIN_PASSWORD_LENGTH=>$S->config->getMinPasswordLength());
+	if ( $upload->needPassword() ) {
+		$T->param(FILEX_FORM_USE_PASSWORD_ACTIVATE_CHECKED=>1);
+	} else {
+		$T->param(FILEX_FORM_USE_PASSWORD_DESACTIVATE_CHECKED=>1);
 	}
 	# get delivery mail
 	$T->param(FILEX_FORM_DELIVERY_NAME=>FIELD_DELIVERY_NAME);

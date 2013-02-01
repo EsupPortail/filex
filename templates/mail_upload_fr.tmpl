@@ -6,6 +6,8 @@ Pour qu'un utilisateur télécharge votre fichier, envoyez lui cette adresse :
 
 <TMPL_VAR NAME="FILEX_GET_URL">
 
+<TMPL_IF NAME="FILEX_HAS_PASSWORD">Mot de passe pour télécharger le fichier : <TMPL_VAR NAME="FILEX_PASSWORD"></TMPL_IF>
+
 Information sur le fichier déposé :
 
 Nom : <TMPL_VAR NAME="FILEX_FILE_NAME">
