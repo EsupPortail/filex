@@ -20,6 +20,7 @@
 	<input type="hidden" name="<TMPL_VAR NAME='FILEX_MAIN_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_MAIN_ACTION_ID'>">
 	<input type="hidden" name="<TMPL_VAR NAME='FILEX_SUB_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_SUB_ACTION_ID'>">
 	</form>
+	<a href="<TMPL_VAR NAME='FILEX_DELETE_EXPIRED_URL'>">Supprimer les exclusions expir&eacute;es</a>
 	<TMPL_IF NAME="FILEX_HAS_ERROR"><p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p></TMPL_IF>
 <TMPL_IF NAME="FILEX_HAS_EXCLUDE">
 	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des exclusions">
@@ -29,19 +30,19 @@
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_EXCLUDE_LOOP">
-			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even smaller"<TMPL_ELSE> class="smaller"</TMPL_UNLESS>>
 				<td><TMPL_VAR NAME="FILEX_EXCLUDE_DATE"></td>
-				<td><TMPL_VAR NAME="FILEX_EXCLUDE_EXPIRE_DAYS"></td>
-				<td><TMPL_VAR NAME="FILEX_EXCLUDE_EXPIRED"></td>
-				<td><TMPL_VAR NAME="FILEX_EXCLUDE_ORDER"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_EXCLUDE_EXPIRE_DAYS"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_EXCLUDE_EXPIRED"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_EXCLUDE_ORDER"></td>
 				<td><TMPL_VAR NAME="FILEX_EXCLUDE_DESCRIPTION"></td>
 				<td><TMPL_VAR NAME="FILEX_EXCLUDE_RULE"></td>
-				<td><TMPL_VAR NAME="FILEX_EXCLUDE_STATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_EXCLUDE_STATE"></td>
 				<td style="text-align: center;">
 					<ul class="inline" style="margin: 0; padding: 0;">
-						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
-						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
 						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
 					</ul>
 				</td>
 			</tr>

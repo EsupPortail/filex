@@ -5,7 +5,7 @@ use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VE
 
 BEGIN {
 	if (MP2) {
-		use Apache2::ServerUtil ();
+		require Apache2::ServerUtil;
 	}
 }
 do {

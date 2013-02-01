@@ -9,6 +9,7 @@ use constant SA_STATE => 2;
 use constant SA_MODIFY => 4;
 use constant SA_SHOW_MODIFY => 5;
 use constant SA_ADD => 3;
+use constant SA_DELETE_EXPIRED => 6;
 
 use constant SUB_ACTION_FIELD_NAME=>"sa";
 use constant EXCLUDE_RULE_ID_FIELD_NAME=>"exclude_rule_id";
@@ -38,7 +39,7 @@ sub process {
 	$T->param(FILEX_MAIN_ACTION_FIELD_NAME=>$self->getDispatchName());
 	$T->param(FILEX_MAIN_ACTION_ID=>$self->getActionId());
 	$T->param(FILEX_SUB_ACTION_FIELD_NAME=>SUB_ACTION_FIELD_NAME);
-
+	$T->param(FILEX_DELETE_EXPIRED_URL=>toHtml($self->genDelExpiredUrl()));
 	# Exclude database
 	my $exclude_DB = eval { FILEX::DB::Admin::Exclude->new(); };
 	if ($@) {
@@ -61,6 +62,7 @@ sub process {
 				$errstr = ($exclude_DB->getLastErrorCode() == 1062) ? $S->i18n->localize("rule already exists") : $exclude_DB->getLastErrorString();
 				$b_err = 1;
 			}
+			$T->param(FILEX_EXCLUDE_FORM_EXPIRE_DAYS=>$S->config->getExcludeExpireDays());
 			last SWITCH;
 		}
 		# delete rule
@@ -111,6 +113,15 @@ sub process {
 					expire_days=>$S->apreq->param(EXCLUDE_RULE_EXPIRE_DAYS_FIELD_NAME)) ) {
 				$b_err = 1;
 				$errstr = ( $exclude_DB->getLastErrorCode() == 1062 ) ? $S->i18n->localize("rule already exists") : $exclude_DB->getLastErrorString();
+			}
+			$T->param(FILEX_EXCLUDE_FORM_EXPIRE_DAYS=>$S->config->getExcludeExpireDays());
+			last SWITCH;
+		}
+		# delete expired rules
+		if ( $sub_action == SA_DELETE_EXPIRED ) {
+			if ( ! $exclude_DB->delExpired() ) {
+				$b_err = 1;
+				$errstr = $exclude_DB->getLastErrorString();
 			}
 			last SWITCH;
 		}
@@ -202,6 +213,14 @@ sub genRemoveUrl {
 	$url .= "?".$self->genQueryString(
 		$sub_action=>SA_DELETE,
 		$exclude_id=>$id);
+	return $url;
+}
+
+sub genDelExpiredUrl {
+	my $self = shift;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString($sub_action=>SA_DELETE_EXPIRED);
 	return $url;
 }
 

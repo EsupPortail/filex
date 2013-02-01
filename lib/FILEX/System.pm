@@ -338,7 +338,7 @@ sub beginSession {
 			($bIsExclude,$excludeReason) = $self->isExclude($self->{'_user_'}) if !defined($bIsExclude);
 			if ( ref($self->{'_session_'}) ) { 
 				$self->{'_session_'}->setParam(is_exclude=>$bIsExclude,1);
-				$self->{'_session_'}->setParam(exclude_reason=>$excludeReason,1);
+				$self->{'_session_'}->setParam(exclude_reason=>(defined($excludeReason))?$excludeReason:"",1);
 			}
 		}
 		if ( $bIsExclude ) {

@@ -48,7 +48,7 @@
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_FILES_LOOP">
-			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>><td><a<TMPL_IF NAME="FILEX_HAS_EXPIRED"> class="expired"</TMPL_IF> href="<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>" title="Informations : <TMPL_VAR NAME='FILEX_LONG_FILE_NAME'>"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td><td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td><td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td></tr>
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>><td><a<TMPL_IF NAME="FILEX_HAS_EXPIRED"> class="expired"</TMPL_IF> href="<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>" title="Informations : <TMPL_VAR NAME='FILEX_LONG_FILE_NAME'>"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td class="center"><TMPL_VAR NAME="FILEX_FILE_SIZE"></td><td class="center"><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td><td class="center"><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td><td class="center"><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td></tr>
 			</TMPL_LOOP>
 		</tbody>
 	</table>

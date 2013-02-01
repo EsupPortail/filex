@@ -1,3 +1,10 @@
+v1.7a
+1- Correction d'un petit bug dans le module de configuration d'Apache (HttpConfig.pm) dans le cas d'un usage avec apache 1.x
+2- Ajout des fonctionnalités :
+	- Suppression des exclusions ayant expiré (module "Gestion des exclusions")
+	- Suppression des règles sans associations (module "Gestion des règles")
+3- Modifications feuille de style et templates pour meilleur lisibilité (essentiellement les modules administratifs)
+
 v1.7
 1- Fonctionne avec Apache 2
 2- nouveau module de gestion des sessions

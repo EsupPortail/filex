@@ -108,6 +108,10 @@ p.gobackfilex {
 	text-align: center ! important;
 }
 
+.smaller {
+	font-size: smaller;
+}
+
 table.infos {
 	border: solid black;
 	border-width: 1px 0 0 1px;

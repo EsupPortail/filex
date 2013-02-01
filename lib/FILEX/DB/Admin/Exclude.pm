@@ -251,6 +251,25 @@ sub existsRule {
 	return $result;
 }
 
+# delete expired rules
+#
+sub delExpired {
+	my $self = shift;
+	my $dbh = $self->_dbh();
+	my $strQuery = "DELETE FROM exclude WHERE expire_days > 0 AND DATE_ADD(create_date, INTERVAL expire_days DAY) < NOW()";
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$dbh->commit();
+	};
+ 	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"=> Database Error : $@ : $strQuery");
+		return undef;
+	}
+	return 1;
+}
+
 1;
 =pod
 

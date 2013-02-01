@@ -152,15 +152,15 @@
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_RESULTS_LOOP">
-			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even smaller"<TMPL_ELSE> class="smaller"</TMPL_UNLESS>>
 				<td><a href="<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>" title="<TMPL_VAR NAME='FILEX_LONG_FILE_NAME'>"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td>
-				<td><TMPL_VAR NAME="FILEX_DISK_NAME"></td>
-				<td><TMPL_VAR NAME="FILEX_FILE_OWNER"></td>
-				<td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td>
-				<td><TMPL_VAR NAME="FILEX_ENABLE"></td>
-				<td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td>
-				<td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td>
-				<td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_DISK_NAME"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_FILE_OWNER"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_FILE_SIZE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_ENABLE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>

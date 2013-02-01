@@ -284,6 +284,31 @@ sub exists {
 	return $result;
 }
 
+# delete rules without associations
+sub delNoAssoc {
+	my $self = shift;
+	my $dbh = $self->_dbh();
+	my $strQuery = "DELETE rules ".
+		"FROM rules ".
+		"LEFT JOIN exclude ON rules.id = exclude.rule_id ".
+		"LEFT JOIN quota ON rules.id = quota.rule_id ".
+		"LEFT JOIN big_brother ON rules.id = big_brother.rule_id ".
+		"WHERE exclude.rule_id IS NULL ".
+		"AND quota.rule_id IS NULL ".
+		"AND big_brother.rule_id IS NULL";
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$dbh->commit();
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"=> Database Error : $@ : $strQuery");
+		return undef;
+	}
+	return 1;
+}
+
 1;
 =pod
 

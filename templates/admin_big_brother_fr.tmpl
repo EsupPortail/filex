@@ -30,16 +30,16 @@
 			<TMPL_LOOP NAME="FILEX_BB_LOOP">
 			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
 				<td><TMPL_VAR NAME="FILEX_BB_DATE"></td>
-				<td><TMPL_VAR NAME="FILEX_BB_ORDER"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_BB_ORDER"></td>
 				<td><TMPL_VAR NAME="FILEX_BB_DESCRIPTION"></td>
 				<td><TMPL_VAR NAME="FILEX_BB_RULE"></td>
 				<td><TMPL_VAR NAME="FILEX_BB_MAIL"></td>
-				<td><TMPL_VAR NAME="FILEX_BB_STATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_BB_STATE"></td>
 				<td style="text-align: center;">
 					<ul class="inline" style="padding:0; margin: 0;">
-						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
-						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
 						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
 					</ul>
 				</td>
 			</tr>

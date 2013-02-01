@@ -39,17 +39,17 @@
 			<TMPL_LOOP NAME="FILEX_QUOTA_LOOP">
 			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_DATE"></td>
-				<td><TMPL_VAR NAME="FILEX_QUOTA_ORDER"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_QUOTA_ORDER"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_DESCRIPTION"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_RULE"></td>
-				<td><TMPL_VAR NAME="FILEX_QUOTA_MAX_FILE_SIZE"></td>
-				<td><TMPL_VAR NAME="FILEX_QUOTA_MAX_USED_SPACE"></td>
-				<td><TMPL_VAR NAME="FILEX_QUOTA_STATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_QUOTA_MAX_FILE_SIZE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_QUOTA_MAX_USED_SPACE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_QUOTA_STATE"></td>
 				<td style="text-align: center;">
 					<ul class="inline" style="margin: 0; padding:0;">
-						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
-						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
 						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
 					</ul>
 				</td>
 			</tr>

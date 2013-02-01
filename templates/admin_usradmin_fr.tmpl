@@ -16,13 +16,13 @@
 			<TMPL_LOOP NAME="FILEX_ADMINS_LOOP">
 			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
 				<td><TMPL_VAR NAME="FILEX_ADMIN_UID"></td>
-				<td><TMPL_VAR NAME="FILEX_ADMIN_INFOS"></td>
-				<td><a href="mailto:<TMPL_VAR NAME='FILEX_ADMIN_MAIL'>"><TMPL_VAR NAME="FILEX_ADMIN_MAIL"></a></td>
-				<td><TMPL_VAR NAME="FILEX_ADMIN_STATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_ADMIN_INFOS"></td>
+				<td class="center"><a href="mailto:<TMPL_VAR NAME='FILEX_ADMIN_MAIL'>"><TMPL_VAR NAME="FILEX_ADMIN_MAIL"></a></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_ADMIN_STATE"></td>
 				<td style="text-align: center;">
 					<ul class="inline" style="padding:0; margin:0;">
-						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
 						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
 					</ul>
 				</td>
 			</tr>

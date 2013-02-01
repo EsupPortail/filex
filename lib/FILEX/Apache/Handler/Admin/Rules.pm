@@ -8,6 +8,7 @@ use constant SA_DELETE => 1;
 use constant SA_MODIFY => 2;
 use constant SA_ADD => 3;
 use constant SA_SHOW_MODIFY => 4;
+use constant SA_DELETE_NOASSOC => 5;
 
 use constant SUB_ACTION_FIELD_NAME=>"sa";
 use constant RULES_RULE_TYPE_FIELD_NAME=>"rule_type";
@@ -32,6 +33,7 @@ sub process {
 	$T->param(FILEX_RULES_RULE_NAME_FIELD_NAME=>RULES_RULE_NAME_FIELD_NAME);
 	$T->param(FILEX_RULES_RULE_EXP_FIELD_NAME=>RULES_RULE_EXP_FIELD_NAME);
 	$T->param(FILEX_RULES_RULE_ID_FIELD_NAME=>RULES_RULE_ID_FIELD_NAME);
+	$T->param(FILEX_DELETE_NOASSOC_RULES=>toHtml($self->genDeleteNoAssocRulesUrl()));
 	my $DB = eval { FILEX::DB::Admin::Rules->new(); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
@@ -88,6 +90,14 @@ sub process {
 					type=>$S->apreq->param(RULES_RULE_TYPE_FIELD_NAME)) ) {
 				$b_err = 1;
 				$errstr = ( $DB->getLastErrorCode() == 1062 ) ? $S->i18n->localize("rule already exists") : $DB->getLastErrorString();
+			}
+			last SWITCH;
+		}
+		# delete no associated rules
+		if ( $sub_action == SA_DELETE_NOASSOC ) {
+			if ( ! $DB->delNoAssoc() ) {
+				$b_err = 1;
+				$errstr = $DB->getLastErrorString();
 			}
 			last SWITCH;
 		}
@@ -153,6 +163,14 @@ sub genRemoveUrl {
 	my $rule_id_field = RULES_RULE_ID_FIELD_NAME;
 	my $url = $self->sys->getCurrentUrl();
 	$url .= "?".$self->genQueryString($sub_action=>SA_DELETE,$rule_id_field=>$id);
+	return $url;
+}
+
+sub genDeleteNoAssocRulesUrl {
+	my $self = shift;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString($sub_action=>SA_DELETE_NOASSOC);
 	return $url;
 }
 

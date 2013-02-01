@@ -13,10 +13,10 @@
 			<TMPL_LOOP NAME="FILEX_PURGE_LOOP">
 			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
 				<td><TMPL_VAR NAME="FILEX_FILE_NAME"></td>
-				<td><TMPL_VAR NAME="FILEX_OWNER"></td>
-				<td><TMPL_VAR NAME="FILEX_SIZE"></td>
-				<td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td>
-				<td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_OWNER"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_SIZE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td>
+				<td class="center"><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>
