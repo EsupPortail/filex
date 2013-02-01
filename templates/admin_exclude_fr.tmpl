@@ -1,10 +1,10 @@
 <!-- chunky template for current download -->
-<h1>Gestion des exclusions :</h1>
+<h2>Gestion des exclusions :</h2>
 	<p>
 		Ce module permet de g&eacute;rer les acc&egrave;s des utilisateurs au syst&egrave;me. Une exclusion est bas&eacute;e sur une r&egrave;gle pr&eacute;c&eacute;demment d&eacute;finie via le module "Gestion des r&egrave;gles"
 	</p>
 	<form method="post" action="<TMPL_VAR NAME='FILEX_EXCLUDE_FORM_ACTION'>">
-	<h2>Ajouter une exclusion :</h2>
+	<h3>Ajouter une exclusion :</h3>
 	<p><label for="rtype">R&egrave;gles : </label>
 		<select name="<TMPL_VAR NAME='FILEX_EXCLUDE_RULE_ID_FIELD_NAME'>" id="rtype" class="Field">
 			<TMPL_LOOP NAME="FILEX_EXCLUDE_RULES_LOOP">

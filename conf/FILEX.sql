@@ -69,7 +69,7 @@ CREATE TABLE upload (
   INDEX idx_filename (file_name),
   INDEX idx_expire (expire_date),
 	INDEX idx_owner (owner),
-	INDEX idx_owner_uniq_id (owner_uniq_id),
+	INDEX idx_owner_uniq_id (owner_uniq_id)
 ) TYPE=InnoDB;
 
 

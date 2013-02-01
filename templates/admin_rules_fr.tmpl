@@ -1,5 +1,5 @@
 <!-- chunky template for current download -->
-<h1>Gestion des r&egrave;gles :</h1>
+<h2>Gestion des r&egrave;gles :</h2>
 	<p>Les r&egrave;gles sont utilis&eacute;es pour g&eacute;rer les <em>exclusions</em> ainsi que les <em>quotas</em>. Si une r&egrave;gle est valide pour un utilisateur donn&eacute;, alors elle d&eacute;clanchera une action comme par exemple l'exclusion de l'acc&egrave;s au syst&egrave;me. Les r&egrave;gles sont de deux type :</p>
 	<ul>
 		<li>Les r&egrave;gles de type "<strong>DN</strong>" : ce sont des expressions r&eacute;guli&egrave;res appliqu&eacute;es sur le DN d'un utilisateur authentifi&eacute; avec succ&egrave;s.</li>
@@ -9,7 +9,7 @@
 	</ul>
 	<p><strong>Attention</strong> : les r&egrave;gles &eacute;tant r&eacute;f&eacute;renc&eacute;es par la gestion des <em>exclusions</em> et des <em>quotas</em>; si vous supprimer une r&egrave;gle, alors les entr&eacute;es d'exclusions et de quotas les r&eacute;f&eacute;ren&ccedil;ant seront supprim&eacute;es.</p>
 	<form method="post" action="<TMPL_VAR NAME='FILEX_RULES_FORM_ACTION'>">
-	<h2>Ajouter une r&egrave;gle :</h2>
+	<h3>Ajouter une r&egrave;gle :</h3>
 	<p><label for="rtype">Type : </label>
 		<select name="<TMPL_VAR NAME='FILEX_RULES_RULE_TYPE_FIELD_NAME'>" id="rtype" class="Field">
 			<TMPL_LOOP NAME="FILEX_RULES_TYPE_LOOP">

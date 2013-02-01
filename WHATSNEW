@@ -1,3 +1,8 @@
+v1.6a
+1- petite modification des templates d'affichage
+2- petite modification de la feuille de style
+3- correction d'un bug syntaxique dans le fichier d'import de la base de donnée (FILEX.sql)
+
 v1.6
 1- bug fix script cron : liste des téléchargement n'était pas affichée
 2- bug fix handler esup : encodage utf-8

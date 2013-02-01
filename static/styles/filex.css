@@ -11,11 +11,21 @@ a:visited { color: blue; }
 a:hover { text-decoration: underline }
 
 h1 {
-	font-size: 10pt;
+	font-size: 120%;
 	font-weight: bold;
 }
 
-h1.fileinfo {
+h2 {
+	font-size: 110%;
+	font-style: italic;
+}
+
+h3 {
+	font-size: 100%;
+	font-style: bold;
+}
+
+.fileinfo {
 	font-size: 12pt;
 	font-weight: bold;
 	text-align: center;
@@ -23,7 +33,8 @@ h1.fileinfo {
 	color: white;
 	padding: 2pt;
 }
-h1.login {
+
+.login {
 	text-align: center;
 	font-size: 12pt;
 	font-weight: bold;
@@ -40,10 +51,6 @@ div.login {
 	width: 40%;
 }
 
-h2 {
-	font-size: 10pt;
-	font-style: italic;
-}
 
 /* listes en lignes */
 ul.inline li {

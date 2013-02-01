@@ -20,7 +20,7 @@
 		<input type="hidden" name="<TMPL_VAR NAME='SUB_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='SUB_ACTION_VALUE'>">
 		<input type="hidden" name="<TMPL_VAR NAME='FILE_ID_FIELD_NAME'>" value="<TMPL_VAR NAME='FILE_ID_VALUE'>">
 		</TMPL_IF>
-		<h1 class="fileinfo"><TMPL_VAR NAME="FILEX_FILE_NAME"></h1>
+		<h2 class="fileinfo"><TMPL_VAR NAME="FILEX_FILE_NAME"></h2>
 		<ul>
 			<li><strong>D&eacute;pos&eacute; le : </strong><TMPL_VAR NAME="FILEX_FILE_DATE">
 			<li><strong>Expire le : </strong><TMPL_VAR NAME="FILEX_FILE_EXPIRE">
@@ -66,7 +66,7 @@
 <TMPL_IF NAME="FILEX_CAN_EXPIRE"><li><strong>Adresse de t&eacute;l&eacute;chargement : </strong><br><a href="<TMPL_VAR NAME='FILEX_GET_ADDRESS'>" target="_blank" title="t&eacute;l&eacute;charger"><TMPL_VAR NAME="FILEX_GET_ADDRESS"></a></TMPL_IF>
 		</ul>
 <TMPL_IF NAME="FILEX_ADMIN_MODE">
-		<h1>Informations Administrateur</h1>
+		<h3>Informations Administrateur</h3>
 		<ul>
 			<li><strong>Depuis la machine : </strong><TMPL_VAR NAME="FILEX_UPLOAD_ADDRESS">
 			<li><strong>Utilise un proxy : </strong><TMPL_VAR NAME="FILEX_USE_PROXY">

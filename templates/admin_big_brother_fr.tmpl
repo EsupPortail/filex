@@ -1,10 +1,10 @@
 <!-- chunky template for current download -->
-<h1>Supervision de d&eacute;pose de fichier :</h1>
+<h2>Supervision de d&eacute;pose de fichier :</h2>
 	<p>Ce module permet de superviser les d&eacute;poses de fichier de certains utilisateur.</p>
 	<p class="hlight">Vous devez activer l'option <strong>UseBigBrother</strong> et l'option <strong>MailNotification</strong> dans le fichier de configuration pour recevoir les messages de supervision</p>
 	<p>Utilisez la &quot;,&quot; comme s&eacute;parateur d'adresses mail pour un envoi de message &agrave; plusieurs destinataires.</p>
 	<form method="post" action="<TMPL_VAR NAME='FILEX_BB_FORM_ACTION'>">
-	<h2>Ajouter une supervision :</h2>
+	<h3>Ajouter une supervision :</h3>
 	<p><label for="rtype">R&egrave;gles : </label>
 		<select name="<TMPL_VAR NAME='FILEX_BB_RULE_ID_FIELD_NAME'>" id="rtype" class="Field">
 			<TMPL_LOOP NAME="FILEX_BB_RULES_LOOP">

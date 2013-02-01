@@ -46,7 +46,7 @@
 		</TMPL_IF>
 		<TMPL_IF NAME="FILEX_CAN_UPLOAD">
 		<form method="post" action="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_ACTION'>" enctype="multipart/form-data" onSubmit="openUploadMeter('<TMPL_VAR NAME='FILEX_METER_URL'>');">
-			<h1><label for="upload">Veuillez s&eacute;lectionner le document &agrave; d&eacute;poser</label></h1>
+			<h2><label for="upload">Veuillez s&eacute;lectionner le document &agrave; d&eacute;poser</label></h2>
 			<TMPL_IF NAME="FILEX_HAS_MAX_FILE_SIZE"><p>Taille de fichier maximale : <TMPL_VAR NAME="FILEX_MAX_FILE_SIZE"></TMPL_IF></p>
 			<p><label for="ctl01">Expiration du fichier : </label>
 			<select name="<TMPL_VAR NAME='FILEX_FORM_UPLOAD_DAY_KEEP_NAME'>" id="ctl01">
@@ -63,7 +63,7 @@
 		</TMPL_IF>
 	</div>
 	<div class="main">
-	<h1>Notes :</h1>
+	<h2>Notes :</h2>
 	<ol>
 		<li>La fen&ecirc;tre de progression ne fonctionne qu'avec des versions de navigateurs &gt; 4 (IE,Netscape) ou mozilla,opera
 		<li>Toutes les activit&eacute;s sont consign&eacute;es dans les journaux du syst&egrave;me</li>
