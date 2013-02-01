@@ -15,7 +15,7 @@
 		<TMPL_IF NAME="FILEX_HAS_ERROR">
 		<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>
 		<TMPL_ELSE>
-		<TMPL_IF NAME="FILEX_CAN_EXPIRE">
+		<TMPL_IF NAME="FILEX_WITH_SUBMIT">
 		<form action="<TMPL_VAR NAME='FILEX_FORM_ACTION_URL'>" method="POST">
 		<input type="hidden" name="<TMPL_VAR NAME='SUB_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='SUB_ACTION_VALUE'>">
 		<input type="hidden" name="<TMPL_VAR NAME='FILE_ID_FIELD_NAME'>" value="<TMPL_VAR NAME='FILE_ID_VALUE'>">
@@ -84,8 +84,8 @@
 		<li><label><input name="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_NAME'>" value="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_VALUE'>" type="checkbox"> D&eacute;sactiver cet utilisateur</label></li>
 		</ul>
 </TMPL_IF>
-		<TMPL_IF NAME="FILEX_CAN_EXPIRE">
-		<div class="center"><input type="submit" value="Validez" class="Submit"></div>
+		<TMPL_IF NAME="FILEX_WITH_SUBMIT">
+		<div class="center"><input type="submit" name="<TMPL_VAR NAME='FILEX_FORM_SUBMIT_NAME'>" value="Validez" class="Submit"></div>
 		</form>
 		</TMPL_IF>
 		<TMPL_IF NAME="GO_BACK_URL">

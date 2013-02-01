@@ -1,3 +1,10 @@
+v1.6b
+1- correction du module d'affichage des propriétés d'un fichier en mode administrateur :
+	si le fichier était désactivé, alors il n'était pas possible de valider le formulaire
+2- correction d'un bug concernant la création de règles d'exclusion automatique d'un utilisateur
+3- désactivation de la fonctionnalité de rechargement automatique du fichier de config :-( ! 
+	n'est pas systématiquement rechargé correctement par les différents procésuss apache
+
 v1.6a
 1- petite modification des templates d'affichage
 2- petite modification de la feuille de style

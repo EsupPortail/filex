@@ -347,7 +347,7 @@ sub _reload {
 # MinPasswordLength 
 sub getMinPasswordLength {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	my $value = int($self->{'_config_'}->val(SYSSECTION,"MinPasswordLength",4));
 	$value = 4 if ($value <= 0 || $value > 30);
 	return $value;
@@ -356,7 +356,7 @@ sub getMinPasswordLength {
 #MaxPasswordLength
 sub getMaxPasswordLength {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	my $value = int($self->{'_config_'}->val(SYSSECTION,"MaxPasswordLength",4));
 	$value = 30 if ( $value <= 0 || $value > 30);
 	return $value;
@@ -365,84 +365,84 @@ sub getMaxPasswordLength {
 # Which authentification module to use
 sub getAuthModule {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"AuthModule","AuthCAS");
 }
 
 # Get Meter Refrech Delay (default to 5 seconds)
 sub getMeterRefreshDelay {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"MeterRefreshDelay",5);
 }
 
 # Get Database Name
 sub getDBName {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(DBSECTION,"Name");
 }
 
 # Get Database Username
 sub getDBUsername {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(DBSECTION,"Username");
 }
 
 # Get Database Password
 sub getDBPassword {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(DBSECTION,"Password","");
 }
 
 sub getDBHost {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(DBSECTION,"Host","localhost");
 }
 
 sub getDBPort {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(DBSECTION,"Port",undef);
 }
 sub getDBSocket {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(DBSECTION,"Socket",undef);
 }
 # HostName
 sub getHostName {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"HostName",undef);
 }
 # Get Temporary Directory
 sub getTmpFileDir {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"TmpFileDir");
 }
 
 # Get File Repository Directory
 sub getFileRepository {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"FileRepository");
 }
 
 sub getStaticFileDir {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"StaticFileDir");
 }
 
 # Get Max Upload File Size
 sub getMaxFileSize {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	my $value = $self->{'_config_'}->val(SYSSECTION,"MaxFileSize",-1);
 	# check if an integer
 	$value = ( $value !~ /^-?[0-9]+$/ || $value < 0 ) ? -1 : $value;
@@ -452,7 +452,7 @@ sub getMaxFileSize {
 # get Max Concurrent Used space for a user
 sub getMaxUsedSpace {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	my $value = $self->{'_config_'}->val(SYSSECTION,"MaxUsedSpace",-1);
 	# check if an integer
 	$value = ( $value !~ /^-?[0-9]+$/ || $value < 0 ) ? -1 : $value;
@@ -461,7 +461,7 @@ sub getMaxUsedSpace {
 
 sub getMaxDiskSpace {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	my $value = $self->{'_config_'}->val(SYSSECTION,"MaxDiskSpace");
 	# check if an integer
 	return ( $value && $value =~ /^[0-9]+$/ ) ? $value : undef;
@@ -469,7 +469,7 @@ sub getMaxDiskSpace {
 
 sub getMaxDiskSpaceLimit {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	my $value = $self->{'_config_'}->val(SYSSECTION,"MaxDiskSpaceLimit");
 	return ( $value && $value =~ /^[0-9]+$/ ) ? $value : 95;
 }
@@ -477,67 +477,67 @@ sub getMaxDiskSpaceLimit {
 # Get SMTP Server
 sub getSmtpServer {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SMTPSECTION,"Server");
 }
 
 # get SMTP Timeout
 sub getSmtpTimeout {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SMTPSECTION,"Timeout");
 }
 
 # get SMTP Hello
 sub getSmtpHello {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SMTPSECTION,"Hello");
 }
 
 # check if we need to notify user via email
 sub needEmailNotification {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	# if set to 1
 	return ( $self->{'_config_'}->val(SYSSECTION,"EmailNotify") == 1 ) ? 1 : undef;
 }
 # check if we need to use the big brother feature
 sub useBigBrother {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return ( $self->{'_config_'}->val(SYSSECTION,"UseBigBrother") == 1 ) ? 1 : 0;
 }
 # get CAS Server
 sub getCasServer {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"CasServer");
 }
 
 # session directory
 sub getSessionDirectory {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"SessionDirectory");
 }
 # session lock
 sub getSessionLockDirectory {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"SessionLockDirectory");
 }
 # getCookieName
 sub getCookieName {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"CookieName");
 }
 
 # retrieve cookie expiration time
 sub getCookieExpires {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	# default to 30 minutes if not specified
 	my $cktime = $self->{'_config_'}->val(SYSSECTION,"CookieExpires",1800);
 	return ($cktime =~ /^[0-9]+$/) ? $cktime : 1800;
@@ -546,14 +546,14 @@ sub getCookieExpires {
 # the template directory
 sub getTemplateIniFile {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"TemplateIniFile");
 }
 
 # get the i18n ini file
 sub getI18nIniFile {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"I18nIniFile");
 }
 
@@ -561,7 +561,7 @@ sub getI18nIniFile {
 # return 1 if same device or undef.
 sub isSameDevice {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	my ($tmp,$rep);
 	# no error checking here
 	$tmp = stat($self->getTmpFileDir()) || warn(__PACKAGE__,"-> unable to stat ",$self->getTmpFileDir()," : $@");
@@ -572,7 +572,7 @@ sub isSameDevice {
 # get cache root for IPC
 sub getCacheRoot {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(CASECTION,"CacheRoot");
 }
 
@@ -580,7 +580,7 @@ sub getCacheRoot {
 # default to "FILEX"
 sub getCacheNamespace {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(CASECTION,"Namespace","FILEX");
 }
 
@@ -588,7 +588,7 @@ sub getCacheNamespace {
 # default to 3600 seconds
 sub getCacheDefaultExpire {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return abs(int($self->{'_config_'}->val(CASECTION,"DefaultExpire",3600)));
 }
 
@@ -596,172 +596,172 @@ sub getCacheDefaultExpire {
 # default to 60 seconds
 sub getCacheAutoPurge {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return abs(int($self->{'_config_'}->val(CASECTION,"AutoPurge",60)));
 }
 
 # get Ldap server url
 sub getLdapServerUrl {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"ServerUrl");
 }
 
 # get Ldap BindDN
 sub getLdapBindDn {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"BindDn");
 }
 
 # get Ldap bind password
 sub getLdapBindPassword {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"BindPassword");
 }
 
 # get ldap search base
 sub getLdapSearchBase {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"SearchBase");
 }
 
 # get ldap uid attr
 sub getLdapUidAttr {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"UidAttr");
 }
 
 # get ldap username attr
 sub getLdapUsernameAttr {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"UsernameAttr");
 }
 # get ldap uniq id attr
 sub getLdapUniqAttr {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"UniqAttr",undef);
 }
 # get ldap unid id attr mode
 sub getLdapUniqAttrMode {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"UniqAttrMode",0);
 }
 # get ldap mail attr
 sub getLdapMailAttr {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"MailAttr");
 }
 
 # get ldap group query
 sub getLdapGroupQuery {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"GroupQuery");
 }
 
 # get System Email
 sub getSystemEmail {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(SYSSECTION,"SystemEmail");
 }
 
 # get File expiration default
 sub getDefaultFileExpire {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return abs(int($self->{'_config_'}->val(SYSSECTION,"DefaultFileExpire",$self->getMaxFileExpire())));
 }
 
 sub getMaxFileExpire {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return abs(int($self->{'_config_'}->val(SYSSECTION,"MaxFileExpire",7)));
 }
 
 sub getMinFileExpire {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return abs(int($self->{'_config_'}->val(SYSSECTION,"MinFileExpire",1)));
 }
 
 sub getRenewFileExpire {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return abs(int($self->{'_config_'}->val(SYSSECTION,"RenewFileExpire",0)));
 }
 
 sub getUriGet {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"get");
 }
 
 sub getUriUpload {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"upload");
 }
 
 sub getUriMeter {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"meter");
 }
 
 sub getUriAdmin {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"admin");
 }
 
 sub getUriManage {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"manage");
 }
 
 sub getUriStatic {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"static");
 }
 
 sub getUriManageXml {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"managexml");
 }
 
 sub useUriManageXml {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"useManageXml",0);
 }
 
 # admin
 sub getAdminModules {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(ADMSECTION,"Modules");
 }
 
 sub getAdminDefault {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(ADMSECTION,"Default");
 }
 sub getAdminModuleRouteParameter {
 	my $self = shift;
-	$self->_reload();
+	#$self->_reload();
 	return $self->{'_config_'}->val(ADMSECTION,"ModuleRouteParameter");
 }
 

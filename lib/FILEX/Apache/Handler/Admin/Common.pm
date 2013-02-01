@@ -28,6 +28,7 @@ use constant FIELD_USE_PASSWORD_NAME => "upwd";
 use constant FIELD_PASSWORD_NAME => "pwd";
 use constant FIELD_DISABLE_USER_FILES_NAME => "duf";
 use constant FIELD_DISABLE_USER_NAME => "du";
+use constant FIELD_SUBMIT_NAME => "sub";
 use constant ADMIN_MODE => 1;
 
 # require : FILEX::System + upload id
@@ -48,10 +49,10 @@ sub doFileInfos {
 	my $file_id = $ARGZ{'file_id'};
 	my $mode = ( exists($ARGZ{'mode'}) && $ARGZ{'mode'} =~ /^[0-1]$/) ? $ARGZ{'mode'} : 0;
 	my $T = $S->getTemplate(name=>"admin_fileinfo");
-	$T->param(SUB_ACTION_FIELD_NAME=>$ARGZ{'sub_action_field_name'});
-	$T->param(SUB_ACTION_VALUE=>$ARGZ{'sub_action_value'});
-	$T->param(FILE_ID_FIELD_NAME=>$ARGZ{'file_id_field_name'});
-	$T->param(FILE_ID_VALUE=>$file_id);
+	#$T->param(SUB_ACTION_FIELD_NAME=>$ARGZ{'sub_action_field_name'});
+	#$T->param(SUB_ACTION_VALUE=>$ARGZ{'sub_action_value'});
+	#$T->param(FILE_ID_FIELD_NAME=>$ARGZ{'file_id_field_name'});
+	#$T->param(FILE_ID_VALUE=>$file_id);
 	# go back
 	if ( exists($ARGZ{'go_back'}) && defined($ARGZ{'go_back'}) ) {
 		$T->param(GO_BACK_URL=>$S->toHtml($ARGZ{'go_back'}));
@@ -59,8 +60,10 @@ sub doFileInfos {
 	# user name
 	$T->param(FILEX_USER_NAME=>$S->toHtml($S->getUser()->getRealName()));
 	$T->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
+	# form url
+	#$T->param(FILEX_FORM_ACTION_URL=>$S->toHtml($ARGZ{'url'}));
+	#$T->param(FILEX_FORM_SUBMIT_NAME=>FIELD_SUBMIT_NAME);
 
-	$T->param(FILEX_FORM_ACTION_URL=>$S->toHtml($ARGZ{'url'}));
 	my $upload = eval { FILEX::DB::Upload->new(id=>$file_id); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
@@ -72,8 +75,6 @@ sub doFileInfos {
 		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("requested file does not exists"));
 		return $T;
 	}
-	# Set template admin mode
-	$T->param(FILEX_ADMIN_MODE=>1) if ( $mode == ADMIN_MODE );
 	# check if the user is the owner of the file
 	my $bIsOwner = $upload->checkOwner($S->getUser()->getUniqId());
 	# if in admin_mode => ok if the logged user is an administrator
@@ -84,118 +85,122 @@ sub doFileInfos {
 		return $T;
 	}
 
-	# check for params
-	my $changes = 0;
-	# admin mode
-	if ( $mode == ADMIN_MODE ) {
-		# set file enable or not
-		my $activate = $S->apreq->param(FIELD_STATE_NAME);
-		if ( defined($activate) ) {
-			if (($upload->getEnable() != $activate) && ($activate == 1 || $activate == 0)) {
-				$upload->setEnable($activate);
-				$changes++;
-			}
-		}
-		my $helpers = undef;
-		# disable owner's files
-		my $disableOwnerFiles = $S->apreq->param(FIELD_DISABLE_USER_FILES_NAME);
-		if ( defined($disableOwnerFiles) && $disableOwnerFiles =~ /^[1|0]$/ ) {
-			if ( !defined($helpers) ) {
-				$helpers = eval { FILEX::DB::Admin::Helpers->new(); };
-				if ($@) {
-					$T->param(FILEX_HAS_ERROR=>1);
-					$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
-					# fatal error !
-					return $T
-				}
-			}
-			# disable files
-			if ( $disableOwnerFiles == 1 ) {
-				# set files disabled
-				if ( ! $helpers->disableUserFiles($upload->getOwnerUniqId()) ) {
-					warn(__PACKAGE__," unable to disable user's files : "+$helpers->getLastErrorString());
-				} else {
-					# since the files is loaded before disabling it we need to change it's state
-					$upload->setEnable(0);
-				}
-			}
-			# enable files
-			if ( $disableOwnerFiles == 0 ) {
-				if ( ! $helpers->enableUserFiles($upload->getOwnerUniqId()) ) {
-					warn(__PACKAGE__,"=> unable to disable user's files : ",$helpers->getLastErrorString());
-				} else {
-					$upload->setEnable(1);
-				}
-			}
-		}
-		# disable owner
-		my $disableOwner = $S->apreq->param(FIELD_DISABLE_USER_NAME);
-		if ( defined($disableOwner) && $disableOwner =~ /^1$/ ) {
-			if ( ! autoExclude($upload->getOwner()) ) {
-				warn(__PACKAGE__,"=> unable to create exclude rule for : ",$upload->getOwner());
-			}
-		}
-	}
-	my $purge = $S->apreq->param(FIELD_EXPIRE_NAME);
-	if ( defined($purge) && $purge == 1) {
-		$upload->makeExpire();
-		$changes++;
-	}
-	my $resume = $S->apreq->param(FIELD_RESUME_NAME);
-	if ( defined($resume) ) {
-		if (($upload->getGetResume() != $resume) && ($resume == 1 || $resume == 0)) {
-			$upload->setGetResume($resume);
-			$changes++;
-		}
-	}
-	my $delivery = $S->apreq->param(FIELD_DELIVERY_NAME);
-	if ( defined($delivery) ) {
-		if (($upload->getGetDelivery() != $delivery) && ($delivery == 1 || $delivery == 0)) {
-			$upload->setGetDelivery($delivery);
-			$changes++;
-		}
-	}
-	my $renew = $S->apreq->param(FIELD_RENEW_NAME);
-	if ( defined($renew) && ($renew != 0) ) {
-		if ( $upload->getRenewCount() < $S->config->getRenewFileExpire() ) {
-			if ( $renew >= $S->config->getMinFileExpire() && $renew <= $S->config->getMaxFileExpire() ) {
-				$upload->extendExpireDate($renew);
-				$changes++
-			}
-		}
-	}
-	# password
-	my $use_password = $S->apreq->param(FIELD_USE_PASSWORD_NAME);
-	if ( defined($use_password) ) {
-		if ( $use_password == 0 ) {
-			# disable password only if enabled
-			$upload->setPassword() if ( $upload->needPassword() );
-			$changes++;
-		}
-		if ( $use_password == 1 ) {
-			my $password = $S->apreq->param(FIELD_PASSWORD_NAME);
-			# strip whitespace
-			$password =~ s/\s//g if defined($password);
-			my $bSetPassword = 1;
-			if ( $upload->needPassword() ) {
-				# password already set && no new password then nothing
-				$bSetPassword = 0 if ( !defined($password) || !length($password) );
-			} 
-			if ( $bSetPassword ) {
-				# check for password length
-				if ( defined($password) && ( length($password) >= $S->config->getMinPasswordLength() && 
-				     length($password) <= $S->config->getMaxPasswordLength() ) ) {
-					$upload->setPassword($password);
+	# CHECK FOR PARAMS
+	my $isSubmit = $S->apreq->param(FIELD_SUBMIT_NAME);
+	if ( defined($isSubmit) && length($isSubmit) > 0 ) {
+		my $changes = 0;
+		# admin mode
+		if ( $mode == ADMIN_MODE ) {
+			# set file enable or not
+			my $activate = $S->apreq->param(FIELD_STATE_NAME);
+			if ( defined($activate) ) {
+				if (($upload->getEnable() != $activate) && ($activate == 1 || $activate == 0)) {
+					$upload->setEnable($activate);
 					$changes++;
 				}
 			}
+			my $helpers = undef;
+			# disable owner's files
+			my $disableOwnerFiles = $S->apreq->param(FIELD_DISABLE_USER_FILES_NAME);
+			if ( defined($disableOwnerFiles) && $disableOwnerFiles =~ /^[1|0]$/ ) {
+				if ( !defined($helpers) ) {
+					$helpers = eval { FILEX::DB::Admin::Helpers->new(); };
+					if ($@) {
+						$T->param(FILEX_HAS_ERROR=>1);
+						$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
+						# fatal error !
+						return $T
+					}
+				}
+				# disable files
+				if ( $disableOwnerFiles == 1 ) {
+					# set files disabled
+					if ( ! $helpers->disableUserFiles($upload->getOwnerUniqId()) ) {
+						warn(__PACKAGE__," unable to disable user's files : "+$helpers->getLastErrorString());
+					} else {
+						# since the files is loaded before disabling it we need to change it's state
+						$upload->setEnable(0);
+					}
+				}
+				# enable files
+				if ( $disableOwnerFiles == 0 ) {
+					if ( ! $helpers->enableUserFiles($upload->getOwnerUniqId()) ) {
+						warn(__PACKAGE__,"=> unable to disable user's files : ",$helpers->getLastErrorString());
+					} else {
+						$upload->setEnable(1);
+					}
+				}
+			}
+			# disable owner
+			my $disableOwner = $S->apreq->param(FIELD_DISABLE_USER_NAME);
+			if ( defined($disableOwner) && $disableOwner =~ /^1$/ ) {
+				if ( ! autoExclude($upload->getOwner()) ) {
+					warn(__PACKAGE__,"=> unable to create exclude rule for : ",$upload->getOwner());
+				}
+			}
+		}
+		my $purge = $S->apreq->param(FIELD_EXPIRE_NAME);
+		if ( defined($purge) && $purge == 1) {
+			$upload->makeExpire();
+			$changes++;
+		}
+		my $resume = $S->apreq->param(FIELD_RESUME_NAME);
+		if ( defined($resume) ) {
+			if (($upload->getGetResume() != $resume) && ($resume == 1 || $resume == 0)) {
+				$upload->setGetResume($resume);
+				$changes++;
+			}
+		}
+		my $delivery = $S->apreq->param(FIELD_DELIVERY_NAME);
+		if ( defined($delivery) ) {
+			if (($upload->getGetDelivery() != $delivery) && ($delivery == 1 || $delivery == 0)) {
+				$upload->setGetDelivery($delivery);
+				$changes++;
+			}
+		}
+		my $renew = $S->apreq->param(FIELD_RENEW_NAME);
+		if ( defined($renew) && ($renew != 0) ) {
+			if ( $upload->getRenewCount() < $S->config->getRenewFileExpire() ) {
+				if ( $renew >= $S->config->getMinFileExpire() && $renew <= $S->config->getMaxFileExpire() ) {
+					$upload->extendExpireDate($renew);
+					$changes++
+				}
+			}
+		}
+		# password
+		my $use_password = $S->apreq->param(FIELD_USE_PASSWORD_NAME);
+		if ( defined($use_password) ) {
+			if ( $use_password == 0 ) {
+				# disable password only if enabled
+				$upload->setPassword() if ( $upload->needPassword() );
+				$changes++;
+			}
+			if ( $use_password == 1 ) {
+				my $password = $S->apreq->param(FIELD_PASSWORD_NAME);
+				# strip whitespace
+				$password =~ s/\s//g if defined($password);
+				my $bSetPassword = 1;
+				if ( $upload->needPassword() ) {
+					# password already set && no new password then nothing
+					$bSetPassword = 0 if ( !defined($password) || !length($password) );
+				} 
+				if ( $bSetPassword ) {
+					# check for password length
+					if ( defined($password) && ( length($password) >= $S->config->getMinPasswordLength() && 
+							 length($password) <= $S->config->getMaxPasswordLength() ) ) {
+						$upload->setPassword($password);
+						$changes++;
+					}
+				}
+			}
+		}
+		if ( $changes && !$upload->save() ) {
+			$T->param(FILEX_HAS_ERROR=>1);
+			$T->param(FILEX_ERROR=>$upload->getLastErrorString());
+			return $T;
 		}
 	}
-	if ( $changes && !$upload->save() ) {
-		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$upload->getLastErrorString());
-		return $T;
-	}
+	# END CHECK PARAM
 
 	# fill
 	$T->param(FILEX_RENEW_COUNT=>$upload->getRenewCount());
@@ -301,6 +306,8 @@ sub doFileInfos {
 
 	# Administrative mode display
 	if ( $mode == ADMIN_MODE ) {
+		# set template to admin mode
+		$T->param(FILEX_ADMIN_MODE=>1);
 		# file owner's mail
 		$T->param(FILEX_FILE_OWNER=>$S->getMail($upload->getOwner()));
 		# file owner's id
@@ -346,6 +353,20 @@ sub doFileInfos {
 		$T->param(FILEX_FORM_DISABLE_USER_NAME=>FIELD_DISABLE_USER_NAME);
 		$T->param(FILEX_FORM_DISABLE_USER_VALUE=>1);
 	}
+	# form url
+	# with or without validate button ?
+	# if expired no validate button unless mode == ADMIN_MODE
+	my $bValidateButton = ( $mode == ADMIN_MODE || $bIsExpired != 1 ) ? 1 : 0;
+	if ( $bValidateButton == 1 ) {
+		$T->param(FILEX_WITH_SUBMIT=>1);
+		$T->param(FILEX_FORM_ACTION_URL=>$S->toHtml($ARGZ{'url'}));
+		$T->param(FILEX_FORM_SUBMIT_NAME=>FIELD_SUBMIT_NAME);
+		$T->param(SUB_ACTION_FIELD_NAME=>$ARGZ{'sub_action_field_name'});
+		$T->param(SUB_ACTION_VALUE=>$ARGZ{'sub_action_value'});
+		$T->param(FILE_ID_FIELD_NAME=>$ARGZ{'file_id_field_name'});
+		$T->param(FILE_ID_VALUE=>$file_id);
+	}
+
 	# return if no downloads
 	return $T if ( $upload->getDownloadCount() == 0 );
 
@@ -433,7 +454,7 @@ sub autoExclude {
 		return undef;
 	}
 	# check if the rule is already associated if not a new rule
-	my $excludeExists = 0;
+	my $excludeExists = -1;
 	if ( !$bIsNewRule ) {
 		$excludeExists = $exclude->existsRule($rule_id);
 		if ( !defined($excludeExists) ) {
