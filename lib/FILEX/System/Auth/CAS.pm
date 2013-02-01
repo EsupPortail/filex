@@ -161,8 +161,8 @@ sub getServerLoginURL {
     my $self = shift;
     my $service = shift;
     
-    #return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service);
-    return $self->{'url'}.$self->{'loginPath'}.'?service='.$service;
+    return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service);
+    #return $self->{'url'}.$self->{'loginPath'}.'?service='.$service;
 }
 
 ## Returns non-blocking login URL
@@ -171,8 +171,8 @@ sub getServerLoginGatewayURL {
     my $self = shift;
     my $service = shift;
     
-    #return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service).'&gateway=1';
-    return $self->{'url'}.$self->{'loginPath'}.'?service='.$service.'&gateway=1';
+    return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service).'&gateway=1';
+    #return $self->{'url'}.$self->{'loginPath'}.'?service='.$service.'&gateway=1';
 }
 
 ## Return logout URL
@@ -181,8 +181,8 @@ sub getServerLogoutURL {
     my $self = shift;
     my $service = shift;
     
-    #return $self->{'url'}.$self->{'logoutPath'}.'?service='.&_escape_chars($service).'&gateway=1';
-    return $self->{'url'}.$self->{'logoutPath'}.'?service='.$service.'&gateway=1';
+    return $self->{'url'}.$self->{'logoutPath'}.'?service='.&_escape_chars($service).'&gateway=1';
+    #return $self->{'url'}.$self->{'logoutPath'}.'?service='.$service.'&gateway=1';
 }
 
 sub getServerServiceValidateURL {
@@ -191,11 +191,11 @@ sub getServerServiceValidateURL {
     my $ticket = shift;
     my $pgtUrl = shift;
 
-    #my $query_string = 'service='.&_escape_chars($service).'&ticket='.$ticket;
-    my $query_string = 'service='.$service.'&ticket='.$ticket;
+    my $query_string = 'service='.&_escape_chars($service).'&ticket='.$ticket;
+    #my $query_string = 'service='.$service.'&ticket='.$ticket;
     if (defined $pgtUrl) {
-			#$query_string .= '&pgtUrl='.&_escape_chars($pgtUrl);
-			$query_string .= '&pgtUrl='.$pgtUrl;
+			$query_string .= '&pgtUrl='.&_escape_chars($pgtUrl);
+			#$query_string .= '&pgtUrl='.$pgtUrl;
     }
 
     ## URL was /validate with CAS 1.0
@@ -207,8 +207,8 @@ sub getServerProxyURL {
     my $targetService = shift;
     my $pgt = shift;
 
-    #return $self->{'url'}.$self->{'proxyPath'}.'?targetService='.&_escape_chars($targetService).'&pgt='.&_escape_chars($pgt);
-    return $self->{'url'}.$self->{'proxyPath'}.'?targetService='.$targetService.'&pgt='.$pgt;
+    return $self->{'url'}.$self->{'proxyPath'}.'?targetService='.&_escape_chars($targetService).'&pgt='.&_escape_chars($pgt);
+    #return $self->{'url'}.$self->{'proxyPath'}.'?targetService='.$targetService.'&pgt='.$pgt;
 }
 
 sub getServerProxyValidateURL {
@@ -216,8 +216,8 @@ sub getServerProxyValidateURL {
     my $service = shift;
     my $ticket = shift;
 
-    #return $self->{'url'}.$self->{'proxyValidatePath'}.'?service='.&_escape_chars($service).'&ticket='.&_escape_chars($ticket);
-    return $self->{'url'}.$self->{'proxyValidatePath'}.'?service='.$service.'&ticket='.$ticket;
+    return $self->{'url'}.$self->{'proxyValidatePath'}.'?service='.&_escape_chars($service).'&ticket='.&_escape_chars($ticket);
+    #return $self->{'url'}.$self->{'proxyValidatePath'}.'?service='.$service.'&ticket='.$ticket;
 }
 
 ## Validate a Service Ticket
