@@ -8,6 +8,9 @@
 </head>
 <body>
 <div class="body">
+	<div class="logo">
+		<h1><span>FileX</span> [ <TMPL_VAR NAME="FILEX_USER_NAME"> ]</h1>
+	</div>
 	<div class="main">
 		<TMPL_IF NAME="FILEX_HAS_ERROR">
 		<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>
@@ -24,39 +27,39 @@
 			<li><strong>Taille : </strong><TMPL_VAR NAME="FILEX_FILE_SIZE">
 			<li><strong>Nombre de t&eacute;l&eacute;chargements : </strong><TMPL_VAR NAME="FILEX_FILE_COUNT">
 <TMPL_IF NAME="FILEX_CAN_EXPIRE">
-			<li><strong>Mot de passe : </strong>
-<input name="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_VALUE_ACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_USE_PASSWORD_ACTIVATE_CHECKED">checked</TMPL_IF>>Oui 
-<input name="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_VALUE_DESACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_USE_PASSWORD_DESACTIVATE_CHECKED">checked</TMPL_IF>>Non 
-<input type="password" size="15" class="Field" name="<TMPL_VAR NAME='FILEX_FORM_PASSWORD_NAME'>" maxlength="<TMPL_VAR NAME='FILEX_MAX_PASSWORD_LENGTH'>"><br>
+			<li><label for="idPwd"><strong>Mot de passe : </strong></label>
+<label><input name="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_VALUE_ACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_USE_PASSWORD_ACTIVATE_CHECKED">checked</TMPL_IF>>Oui </label>
+<label><input name="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_USE_PASSWORD_VALUE_DESACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_USE_PASSWORD_DESACTIVATE_CHECKED">checked</TMPL_IF>>Non </label>
+<input id="idPwd" type="password" size="15" class="Field" name="<TMPL_VAR NAME='FILEX_FORM_PASSWORD_NAME'>" maxlength="<TMPL_VAR NAME='FILEX_MAX_PASSWORD_LENGTH'>"><br>
 <span class="notes">Le mot de passe doit avoir une longueur comprise entre <strong><TMPL_VAR NAME="FILEX_MIN_PASSWORD_LENGTH"></strong> et <strong><TMPL_VAR NAME="FILEX_MAX_PASSWORD_LENGTH"></strong> caract&egrave;res</span>
 </TMPL_IF>
 			<li><strong>Expir&eacute; : </strong>
 <TMPL_IF NAME="FILEX_CAN_EXPIRE">
-<br><input name="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_VALUE_YES'>">Oui 
-<input name="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_VALUE_NO'>"checked>Non
+<br><label><input name="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_VALUE_YES'>">Oui </label>
+<label><input name="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_VALUE_NO'>"checked>Non</label>
 <TMPL_ELSE><TMPL_VAR NAME="FILEX_EXPIRED"></TMPL_IF>
 			<li><strong>Nombre de renouvellement : </strong><TMPL_VAR NAME="FILEX_RENEW_COUNT"> / <TMPL_VAR NAME="FILEX_MAX_RENEW_COUNT">
 <TMPL_IF NAME="FILEX_CAN_EXPIRE">
 	<TMPL_IF NAME="FILEX_CAN_RENEW_FILE_LIFE">
-			<li><strong>Augmenter la dur&eacute;e de vie du fichier de : </strong>
+			<li><label><strong>Augmenter la dur&eacute;e de vie du fichier de : </strong>
 			<select name="<TMPL_VAR NAME='FILEX_FORM_RENEW_NAME'>">
 			<TMPL_LOOP NAME="FILEX_RENEW_LOOP">
 				<option value="<TMPL_VAR NAME='FILEX_FORM_RENEW_VALUE'>"><TMPL_VAR NAME="FILEX_FORM_RENEW_VALUE"></option>
 			</TMPL_LOOP>
-			</select> Jours
+			</select> Jours</label>
 	</TMPL_IF>
 </TMPL_IF>
 			<li><strong>Recevoir un message &agrave; chaque t&eacute;l&eacute;chargement : </strong>
 <TMPL_IF NAME="FILEX_CAN_EXPIRE">
-<br><input name="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_VALUE_YES'>" <TMPL_IF NAME="FILEX_FORM_DELIVERY_VALUE_YES_CHECKED">checked</TMPL_IF>>Oui 
-<input name="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_VALUE_NO'>" <TMPL_IF NAME="FILEX_FORM_DELIVERY_VALUE_NO_CHECKED">checked</TMPL_IF>>Non
+<br><label><input name="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_VALUE_YES'>" <TMPL_IF NAME="FILEX_FORM_DELIVERY_VALUE_YES_CHECKED">checked</TMPL_IF>>Oui </label>
+<label><input name="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_VALUE_NO'>" <TMPL_IF NAME="FILEX_FORM_DELIVERY_VALUE_NO_CHECKED">checked</TMPL_IF>>Non</label>
 <TMPL_ELSE>
 	<TMPL_VAR NAME="FILEX_DELIVERY">
 </TMPL_IF>
 			<li><strong>Recevoir un r&eacute;capitulatif lorsque le fichier sera supprim&eacute; : </strong>
 <TMPL_IF NAME="FILEX_CAN_EXPIRE">
-<br><input name="<TMPL_VAR NAME='FILEX_FORM_RESUME_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_RESUME_VALUE_YES'>" <TMPL_IF NAME="FILEX_FORM_RESUME_VALUE_YES_CHECKED">checked</TMPL_IF>>Oui 
-<input name="<TMPL_VAR NAME='FILEX_FORM_RESUME_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_RESUME_VALUE_NO'>" <TMPL_IF NAME="FILEX_FORM_RESUME_VALUE_NO_CHECKED">checked</TMPL_IF>>Non
+<br><label><input name="<TMPL_VAR NAME='FILEX_FORM_RESUME_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_RESUME_VALUE_YES'>" <TMPL_IF NAME="FILEX_FORM_RESUME_VALUE_YES_CHECKED">checked</TMPL_IF>>Oui </label>
+<label><input name="<TMPL_VAR NAME='FILEX_FORM_RESUME_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_RESUME_VALUE_NO'>" <TMPL_IF NAME="FILEX_FORM_RESUME_VALUE_NO_CHECKED">checked</TMPL_IF>>Non</label>
 <TMPL_ELSE>
 <TMPL_VAR NAME="FILEX_RESUME">
 </TMPL_IF>
@@ -73,17 +76,21 @@
 			<li><strong>Nom sur le disque</strong> : <TMPL_VAR NAME="FILEX_DISK_NAME">
 		<TMPL_IF NAME="FILEX_CAN_EXPIRE">
 			<li><strong>Etat : </strong>
-		<input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_ACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_ACTIVATE_CHECKED">checked</TMPL_IF>>Activ&eacute; 
-		<input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_DESACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_DESACTIVATE_CHECKED">checked</TMPL_IF>>D&eacute;sactiv&eacute;
+		<label><input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_ACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_ACTIVATE_CHECKED">checked</TMPL_IF>>Activ&eacute; </label>
+		<label><input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_DESACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_DESACTIVATE_CHECKED">checked</TMPL_IF>>D&eacute;sactiv&eacute;</label>
 			<li><a href="<TMPL_VAR NAME='FILEX_ADMIN_GET_ADDRESS'>" target="_blank" title="T&eacute;l&eacute;chargement sans log pour les administrateurs">T&eacute;l&eacute;chargement administrateur</a>
 		</TMPL_IF>
+		<li><label><input name="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_FILES_NAME'>" value="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_FILES_VALUE_ACTIVATE'>" type="radio"> D&eacute;sactiver</label> ou <label><input name="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_FILES_NAME'>" value="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_FILES_VALUE_DESACTIVATE'>" type="radio"> Activer </label> tous les fichiers de cet utilisateur</li>
+		<li><label><input name="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_NAME'>" value="<TMPL_VAR NAME='FILEX_FORM_DISABLE_USER_VALUE'>" type="checkbox"> D&eacute;sactiver cet utilisateur</label></li>
 		</ul>
 </TMPL_IF>
 		<TMPL_IF NAME="FILEX_CAN_EXPIRE">
 		<div class="center"><input type="submit" value="Validez" class="Submit"></div>
 		</form>
 		</TMPL_IF>
-		<p class="center"><a href="javascript:;" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
+		<TMPL_IF NAME="GO_BACK_URL">
+			<p class="center"><a href="<TMPL_VAR NAME='GO_BACK_URL'>">Retour</a></p>
+		</TMPL_IF>
 		</TMPL_IF>
 	</div>
 	<TMPL_IF NAME="FILEX_HAS_DOWNLOAD">
@@ -92,7 +99,7 @@
 		<table class="infos" cellpadding="0" cellspacing="0" width="100%" summary="liste des t&eacute;l&eacute;chargements">
 		<caption>liste des t&eacute;l&eacute;chargements</caption>
 		<thead>
-			<tr><td>Adresse</td><td>Date</td><td>Annul&eacute;</td></tr>
+			<tr><th>Adresse</th><th>Date</th><th>Annul&eacute;</th></tr>
 		</thead>
 		<tbody>
 		<TMPL_IF NAME="FILEX_HAS_DOWNLOAD_ERROR">
@@ -104,8 +111,17 @@
 		</TMPL_IF>
 		</tbody>
 		</table>
-	<p class="center"><a href="javascript:;" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
+	<TMPL_IF NAME="GO_BACK_URL">
+	<p class="center"><a href="<TMPL_VAR NAME='GO_BACK_URL'>">Retour</a></p>
+	</TMPL_IF>
 	</div>
 	</TMPL_IF>
+	<hr>
+	<div class="footer">
+	<p>En cas de probl&egrave;mes ou pour toutes informations, veuillez adresser vos messages &agrave; l'adresse suivante : <a href="mailto:<TMPL_VAR NAME='FILEX_SYSTEM_EMAIL'>"><TMPL_VAR NAME="FILEX_SYSTEM_EMAIL"></a></p>
+	</div>
+</div>
+<div class="img">
+	<img src="media/logo.png" width="90" height="50" alt="Insa de Lyon">
 </div>
 </body>

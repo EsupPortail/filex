@@ -10,7 +10,7 @@
 	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des administrateurs">
 		<caption>Liste des administrateurs</caption>
 		<thead>
-			<tr><td>Identifiant</td><td>Informations</td><td>Email</td><td>Etat</td><td>Actions</td></tr>
+			<tr><th>Identifiant</th><th>Informations</th><th>Email</th><th>Etat</th><th>Actions</th></tr>
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_ADMINS_LOOP">
@@ -19,7 +19,12 @@
 				<td><TMPL_VAR NAME="FILEX_ADMIN_INFOS"></td>
 				<td><a href="mailto:<TMPL_VAR NAME='FILEX_ADMIN_MAIL'>"><TMPL_VAR NAME="FILEX_ADMIN_MAIL"></a></td>
 				<td><TMPL_VAR NAME="FILEX_ADMIN_STATE"></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="[A|De]activer">S</a></td>
+				<td style="text-align: center;">
+					<ul class="inline" style="padding:0; margin:0;">
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+					</ul>
+				</td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>

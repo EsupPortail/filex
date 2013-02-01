@@ -47,7 +47,7 @@ sub process {
 			if ( ! $DB->add(name=>$S->apreq->param(RULES_RULE_NAME_FIELD_NAME),
 				exp=>$S->apreq->param(RULES_RULE_EXP_FIELD_NAME),
 				type=>$S->apreq->param(RULES_RULE_TYPE_FIELD_NAME)) ) {
-				$errstr = ($DB->getLastErrorCode() == 1062) ? $S->i18n->localize("rule already exists") : $DB->getLastErrorString();
+				$errstr = ($DB->getLastErrorCode() == 1062) ? $S->i18n->localize("rule already exists") : $S->i18n->localize($DB->getLastErrorString());
 				$b_err = 1;
 			}
 			last SWITCH;
@@ -114,7 +114,7 @@ sub process {
 	}
 	# already defined rules
 	my (@results,@rules_loop,$state);
-	$b_err = $DB->list(\@results);
+	$b_err = $DB->listEx(\@results);
 	if ($#results >= 0) {
 		for (my $i=0; $i<=$#results; $i++) {
 			my $record = {};
@@ -122,6 +122,9 @@ sub process {
 			$record->{'FILEX_RULE_NAME'} = $S->toHtml($results[$i]->{'name'});
 			$record->{'FILEX_RULE_EXP'} = $S->toHtml($results[$i]->{'exp'});
 			$state = $results[$i]->{'enable'};
+			$record->{'FILEX_RULE_LINK_EX'} = $S->toHtml(($results[$i]->{'exclude'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
+			$record->{'FILEX_RULE_LINK_QT'} = $S->toHtml(($results[$i]->{'quota'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
+			$record->{'FILEX_RULE_LINK_SP'} = $S->toHtml(($results[$i]->{'big_brother'} == 1)?$S->i18n->localize("yes"):$S->i18n->localize("no"));
 			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
 			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@rules_loop,$record);

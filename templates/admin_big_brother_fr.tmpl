@@ -24,7 +24,7 @@
 	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des supervisions">
 		<caption>Liste des supervisions</caption>
 		<thead>
-			<tr><td>Date</td><td>Ordre</td><td>Description</td><td>R&egrave;gle</td><td>mail(s)</td><td>Etat</td><td>Actions</td></tr>
+			<tr><th>Date</th><th>Ordre</th><th>Description</th><th>R&egrave;gle</th><th>mail(s)</th><th>Etat</th><th>Actions</th></tr>
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_BB_LOOP">
@@ -35,7 +35,13 @@
 				<td><TMPL_VAR NAME="FILEX_BB_RULE"></td>
 				<td><TMPL_VAR NAME="FILEX_BB_MAIL"></td>
 				<td><TMPL_VAR NAME="FILEX_BB_STATE"></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="[A|De]activer">S</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Modifier">M</a></td>
+				<td style="text-align: center;">
+					<ul class="inline" style="padding:0; margin: 0;">
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+					</ul>
+				</td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>

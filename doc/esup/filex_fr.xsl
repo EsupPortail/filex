@@ -16,11 +16,11 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 
 	<!-- uploads -->
 	<xsl:template match="uploads">
-		<table cellpadding="5pt" cellspacing="0" width="100%" summary="Liste de vos fichiers encore valides" class="uportal-channel-text">
+		<table class="planete" cellpadding="0" cellspacing="0" width="100%" summary="Liste de vos fichiers encore valides">
 			<caption class="uportal-channel-table-caption"><xsl:call-template name="caption"><xsl:with-param name="node" select="."/></xsl:call-template></caption>
 			<thead class="uportal-channel-table-header">
 				<tr class="uportal-background-med">
-					<td><xsl:call-template name="gen_sort_url">
+					<th><xsl:call-template name="gen_sort_url">
 							<xsl:with-param name="node" select="./sorts"/>
 							<xsl:with-param name="name">sort_name_asc</xsl:with-param>
 							<xsl:with-param name="text">+</xsl:with-param>
@@ -31,8 +31,8 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 							<xsl:with-param name="text">-</xsl:with-param>
 							<xsl:with-param name="title">Tri décroissant sur les noms</xsl:with-param>
 							</xsl:call-template>
-					</td>
-					<td><xsl:call-template name="gen_sort_url">
+					</th>
+					<th><xsl:call-template name="gen_sort_url">
 							<xsl:with-param name="node" select="./sorts"/>
 							<xsl:with-param name="name">sort_size_asc</xsl:with-param>
 							<xsl:with-param name="text">+</xsl:with-param>
@@ -42,8 +42,8 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 							<xsl:with-param name="name">sort_size_desc</xsl:with-param>
 							<xsl:with-param name="text">-</xsl:with-param>
 							<xsl:with-param name="title">Tri décroissant sur la taille</xsl:with-param>
-							</xsl:call-template></td>
-					<td><xsl:call-template name="gen_sort_url">
+							</xsl:call-template></th>
+					<th><xsl:call-template name="gen_sort_url">
 							<xsl:with-param name="node" select="./sorts"/>
 							<xsl:with-param name="name">sort_upload_date_asc</xsl:with-param>
 							<xsl:with-param name="text">+</xsl:with-param>
@@ -53,8 +53,8 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 							<xsl:with-param name="name">sort_upload_date_desc</xsl:with-param>
 							<xsl:with-param name="text">-</xsl:with-param>
 							<xsl:with-param name="title">Tri décroissant sur la date de dépose</xsl:with-param>
-							</xsl:call-template></td>
-					<td><xsl:call-template name="gen_sort_url">
+							</xsl:call-template></th>
+					<th><xsl:call-template name="gen_sort_url">
 							<xsl:with-param name="node" select="./sorts"/>
 							<xsl:with-param name="name">sort_expire_date_asc</xsl:with-param>
 							<xsl:with-param name="text">+</xsl:with-param>
@@ -64,8 +64,8 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 							<xsl:with-param name="name">sort_expire_date_desc</xsl:with-param>
 							<xsl:with-param name="text">-</xsl:with-param>
 							<xsl:with-param name="title">Tri décroissant sur la date d'expiration</xsl:with-param>
-							</xsl:call-template></td>
-					<td><xsl:call-template name="gen_sort_url">
+							</xsl:call-template></th>
+					<th><xsl:call-template name="gen_sort_url">
 							<xsl:with-param name="node" select="./sorts"/>
 							<xsl:with-param name="name">sort_download_count_asc</xsl:with-param>
 							<xsl:with-param name="text">+</xsl:with-param>
@@ -75,7 +75,7 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 							<xsl:with-param name="name">sort_download_count_desc</xsl:with-param>
 							<xsl:with-param name="text">-</xsl:with-param>
 							<xsl:with-param name="title">Tri décroissant sur le nombre de téléchargement</xsl:with-param>
-							</xsl:call-template></td>
+							</xsl:call-template></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -157,9 +157,9 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 	<xsl:template name="caption">
 		<xsl:param name="node"/>
 		<xsl:text>Fichiers actifs : </xsl:text><xsl:value-of select="$node/@active_files_count"/>
-		<xsl:text>, Espace Utilisé : </xsl:text><xsl:value-of select="$node/@used_space"/>
+		<xsl:text>, Espace Utilisé : </xsl:text><xsl:value-of select="$node/@used_space"/> <xsl:value-of select="$node/@used_space_unit"/>
 		<xsl:if test="@max_used_space">
-		<xsl:text> / </xsl:text><strong><xsl:value-of select="$node/@max_used_space"/></strong>
+		<xsl:text> / </xsl:text><strong><xsl:value-of select="$node/@max_used_space"/> <xsl:value-of select="$node/@max_used_space_unit"/></strong>
 		</xsl:if>
 	</xsl:template>
 

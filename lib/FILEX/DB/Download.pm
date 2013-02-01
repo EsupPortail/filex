@@ -91,7 +91,7 @@ sub currentFiles {
 	               "GROUP BY u.id ";
 	my $order_by = ( exists($ARGZ{'orderby'}) && length($ARGZ{'orderby'}) ) ? $ARGZ{'orderby'} : 'upload_date';
 	my $order = $ARGZ{'order'} if ( exists($ARGZ{'order'}) );
-	if ( defined($order) ) {
+	if ( defined($order) && $order =~ /^[0-9]+$/) {
 		$order = ( $order == 1 )?"DESC":"ASC";
 	} else {
 		$order = "DESC";

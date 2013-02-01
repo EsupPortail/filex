@@ -83,6 +83,7 @@ sub process {
 			my $inT = doFileInfos(system=>$S,
 			                      file_id=>$file_id,
 			                      url=>$self->genFileInfoUrl($file_id),
+														go_back=>$self->genCurrentUrl(),
 			                      mode=>1,sub_action_value=>SUB_FILE_INFO,
 			                      sub_action_field_name=>SUB_ACTION_FIELD_NAME,
 			                      file_id_field_name=>FILE_ID_FIELD_NAME);
@@ -373,6 +374,13 @@ sub isStudent {
   	$student_type = $1;
   }
   return $student_type;
+}
+
+sub genCurrentUrl {
+	my $self = shift;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString();
+	return $url;
 }
 
 sub genFileInfoUrl {

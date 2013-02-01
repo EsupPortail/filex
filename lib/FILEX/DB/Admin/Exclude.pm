@@ -221,6 +221,27 @@ sub del {
 	return 1;
 }
 
+# check if an exculsion exists switch a given rule
+sub existsRule {
+	my $self = shift;
+	my $rule_id = shift;
+	my $dbh = $self->_dbh();
+	my $strQuery = "SELECT id FROM exclude WHERE rule_id = $rule_id";
+	my $result = undef;
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$result = $sth->fetchrow()||-1;
+		$sth->finish();
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
+		return undef;
+	}
+	return $result;
+}
+
 1;
 =pod
 

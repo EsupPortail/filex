@@ -57,7 +57,8 @@ sub handler {
 			                      sub_action_value=>SUB_FILEINFO,
 			                      file_id_field_name=>FILE_ID_FIELD_NAME,
 			                      file_id=>$file_id,
-			                      url=>$S->getCurrentUrl());
+			                      url=>$S->getCurrentUrl(),
+														go_back=>$S->getCurrentUrl());
 			display($S,$inT);
 			last SWITCH;
 		}

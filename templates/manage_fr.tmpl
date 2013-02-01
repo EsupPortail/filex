@@ -17,30 +17,21 @@
 	<div class="main">
 	<p class="gobackfilex"><a href="help.html" title="Aide" target="_blank">Aide</a> | <a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
 	<TMPL_IF NAME="FILEX_HAS_FILES">
-	<script language="javascript" type="text/javascript">
-	<!--
-	function openInfoWindow(url) {
-	var infowin;
-	infowin = this.open(url,"_file","toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=1,resizable=1,width=500,height=400");
-	infowin.focus();
-	}
-	//-->
-	</script>
 	<p>Par d&eacute;faut, vos fichiers sont tri&eacute;s de mani&egrave;re d&eacute;croissante sur la date de d&eacute;pose.<br>Vous pouvez les trier selon diff&eacute;rent crit&egrave;res en cliquant sur <strong>+</strong> ou <strong>-</strong> dans les ent&ecirc;tes de colonnes.</p>
 	<table class="infos" cellpadding="0" cellspacing="0" width="100%" summary="Liste de vos fichiers">
 		<caption>Liste de vos fichiers (<TMPL_VAR NAME="FILEX_FILE_COUNT">), Espace Utilis&eacute; : <TMPL_VAR NAME="FILEX_USED_SPACE"><TMPL_IF NAME="FILEX_HAVE_QUOTA"> / <strong><TMPL_VAR NAME="FILEX_MAX_USED_SPACE"></strong></TMPL_IF></caption>
 		<thead>
 			<tr>
-				<td><a href="<TMPL_VAR NAME='FILEX_SORT_NAME_ASC_URL'>" title="Trier par Nom de fichier">+</a> Nom <a href="<TMPL_VAR NAME='FILEX_SORT_NAME_DESC_URL'>" title="Trier par Nom de fichier">-</a></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_ASC_URL'>" title="Trier par Taille">+</a> Taille <a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_DESC_URL'>" title="Trier par Taille">-</a></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_DATE_ASC_URL'>" title="Trier par date de D&eacute;pose">+</a> D&eacute;pos&eacute; le <a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_DATE_DESC_URL'>" title="Trier par date de D&eacute;pose">-</a></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_DATE_ASC_URL'>" title="Trier par date d'expiration">+</a> Expire le <a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_DATE_DESC_URL'>" title="Trier par date d'expiration">-</a></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_ASC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">+</a> T&eacute;l&eacute;charg&eacute; <a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_DESC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">-</a></td>
+				<th><a href="<TMPL_VAR NAME='FILEX_SORT_NAME_ASC_URL'>" title="Trier par Nom de fichier">+</a> Nom <a href="<TMPL_VAR NAME='FILEX_SORT_NAME_DESC_URL'>" title="Trier par Nom de fichier">-</a></th>
+				<th><a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_ASC_URL'>" title="Trier par Taille">+</a> Taille <a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_DESC_URL'>" title="Trier par Taille">-</a></th>
+				<th><a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_DATE_ASC_URL'>" title="Trier par date de D&eacute;pose">+</a> D&eacute;pos&eacute; le <a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_DATE_DESC_URL'>" title="Trier par date de D&eacute;pose">-</a></th>
+				<th><a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_DATE_ASC_URL'>" title="Trier par date d'expiration">+</a> Expire le <a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_DATE_DESC_URL'>" title="Trier par date d'expiration">-</a></th>
+				<th><a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_ASC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">+</a> T&eacute;l&eacute;charg&eacute; <a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_DESC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">-</a></th>
 			</tr>
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_FILES_LOOP">
-			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>><td><a<TMPL_IF NAME="FILEX_HAS_EXPIRED"> class="expired"</TMPL_IF> href="javascript:;" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>')" title="Information : <TMPL_VAR NAME='FILEX_LONG_FILE_NAME'>"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td><td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td><td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td></tr>
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>><td><a<TMPL_IF NAME="FILEX_HAS_EXPIRED"> class="expired"</TMPL_IF> href="<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>" title="Informations : <TMPL_VAR NAME='FILEX_LONG_FILE_NAME'>"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td><td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td><td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td></tr>
 			</TMPL_LOOP>
 		</tbody>
 	</table>

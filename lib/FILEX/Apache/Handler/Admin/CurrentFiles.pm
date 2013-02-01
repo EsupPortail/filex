@@ -45,6 +45,7 @@ sub process {
 			my $file_id = $S->apreq->param(FILE_ID_FIELD_NAME);
 			last SWITCH if ( !defined($file_id) );
 			my $inT = doFileInfos(system=>$S, file_id=>$file_id,url=>$self->genFileInfoUrl($file_id),
+														go_back=>$self->genCurrentUrl(),
 			                      mode=>1,sub_action_value=>SUB_FILE_INFO,
 			                      sub_action_field_name=>SUB_ACTION_FIELD_NAME,
 			                      file_id_field_name=>FILE_ID_FIELD_NAME);
@@ -143,6 +144,13 @@ sub genFileInfoUrl {
 	my $sub_action = SUB_ACTION_FIELD_NAME;
 	my $url = $self->sys->getCurrentUrl();
 	$url .= "?".$self->genQueryString($sub_action => SUB_FILE_INFO,id => $file_id);
+	return $url;
+}
+
+sub genCurrentUrl {
+	my $self = shift;
+	my $url = $self->sys->getCurrentUrl();
+	$url .= "?".$self->genQueryString();
 	return $url;
 }
 

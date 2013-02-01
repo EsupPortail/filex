@@ -1,3 +1,20 @@
+v1.6
+1- bug fix script cron : liste des téléchargement n'était pas affichée
+2- bug fix handler esup : encodage utf-8
+3- plus de popup pour la consultation des propriété d'un fichier
+5- amélioration graphique partie administration
+6- changement dans la gestion des règles (table rules) de la base de donnée : l'unicité est sur le champ (type+exp) et non exp seulement
+7- administration : possibilité d'activer/désactiver la totalité des fichiers non expiré d'un utilisateur
+8- administration : possibilité de créer une règle d'exclusion automatiquement pour un utilistateur
+
+v1.5b
+1- possibilité de spécifier la socket mysql dans FILEX.ini
+2- possibilité de spécifier le nom du serveur dans FILEX.ini
+3- petit patch dans bin/FILEX.pl
+
+v1.5a
+1- correction d'un bug dans l'authentification CAS en cas de fonctionnement en mode application proxifiée !
+
 v1.5
 1- création de règles sur requètes LDAP
 2- le champs "nom" dans les modules Exclude,Quota,BigBrother devient "description" et n'est plus obligatoire
@@ -10,7 +27,7 @@ v1.4
 2- La page de progression du téléchargement affiche un message lorsque celui-ci est trop important
 3- petit patch pour prendre en compte une valeur NULL selon certaine version de MySQL : le nombre de
 téléchargement si il est égal à ZERO peut ne pas être affiché.
-4- gestion des session (Apache::Session::File) -> Filex.ini
+4- gestion des session via (Apache::Session::File)
 5- possibilité de spécifier un identifiant unique pour l'utilisateur (cf README.owner_uniq_id)
 6- possibilité de surveiller les uploads de certains utilisateurs
 7- Fonctionnement en mode application "proxifiée" CAS

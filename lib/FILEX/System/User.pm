@@ -93,7 +93,7 @@ sub getRealName {
   $attr = lc($attr);
   #return ($res) ? $res->{$attr}->[0] : "unknown";
 	$self->{'real_name'} = ($res) ? $res->{$attr}->[0] : "unknown";
-  $self->{'real_name'};
+  return $self->{'real_name'};
 }
 
 # initialize user's uniq id

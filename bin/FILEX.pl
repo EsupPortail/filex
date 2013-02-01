@@ -37,7 +37,7 @@ die("Unable to load I18N module") if !$i18n;
 my @records;
 my $r = $purge->getExpiredFiles(\@records);
 if ( ! $r ) {
-	::log("An error occured while retrieving expired files : ",$purge->getLastError());
+	::log("An error occured while retrieving expired files : ".$purge->getLastError());
 	exit 1;
 }
 
@@ -45,7 +45,7 @@ if ( ! $r ) {
 my $upload;
 foreach my $idx (0 .. $#records) {
 	$upload = $purge->purge($records[$idx]->{'id'});
-	::log("An error occured :",$purge->getLastError()) if !$upload;
+	::log("An error occured :".$purge->getLastError()) if !$upload;
 	if ( $upload && $upload->getGetResume() == 1 && $config->needEmailNotification() ) {
 		sendMail($upload);
 	}
@@ -73,7 +73,7 @@ sub sendMail() {
 	$t->param(FILEX_DOWNLOAD_COUNT=>$u->getDownloadCount());
 	# loop
 	my (@downloads,@download_loop);
-	if ( $u->getDownloads(\@downloads) ) {
+	if ( $u->getDownloads(results=>\@downloads) ) {
 		for ( my $i = 0; $i <= $#downloads; $i++ ) {
 			push(@download_loop,{FILEX_DOWNLOAD_ADDRESS=>rDns($downloads[$i]->{'ip_address'}) || $downloads[$i]->{'ip_address'},FILEX_DOWNLOAD_DATE=>tsToLocal($downloads[$i]->{'ts_date'})});
 		}

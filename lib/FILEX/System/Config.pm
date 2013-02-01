@@ -406,9 +406,19 @@ sub getDBHost {
 sub getDBPort {
 	my $self = shift;
 	$self->_reload();
-	return $self->{'_config_'}->val(DBSECTION,"Port");
+	return $self->{'_config_'}->val(DBSECTION,"Port",undef);
 }
-
+sub getDBSocket {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(DBSECTION,"Socket",undef);
+}
+# HostName
+sub getHostName {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(SYSSECTION,"HostName",undef);
+}
 # Get Temporary Directory
 sub getTmpFileDir {
 	my $self = shift;

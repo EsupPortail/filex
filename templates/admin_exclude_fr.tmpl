@@ -13,7 +13,7 @@
 		</select><br>
 	<label for="idrulename">Description : </label><input class="Field" id="idrulename" type="text" name="<TMPL_VAR NAME='FILEX_EXCLUDE_RULE_DESCRIPTION_FIELD_NAME'>" size="30" maxlength="50" value="<TMPL_VAR NAME='FILEX_EXCLUDE_FORM_EXCLUDE_DESCRIPTION'>"><br>
 	<label for="idrorder">Ordre : </label><input class="Field" id="idrorder" type="text" name="<TMPL_VAR NAME='FILEX_EXCLUDE_RULE_RORDER_FIELD_NAME'>" size="10" maxlength="10" VALUE="<TMPL_VAR NAME='FILEX_EXCLUDE_FORM_EXCLUDE_RORDER'>"><br>
-	<label for="idreason">Raison : </label><textarea class="Field" id="idreason" name="<TMPL_VAR NAME='FILEX_EXCLUDE_RULE_REASON_FIELD_NAME'>" cols="50" rows="5"><TMPL_VAR NAME="FILEX_EXCLUDE_FORM_EXCLUDE_REASON"></textarea><br>
+	<label for="idreason" style="vertical-align: top;">Raison : </label><textarea class="Field" id="idreason" name="<TMPL_VAR NAME='FILEX_EXCLUDE_RULE_REASON_FIELD_NAME'>" cols="50" rows="5"><TMPL_VAR NAME="FILEX_EXCLUDE_FORM_EXCLUDE_REASON"></textarea><br>
 	<input class="Submit" type="submit" value="Envoyer"></p>
 	<input type="hidden" name="<TMPL_VAR NAME='FILEX_EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_EXCLUDE_FORM_EXCLUDE_ID'>">
 	<input type="hidden" name="<TMPL_VAR NAME='FILEX_MAIN_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_MAIN_ACTION_ID'>">
@@ -34,7 +34,13 @@
 				<td><TMPL_VAR NAME="FILEX_EXCLUDE_DESCRIPTION"></td>
 				<td><TMPL_VAR NAME="FILEX_EXCLUDE_RULE"></td>
 				<td><TMPL_VAR NAME="FILEX_EXCLUDE_STATE"></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="[A|De]activer">S</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Modifier">M</a></td>
+				<td style="text-align: center;">
+					<ul class="inline" style="margin: 0; padding: 0;">
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+					</ul>
+				</td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>

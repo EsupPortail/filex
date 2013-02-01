@@ -32,10 +32,12 @@ sub new {
 	my $dbpassword = $self->{'_CONFIG_'}->getDBPassword();
 	my $dbhost = $self->{'_CONFIG_'}->getDBHost();
 	my $dbport = $self->{'_CONFIG_'}->getDBPort();
+	my $dbsocket = $self->{'_CONFIG_'}->getDBSocket();
 	# attempt to connect
 	$self->{'_DBH_'} = eval {
 		my $dsn = "DBI:mysql:database=".$dbname.";host=".$dbhost;
 		$dsn .= ";port=".$dbport if $dbport;
+		$dsn .= ";mysql_socket=".$dbsocket if $dbsocket;
 		DBI->connect($dsn,$dbuser,$dbpassword,{AutoCommit=>0,RaiseError=>1});
 	};
 	die(__PACKAGE__,"-> Unable to Connect to the Database : $@") if ($@);

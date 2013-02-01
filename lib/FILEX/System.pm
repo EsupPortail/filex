@@ -232,9 +232,9 @@ sub mail {
 	# load on demand
 	if ( ! $self->{'_mail_'} ) {
 		$self->{'_mail_'} = FILEX::System::Mail->new(
-			server=>$self->config->getSmtpServer(),
-			hello=>$self->config->getSmtpHello(),
-			timeout=>$self->config->getSmtpTimeout());
+			server=>$self->config()->getSmtpServer(),
+			hello=>$self->config()->getSmtpHello(),
+			timeout=>$self->config()->getSmtpTimeout());
 	}
 	return $self->{'_mail_'};
 }
@@ -268,7 +268,7 @@ sub getQuota {
 sub getUserRealName {
 	my $self = shift;
 	my $uid = shift;
-	my $attr = $self->config->getLdapUsernameAttr();
+	my $attr = $self->config()->getLdapUsernameAttr();
 	my $res = $self->ldap->getUserAttrs(uid=>$uid,attrs=>[$attr]);
 	$attr = lc($attr);
 	return ($res) ? $res->{$attr}->[0] : "unknown";
@@ -288,8 +288,8 @@ sub beginSession {
 	my $noAuth = ( exists($ARGZ{'no_auth'}) && defined($ARGZ{'no_auth'}) && ($ARGZ{'no_auth'} == 1) ) ? 1 : 0;
 	my $noLogin = ( exists($ARGZ{'no_login'}) && defined($ARGZ{'no_login'}) && ($ARGZ{'no_login'}) == 1) ? 1 : 0;
 	# cookie
-	my $ckname = $self->config->getCookieName();
-	my $cktime = $self->config->getCookieExpires();
+	my $ckname = $self->config()->getCookieName();
+	my $cktime = $self->config()->getCookieExpires();
 
 	my $acookie = Apache::Cookie->new($r);
 	my $cookie = $acookie->parse();
@@ -391,8 +391,8 @@ sub _loadSession {
 	$self->{'_session_'} = {};
 	eval {
 		tie %{$self->{'_session_'}},'Apache::Session::File',$session_id,{
-			Directory=>$self->config->getSessionDirectory(),
-			LockDirectory=>$self->config->getSessionLockDirectory()
+			Directory=>$self->config()->getSessionDirectory(),
+			LockDirectory=>$self->config()->getSessionLockDirectory()
 		};
 	};
 	if ($@) {
@@ -425,8 +425,8 @@ sub _startSession {
 	$self->{'_session_'} = {};
 	eval {
 		tie %{$self->{'_session_'}},'Apache::Session::File',undef,{
-			Directory=>$self->config->getSessionDirectory(),
-			LockDirectory=>$self->config->getSessionLockDirectory()
+			Directory=>$self->config()->getSessionDirectory(),
+			LockDirectory=>$self->config()->getSessionLockDirectory()
 		};
 	};
 	if ($@) {
@@ -534,7 +534,7 @@ sub isWatched {
 	my $user = shift;
 	warn(__PACKAGE__,"=> require a FILEX::System::User") && return undef if (!defined($user) || (ref($user) ne "FILEX::System::User"));
 	# check if usemail and watchuser
-	if ( $self->config->needEmailNotification() && $self->config->useBigBrother() ) {
+	if ( $self->config()->needEmailNotification() && $self->config()->useBigBrother() ) {
 		my $watch = $self->_watch();
 		return ($watch) ? $watch->isWatched($user->getId()) : undef;
 	} 
@@ -548,7 +548,7 @@ sub _redirectAuth {
 	my $r = $self->apreq();
 	# if we have cookie then destroy it
 	if ( $self->{'_havecookie_'} == 1 ) {
-		my $dcookie = _genCookie($r,-name=>$self->config->getCookieName(),
+		my $dcookie = _genCookie($r,-name=>$self->config()->getCookieName(),
 			-value=>"",
 			-expires=>"-1Y");
 		$r->err_headers_out->add("Set-Cookie",$dcookie);
@@ -568,7 +568,7 @@ sub _doLogin {
 	my $t = $self->getTemplate(name=>"login");
 	# fill template
 	$t->param(FILEX_STATIC_FILE_BASE=>$self->getStaticUrl());
-	$t->param(FILEX_SYSTEM_EMAIL=>$self->config->getSystemEmail());
+	$t->param(FILEX_SYSTEM_EMAIL=>$self->config()->getSystemEmail());
 	$t->param(FILEX_LOGIN_FORM_ACTION=>$self->getCurrentUrl());
 	$t->param(FILEX_LOGIN_FORM_LOGIN_FIELD_NAME=>LOGIN_FORM_LOGIN_FIELD_NAME);
 	$t->param(FILEX_LOGIN_FORM_PASSWORD_FIELD_NAME=>LOGIN_FORM_PASSWORD_FIELD_NAME);
@@ -593,7 +593,7 @@ sub denyAccess {
 	# fill template
 	$t->param(STATIC_FILE_BASE=>$self->getStaticUrl());
 	$t->param(ERROR=>$self->i18n->localizeToHtml("access deny"));
-	$t->param(SYSTEMEMAIL=>$self->config->getSystemEmail());
+	$t->param(SYSTEMEMAIL=>$self->config()->getSystemEmail());
 	# reason
 	if ( defined($reason) && length($reason) > 0 ) {
 		$t->param(REASON=>$self->toHtml($reason));
@@ -634,7 +634,7 @@ sub prepareHeader {
 		} elsif ( $self->{'_dropcookie_'} == 1 && $self->{'_havecookie_'} == 1 ) {
 			# destroy cookie
 			$r->header_out("Set-Cookie",_genCookie(
-				$r,-name=>$self->config->getCookieName(),
+				$r,-name=>$self->config()->getCookieName(),
 				-value=>"",
 				-expires=>"-1Y")); 
 		}
@@ -776,7 +776,7 @@ sub getServerUrl {
 	my $s = $self->apreq->server();
 	my $url = ( $self->apreq->subprocess_env('https') ) ? "https://" : "http://";
 	# host_name 
-	$url .= $s->server_hostname();
+	$url .= $self->config()->getHostName() || $s->server_hostname();
 	# port if not standard (0==80);
 	$url .= ":".$s->port() if ( $s->port() != 80 && $s->port() != 443 && $s->port() != 0 );
 	return $url;
@@ -807,42 +807,42 @@ sub genQueryString {
 sub getManageUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config->getUriManage());
+	$url .= Apache::Util::escape_uri($self->config()->getUriManage());
 	return $url;
 }
 
 sub getUploadUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config->getUriUpload());
+	$url .= Apache::Util::escape_uri($self->config()->getUriUpload());
 	return $url;
 }
 
 sub getMeterUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config->getUriMeter());
+	$url .= Apache::Util::escape_uri($self->config()->getUriMeter());
 	return $url;
 }
 
 sub getAdminUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config->getUriAdmin());
+	$url .= Apache::Util::escape_uri($self->config()->getUriAdmin());
 	return $url;
 }
 
 sub getGetUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	$url .= Apache::Util::escape_uri($self->config->getUriGet());
+	$url .= Apache::Util::escape_uri($self->config()->getUriGet());
 	return $url;
 }
 
 sub getStaticUrl {
 	my $self = shift;
 	my $url = $self->getServerUrl();
-	my $static_uri = $self->config->getUriStatic();
+	my $static_uri = $self->config()->getUriStatic();
 	$static_uri .= "/" if ( $static_uri !~ /.*\/^/ );
 	$url .= Apache::Util::escape_uri($static_uri);
 	return $url;

@@ -10,7 +10,11 @@ use Exporter;
 %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
 use FILEX::DB::Upload;
+use FILEX::DB::Admin::Helpers;
 use FILEX::Tools::Utils qw(tsToGmt hrSize tsToLocal);
+# for rules creation
+use FILEX::DB::Admin::Rules;
+use FILEX::DB::Admin::Exclude;
 
 use constant FILE_FIELD_NAME => "k";
 use constant ADMIN_DOWNLOAD_FIELD_NAME => "adm";
@@ -22,12 +26,15 @@ use constant FIELD_DELIVERY_NAME => "delivery";
 use constant FIELD_RENEW_NAME => "renew";
 use constant FIELD_USE_PASSWORD_NAME => "upwd";
 use constant FIELD_PASSWORD_NAME => "pwd";
+use constant FIELD_DISABLE_USER_FILES_NAME => "duf";
+use constant FIELD_DISABLE_USER_NAME => "du";
 use constant ADMIN_MODE => 1;
 
 # require : FILEX::System + upload id
 # system => FILEX::System object
 # id => Upload id
 # url => access url
+# go_back => go back url
 # mode => 1 | 0
 sub doFileInfos {
 	my %ARGZ = @_;
@@ -45,11 +52,19 @@ sub doFileInfos {
 	$T->param(SUB_ACTION_VALUE=>$ARGZ{'sub_action_value'});
 	$T->param(FILE_ID_FIELD_NAME=>$ARGZ{'file_id_field_name'});
 	$T->param(FILE_ID_VALUE=>$file_id);
+	# go back
+	if ( exists($ARGZ{'go_back'}) && defined($ARGZ{'go_back'}) ) {
+		$T->param(GO_BACK_URL=>$S->toHtml($ARGZ{'go_back'}));
+	}
+	# user name
+	$T->param(FILEX_USER_NAME=>$S->toHtml($S->getUser()->getRealName()));
+	$T->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
+
 	$T->param(FILEX_FORM_ACTION_URL=>$S->toHtml($ARGZ{'url'}));
 	my $upload = eval { FILEX::DB::Upload->new(id=>$file_id); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
-		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$upload->getLastErrorString()));
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		return $T;
 	}
   if ( !$upload->exists() ) {
@@ -71,11 +86,54 @@ sub doFileInfos {
 
 	# check for params
 	my $changes = 0;
-	my $activate = $S->apreq->param(FIELD_STATE_NAME);
-	if ( defined($activate) && $mode == ADMIN_MODE ) {
-		if (($upload->getEnable() != $activate) && ($activate == 1 || $activate == 0)) {
-			$upload->setEnable($activate);
-			$changes++;
+	# admin mode
+	if ( $mode == ADMIN_MODE ) {
+		# set file enable or not
+		my $activate = $S->apreq->param(FIELD_STATE_NAME);
+		if ( defined($activate) ) {
+			if (($upload->getEnable() != $activate) && ($activate == 1 || $activate == 0)) {
+				$upload->setEnable($activate);
+				$changes++;
+			}
+		}
+		my $helpers = undef;
+		# disable owner's files
+		my $disableOwnerFiles = $S->apreq->param(FIELD_DISABLE_USER_FILES_NAME);
+		if ( defined($disableOwnerFiles) && $disableOwnerFiles =~ /^[1|0]$/ ) {
+			if ( !defined($helpers) ) {
+				$helpers = eval { FILEX::DB::Admin::Helpers->new(); };
+				if ($@) {
+					$T->param(FILEX_HAS_ERROR=>1);
+					$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
+					# fatal error !
+					return $T
+				}
+			}
+			# disable files
+			if ( $disableOwnerFiles == 1 ) {
+				# set files disabled
+				if ( ! $helpers->disableUserFiles($upload->getOwnerUniqId()) ) {
+					warn(__PACKAGE__," unable to disable user's files : "+$helpers->getLastErrorString());
+				} else {
+					# since the files is loaded before disabling it we need to change it's state
+					$upload->setEnable(0);
+				}
+			}
+			# enable files
+			if ( $disableOwnerFiles == 0 ) {
+				if ( ! $helpers->enableUserFiles($upload->getOwnerUniqId()) ) {
+					warn(__PACKAGE__,"=> unable to disable user's files : ",$helpers->getLastErrorString());
+				} else {
+					$upload->setEnable(1);
+				}
+			}
+		}
+		# disable owner
+		my $disableOwner = $S->apreq->param(FIELD_DISABLE_USER_NAME);
+		if ( defined($disableOwner) && $disableOwner =~ /^1$/ ) {
+			if ( ! autoExclude($upload->getOwner()) ) {
+				warn(__PACKAGE__,"=> unable to create exclude rule for : ",$upload->getOwner());
+			}
 		}
 	}
 	my $purge = $S->apreq->param(FIELD_EXPIRE_NAME);
@@ -281,6 +339,12 @@ sub doFileInfos {
 				$T->param(FILEX_FORM_STATE_VALUE_DESACTIVATE_CHECKED=>1);
 			}
 		}
+		# 
+		$T->param(FILEX_FORM_DISABLE_USER_FILES_NAME=>FIELD_DISABLE_USER_FILES_NAME);
+		$T->param(FILEX_FORM_DISABLE_USER_FILES_VALUE_ACTIVATE=>1);
+		$T->param(FILEX_FORM_DISABLE_USER_FILES_VALUE_DESACTIVATE=>0);
+		$T->param(FILEX_FORM_DISABLE_USER_NAME=>FIELD_DISABLE_USER_NAME);
+		$T->param(FILEX_FORM_DISABLE_USER_VALUE=>1);
 	}
 	# return if no downloads
 	return $T if ( $upload->getDownloadCount() == 0 );
@@ -329,6 +393,72 @@ sub genGetUrl {
 		$url .= "?".$S->genQueryString(params=>{$fFile=>$f});
 	}
 	return $url;
+}
+
+# create automaticaly an exclude rules for a given user id
+# return 1 or undef on error
+sub autoExclude {
+	my $uid = shift;
+	return undef && warn(__PACKAGE__,"autoExclude : Require a user id !") if !defined($uid); 
+	# create the Rule
+	my $rule = eval { FILEX::DB::Admin::Rules->new(); };
+	if ($@) {
+		warn(__PACKAGE__,"=> autoExclude : unable to create Rule object : ",$@);
+		return undef;
+	}
+	# check if rule already exists
+	my $rule_id = $rule->exists(type=>$FILEX::DB::Admin::Rules::RULE_TYPE_UID,exp=>$uid);
+	my $bIsNewRule = 0;
+	if ( !defined($rule_id) ) {
+		warn(__PACKAGE__,"=> autoExclude : unable to check for rule existence : ",$rule->getLastErrorString());
+		return undef;
+	}
+	# rule does not exists
+	if ( $rule_id == -1 ) {
+		$rule_id = $rule->add(name=>"_AUTO_ $uid",exp=>$uid,type=>$FILEX::DB::Admin::Rules::RULE_TYPE_UID);
+		if ( !$rule_id ) {
+			warn(__PACKAGE__,"=> autoExclude : unable to create new exclude rule for [ $uid ] : ",$rule->getLastErrorString());
+			return undef;
+		}
+		$bIsNewRule = 1; # set as a new rule
+	}
+	# everythings ok, create the exclude entry
+	my $exclude = eval { FILEX::DB::Admin::Exclude->new(); };
+	if ($@) {
+		warn(__PACKAGE__,"=> autoExclude : unable to create Exclude object : ",$@);
+		if ( $bIsNewRule ) { # delete only if a new rule
+			warn(__PACKAGE__,"=> autoExclude : removing last create rule : ",$rule_id);
+			warn(__PACKAGE__,"=> autoExclude : removing rule [ $rule_id ] failed : ",$@) if ( !$rule->del($rule_id) );
+		}
+		return undef;
+	}
+	# check if the rule is already associated if not a new rule
+	my $excludeExists = 0;
+	if ( !$bIsNewRule ) {
+		$excludeExists = $exclude->existsRule($rule_id);
+		if ( !defined($excludeExists) ) {
+			warn(__PACKAGE__,"=> autoExclude : unable to check if exclude rule exists : ",$@);
+			if ( $bIsNewRule ) { # delete only if a new rule
+				warn(__PACKAGE__,"=> autoExclude : removing last create rule : ",$rule_id);
+				warn(__PACKAGE__,"=> autoExclude : removing rule [ $rule_id ] failed : ",$@) if ( !$rule->del($rule_id) );
+			}
+			return undef;
+		}
+	}
+	# add this new exclude rule only if this rule is not already linked
+	if ( $excludeExists == -1 ) {
+		if ( !$exclude->add(rule_id=>$rule_id,enable=>1,description=>"AUTO created exclude rule for : $uid") ) {
+			warn(__PACKAGE__,"=> autoExclude : unable to create Exclude rule : ",$exclude->getLastErrorString());
+			if ( $bIsNewRule ) { # delete only if a new rule
+				warn(__PACKAGE__,"=> autoExclude : removing last create rule : ",$rule_id);
+				warn(__PACKAGE__,"=> autoExclude : removing rule [ $rule_id ] failed : ",$@) if ( !$rule->del($rule_id) );
+			}
+			return undef;
+		}
+	} else {
+		warn(__PACKAGE__,"=> autoExclude : the rule [ $rule_id ] is already linked [ $excludeExists ] ... skipping");
+	}
+	return 1;
 }
 
 1;

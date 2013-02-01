@@ -28,7 +28,22 @@
 	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des r&egrave;gles">
 		<caption>Liste des r&egrave;gles</caption>
 		<thead>
-			<tr><td>Type</td><td>Nom</td><td>R&egrave;gle</td><td>Actions</td></tr>
+			<tr>
+				<th rowspan="2">Type</th>
+				<th rowspan="2">Nom</th>
+				<th rowspan="2">R&egrave;gle</th>
+				<th rowspan="1" colspan="3">Li&eacute;e &agrave;</th>
+				<th rowspan="2">Actions</th>
+			</tr>
+			<tr>
+				<!-- <th/> -->
+				<!-- <th/> -->
+				<!-- <th/> -->
+				<th><abbr title="Exclusion">Ex</abbr></th>
+				<th><abbr title="Quota">Qt</abbr></th>
+				<th><abbr title="Supervision">Sp</abbr></th>
+				<!-- <th/> -->
+			</tr>
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_RULES_LOOP">
@@ -36,7 +51,15 @@
 				<td><TMPL_VAR NAME="FILEX_RULE_TYPE"></td>
 				<td><TMPL_VAR NAME="FILEX_RULE_NAME"></td>
 				<td><TMPL_VAR NAME="FILEX_RULE_EXP"></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Modifier">M</a></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_LINK_EX"></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_LINK_QT"></td>
+				<td><TMPL_VAR NAME="FILEX_RULE_LINK_SP"></td>
+				<td style="text-align: center;">
+					<ul class="inline" style="padding: 0; margin: 0;">
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+					</ul>
+				</td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>

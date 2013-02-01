@@ -11,8 +11,8 @@ use FILEX::System;
 use FILEX::DB::Manage;
 use FILEX::Tools::Utils qw(hrSize tsToLocal);
 use FILEX::Apache::Handler::Admin::Common qw(doFileInfos);
-
 use XML::LibXML;
+use Encode;
 
 $VERSION = 1.0;
 
@@ -84,10 +84,12 @@ sub handler {
 	my $uploads_elem = XML::LibXML::Element->new("uploads"); # handle error please !
 	$uploads_elem->setAttribute("active_files_count",$#results+1);
 	($hrsize,$hrunit) = hrSize($current_used_space);
-	$uploads_elem->setAttribute("used_space",sprintf("%s %s",$hrsize,$S->i18n->localize($hrunit)));
+	$uploads_elem->setAttribute("used_space",$hrsize);
+	$uploads_elem->setAttribute("used_space_unit",$S->i18n->localize($hrunit));
 	if ( $quota_max_used_space > 0 ) {
 		($hrsize,$hrunit) = hrSize($quota_max_used_space);
-		$uploads_elem->setAttribute("max_used_space",sprintf("%s %s",$hrsize,$S->i18n->localize($hrunit)));
+		$uploads_elem->setAttribute("max_used_space",$hrsize);
+		$uploads_elem->setAttribute("max_used_space_unit",$S->i18n->localize($hrunit));
 	}
 	if ($#results >= 0) {
 		# create sort element
@@ -164,7 +166,7 @@ sub createUpload {
 	my $url = shift;
 	# create element
 	my $element = XML::LibXML::Element->new("upload") or warn(__PACKAGE__,"Unable to create new upload element") && return undef;
-	$element->setAttribute("name",$name);
+	$element->setAttribute("name",encode("utf-8",$name));
 	$element->setAttribute("upload_date",$upload_date);
 	$element->setAttribute("expire_date",$expire_date);
 	$element->setAttribute("size",$size);

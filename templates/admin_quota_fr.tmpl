@@ -33,7 +33,7 @@
 	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des quotas">
 		<caption>Liste des quotas</caption>
 		<thead>
-			<tr><td>Date</td><td>Ordre</td><td>Description</td><td>R&egrave;gle</td><td>MFS</td><td>TUS</td><td>Etat</td><td>Actions</td></tr>
+			<tr><th>Date</th><th>Ordre</th><th>Description</th><th>R&egrave;gle</th><th><abbr title="Taille de fichier maximal">MFS</abbr></th><th><abbr title="Taille total utilis&eacute;e">TUS</abbr></th><th>Etat</th><th>Actions</th></tr>
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_QUOTA_LOOP">
@@ -45,7 +45,13 @@
 				<td><TMPL_VAR NAME="FILEX_QUOTA_MAX_FILE_SIZE"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_MAX_USED_SPACE"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_STATE"></td>
-				<td><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="[A|De]activer">S</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Modifier">M</a></td>
+				<td style="text-align: center;">
+					<ul class="inline" style="margin: 0; padding:0;">
+						<li><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer"><img src="media/icons/trash.png" alt="Supprimer" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="Activer/Desactiver"><img src="media/icons/toggle.png" alt="Activer/Desactiver" border="0"/></a></li>
+						<li><a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Editer"><img src="media/icons/edit.png" alt="Editer" border="0"/></a></li>
+					</ul>
+				</td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>

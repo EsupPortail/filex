@@ -13,12 +13,19 @@ $VERSION = 1.0;
   getRuleTypeName
 );
 
+# rule type
+our $RULE_TYPE_DN = 1;
+our $RULE_TYPE_GROUP = 2;
+our $RULE_TYPE_UID = 3;
+our $RULE_TYPE_LDAP = 4;
+
 my %RULE_TYPES = (
-  1 => "DN",
-  2 => "GROUP",
-	3 => "UID",
-	4 => "LDAP"
+  $RULE_TYPE_DN => "DN",
+  $RULE_TYPE_GROUP => "GROUP",
+	$RULE_TYPE_UID => "UID",
+	$RULE_TYPE_LDAP => "LDAP"
 );
+
 
 # exported functions
 sub getRuleTypes {
@@ -33,17 +40,18 @@ sub getRuleTypeName {
 # name => rule name
 # exp => expresion
 # type => rule type
+# return rule insert id
 sub add {
 	my $self = shift;
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
-                      string=>"Require a rule name",
+                      string=>"require a rule name",
 	                    code=>-1) && return undef if ( !exists($ARGZ{'name'}) || !$self->checkStr($ARGZ{'name'}) );
 	$self->setLastError(query=>"",
-	                    string=>"Require a exp",
+	                    string=>"require a rule",
 	                    code=>-1) && return undef if ( !exists($ARGZ{'exp'}) || !$self->checkStr($ARGZ{'exp'}) );
 	$self->setLastError(query=>"",
-	                    string=>"Require a type",
+	                    string=>"require a type",
                       code=>-1) && return undef if ( !exists($ARGZ{'type'}) || !checkType($ARGZ{'type'}) );
 	my $dbh = $self->_dbh();
 	my %fields = (
@@ -57,9 +65,11 @@ sub add {
 		push(@v,$fields{$k});
 	}
 	my $strQuery = "INSERT INTO rules (".join(",",@f).") VALUES (".join(",",@v).")";
+	my $insertId = undef;
 	eval {
 		my $sth = $dbh->prepare($strQuery);
 		$sth->execute();
+		$insertId = $dbh->{'mysql_insertid'};
 		$dbh->commit();
 	};
 	if ($@) {
@@ -67,7 +77,7 @@ sub add {
 		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
 		return undef;
 	}
-	return 1;
+	return $insertId;
 }
 
 sub modify {
@@ -174,6 +184,36 @@ sub list {
 	return 1;
 }
 
+# extended list of rules 
+sub listEx {
+	my $self = shift;
+	my $res = shift;
+	$self->setLastError(query=>"",
+	                    string=>"Require an ARRAY REF",
+	                    code=>-1) && return undef if (ref($res) ne "ARRAY");
+	my $dbh = $self->_dbh();
+	my $strQuery = "SELECT r.*, count(e.rule_id) AS exclude, ".
+		"count(q.rule_id) AS quota, count(b.rule_id) AS big_brother ".
+		"FROM rules r ".
+		"LEFT JOIN exclude e ON r.id = e.rule_id ".
+		"LEFT JOIN quota q ON r.id = q.rule_id ".
+		"LEFT JOIN big_brother b ON r.id = b.rule_id ".
+		"GROUP BY r.id";
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		while ( my $row = $sth->fetchrow_hashref() ) {
+			push(@$res,$row);
+		}
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
+		return undef;
+	}
+	return 1;
+}
+
 # delete a rule
 # require an id
 sub del {
@@ -193,6 +233,55 @@ sub del {
 		return undef;
 	}
 	return 1;
+}
+
+# type=>rule type
+# exp => rule expession
+# or 
+# name => rule name
+#
+# return : 
+# undef on error
+# -1 if not exists
+# rule id if exists
+sub exists {
+	my $self = shift;
+	my %ARGZ = @_;
+	my %fields = ();
+	my $dbh = $self->_dbh();
+	if ( exists($ARGZ{'name'}) ) {
+		$fields{'name'} = $dbh->quote($ARGZ{'name'});
+	} elsif ( exists($ARGZ{'type'}) && exists($ARGZ{'type'}) ) {
+		$fields{'exp'} = $dbh->quote($ARGZ{'exp'});
+		$fields{'type'} = $ARGZ{'type'};
+	} else {
+		warn(__PACKAGE__,"=> must be called either with type=>xx,exp=>xx or name=>xx");
+		return undef;
+	}
+	my $strQuery = "SELECT id FROM rules WHERE ";
+	my $strQueryNext = undef;
+	foreach my $k ( keys(%fields) ) {
+		$strQueryNext .= " AND " if  defined($strQueryNext);
+		$strQueryNext .= sprintf("%s = %s",$k,$fields{$k});
+	}
+	if ( !defined($strQueryNext) ) {
+		warn(__PACKAGE__,"=> no field set for query !");
+		return undef;
+	}
+	$strQuery .= $strQueryNext;
+	my $result = undef;
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$result = $sth->fetchrow()||-1;
+		$sth->finish();
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"=> Database Error : $@ : $strQuery");
+		return undef;
+	}
+	return $result;
 }
 
 1;
