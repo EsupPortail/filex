@@ -1,21 +1,21 @@
-Votre fichier "<TMPL_VAR NAME="FILENAME">" déposé le <TMPL_VAR NAME="FILEDATE"> a été supprimé.
+Votre fichier "<TMPL_VAR NAME="FILEX_FILE_NAME">" déposé le <TMPL_VAR NAME="FILEX_FILE_DATE"> a été supprimé.
 
 Pour informations :
 
-Fichier : <TMPL_VAR NAME="FILENAME">
-Taille : <TMPL_VAR NAME="FILESIZE">
-Déposé le : <TMPL_VAR NAME="FILEDATE">
-Expire le : <TMPL_VAR NAME="FILEEXPIRE">
+Fichier : <TMPL_VAR NAME="FILEX_FILE_NAME">
+Taille : <TMPL_VAR NAME="FILEX_FILE_SIZE">
+Déposé le : <TMPL_VAR NAME="FILEX_FILE_DATE">
+Expire le : <TMPL_VAR NAME="FILEX_FILE_EXPIRE">
 
-Nombre de téléchargements : <TMPL_VAR NAME="DOWNLOADCOUNT">
-<TMPL_IF NAME="DOWNLOADCOUNT">
+Nombre de téléchargements : <TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT">
+<TMPL_IF NAME="FILEX_DOWNLOAD_COUNT">
 Téléchargé par :
 
-<TMPL_LOOP NAME="DL_LOOP">- <TMPL_VAR NAME="DLADDRESS"> le <TMPL_VAR NAME="DLDATE">
+<TMPL_LOOP NAME="FILEX_DOWNLOAD_LOOP">- <TMPL_VAR NAME="FILEX_DOWNLOAD_ADDRESS"> le <TMPL_VAR NAME="FILEX_DOWNLOAD_DATE">
 </TMPL_LOOP></TMPL_IF>
 
 Merci d'avoir utilisé le service d'échange de fichier.
 
 En cas de problèmes ou pour toutes informations, veuillez adresser 
-vos messages à l'adresse suivante : <TMPL_VAR NAME="SYSTEMEMAIL">
+vos messages à l'adresse suivante : <TMPL_VAR NAME="FILEX_SYSTEM_EMAIL">
 

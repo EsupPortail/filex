@@ -8,7 +8,8 @@ use Apache::Util;
 
 # FILEX related
 use FILEX::System qw(genUniqId toHtml);
-use FILEX::DB::Get;
+use FILEX::DB::Download;
+use FILEX::DB::Upload;
 use FILEX::Tools::Utils qw(tsToGmt hrSize tsToLocal rDns);
 
 # Other
@@ -18,6 +19,8 @@ use MIME::Words;
 
 use constant FILEX_CONFIG_NAME => "FILEXConfig";
 
+use constant FIELD_FILE_NAME => "k";
+use constant FIELD_AUTO_MODE => "auto";
 
 $VERSION = 1.0;
 
@@ -26,54 +29,48 @@ sub handler {
 	# CHECK FOR ERRORS !
 	my $S = FILEX::System->new(shift);
 	my $Template = $S->getTemplate(name=>"get");
-	my $db = eval { FILEX::DB::Get->new(name=>$S->config->getDBName(),
-	                           user=>$S->config->getDBUsername(),
-	                           password=>$S->config->getDBPassword(),
-	                           host=>$S->config->getDBHost(),
-	                           port=>$S->config->getDBPort()); };
+	my $db = eval { FILEX::DB::Download->new() };
 	if ($@) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$@));
 		display($S,$Template);
 	}
 	
 	# get parameters
-	my $file_name = $S->apreq->param("k");
-	my $auto_mode = $S->apreq->param("auto") || 0;
+	my $file_name = $S->apreq->param(FIELD_FILE_NAME);
+	my $auto_mode = $S->apreq->param(FIELD_AUTO_MODE) || 0;
 
-	$Template->param(SYSTEMEMAIL=>$S->config->getSystemEmail());
+	$Template->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	# no filename to download then show it
 	if ( !$file_name ) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("requested file does not exists"));
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("requested file does not exists"));
 		display($S,$Template);
 	}
 
 	# get file infos
-	my (%file_infos,$res);
-	$res = $db->getFileInfosEx(file_name=>$file_name,results=>\%file_infos);
-	# check for errors $res == undef
-	if ( !$res ) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("database error %s",$db->getLastErrorString()));
+	my $upload = eval { FILEX::DB::Upload->new(file_name=>$file_name); };
+	if ($@) {
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$upload->getLastErrorString()));
 		display($S,$Template);
 	}
 	# file record not found
-	if ( !exists($file_infos{'file_name'}) ) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("requested file does not exists"));
+	if ( !$upload->exists() ) {
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("requested file does not exists"));
 		display($S,$Template);
 	}
 	# file expired
-	if ( $file_infos{'expired'} == 1 ) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("file expire"));
+	if ( $upload->isExpired() == 1 ) {
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file expire"));
 		display($S,$Template);
 	}
 	# file disabled
-	if ( $file_infos{'enable'} != 1 || $file_infos{'deleted'} == 1 ) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("file disabled"));
+	if ( $upload->getEnable() != 1 || $upload->getDeleted() == 1 ) {
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file disabled"));
 		display($S,$Template);
 	}
 
@@ -82,24 +79,26 @@ sub handler {
 	# stat the file
 	my @fstat = stat($source);
 	if ( $#fstat < 0 ) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("disk file not found"));
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("disk file not found"));
 		display($S,$Template);
 	}
 	
 	# everything is ok
 	if ( $auto_mode != 1 ) {
-		$Template->param(HAS_FILE=>1);
-		$Template->param(FILENAME=>toHtml($file_infos{'real_name'}));
+		$Template->param(FILEX_HAS_FILE=>1);
+		$Template->param(FILEX_FILE_NAME=>toHtml($upload->getRealName()));
 		my ($fsz,$funit) = hrSize($fstat[7]);
-		$Template->param(FILESIZE=>$fsz." ".$S->i18n->localizeToHtml("$funit"));
-		$Template->param(FILEPUBLISHED=>toHtml(tsToGmt($file_infos{'ts_upload_date'})." (GMT)"));
-		$Template->param(FILEEXPIRE=>toHtml(tsToGmt($file_infos{'ts_expire_date'}). "(GMT)"));
-		$Template->param(FILEOWNER=>$S->getMail($file_infos{'owner'}));
+		$Template->param(FILEX_FILE_SIZE=>$fsz." ".$S->i18n->localizeToHtml("$funit"));
+		$Template->param(FILEX_FILE_PUBLISHED_DATE=>toHtml(tsToGmt($upload->getUploadDate())." (GMT)"));
+		$Template->param(FILEX_FILE_EXPIRE_DATE=>toHtml(tsToGmt($upload->getExpireDate()). " (GMT)"));
+		$Template->param(FILEX_FILE_OWNER=>$S->getMail($upload->getOwner()));
 		# enable auto download
-		$Template->param(CAN_DOWNLOAD=>1);
-		my $download_url = $S->getCurrentUrl()."?".$S->genQueryString({k=>$file_name,auto=>1});
-		$Template->param(DOWNLOAD_URL=>$download_url);
+		$Template->param(FILEX_CAN_DOWNLOAD=>1);
+		my $fk = FIELD_FILE_NAME;
+		my $fauto = FIELD_AUTO_MODE;
+		my $download_url = $S->getCurrentUrl()."?".$S->genQueryString({$fk=>$file_name,$fauto=>1});
+		$Template->param(FILEX_DOWNLOAD_URL=>$download_url);
 		display($S,$Template);
 	}
 	# oki we can push the file
@@ -110,25 +109,25 @@ sub handler {
 	# if download then go
 	my $fh = Apache::File->new();
 	if ( ! $fh->open($source) ) {
-		$Template->param(HAS_ERROR=>1);
-		$Template->param(ERROR=>$S->i18n->localizeToHtml("unable to open file"));
+		$Template->param(FILEX_HAS_ERROR=>1);
+		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to open file"));
 		display($S,$Template);
 	}
 	# inform that we accept range request
 	# Content-Disposition filename MUST be US-ASCII
 	my $content_disposition = "attachment; filename=";
-	my $real_name_ascii = $file_infos{'real_name'};
+	my $real_name_ascii = $upload->getRealName();
 	# convert space to "_"
 	$real_name_ascii =~ s/\s/_/g;
  	if ( $S->isIE() ) {
 		#$real_name_ascii = $file_infos{'real_name'};
 		$content_disposition .= $real_name_ascii;
 	} else {
-		$real_name_ascii = MIME::Words::encode_mimewords($file_infos{'real_name'},Charset=>'iso-8859-1');
+		$real_name_ascii = MIME::Words::encode_mimewords($upload->getRealName(),Charset=>'iso-8859-1');
 		$content_disposition .= "\"$real_name_ascii\"";
 	}
 	$real_name_ascii = "unknown" if length($real_name_ascii) <= 0;
-	$S->sendHeader('Content-Type'=>$file_infos{'content_type'},
+	$S->sendHeader('Content-Type'=>$upload->getContentType(),
 	               'Content-Disposition'=>$content_disposition,
 	               'Content-transfert-encoding'=>"binary",
 	               'Content-Length'=>$fstat[7]);
@@ -143,27 +142,30 @@ sub handler {
 	
 	my $download_id = genUniqId();
 	$db->logCurrentDownload(fields=>[download_id=>$download_id,
-	               upload_id=>$file_infos{'id'},
+	               upload_id=>$upload->getId(),
 	               ip_address=>$S->getRemoteIP()]) or warn(__PACKAGE__,"-> Unable to log current download");
 	# send file
 	$S->apreq->send_fd($fh);
 	# check for connection
 	if ( !$S->isConnected() ) {
-		$db->log(fields=>[upload_id=>$file_infos{'id'},
-	           ip_address=>$S->getRemoteIP(),
-             use_proxy=>$S->isBehindProxy(),
-             proxy_infos=>$S->getProxyInfos(),
-	           canceled=>1]) or warn(__PACKAGE__,"-> Unable to log download !");
+		$upload->addDownloadRecord(
+			upload_id=>$upload->getId(),
+			ip_address=>$S->getRemoteIP(),
+			use_proxy=>$S->isBehindProxy(),
+			proxy_infos=>$S->getProxyInfos(),
+			canceled=>1) or warn(__PACKAGE__,"-> Unable to log download : ".$upload->getLastErrorString());
 	} else {
 		# log download for later stats
-		$db->log(fields=>[upload_id=>$file_infos{'id'},
-		         ip_address=>$S->getRemoteIP(),
-             use_proxy=>$S->isBehindProxy(),
-             proxy_infos=>$S->getProxyInfos()]) or warn(__PACKAGE__,"-> Unable to log download !");
-		# send email on success and get_delivery == 1
-		if ( $S->config->needEmailNotification() && $file_infos{'get_delivery'} == 1) {
-			warn (__PACKAGE__,"-> Unable to send email !") if ( ! sendMail($S,\%file_infos) );
-		}
+		$upload->addDownloadRecord(
+			upload_id=>$upload->getId(),
+			ip_address=>$S->getRemoteIP(),
+			use_proxy=>$S->isBehindProxy(),
+			proxy_infos=>$S->getProxyInfos(),
+			canceled=>0) or warn(__PACKAGE__,"-> Unable to log download : ".$upload->getLastErrorString());
+			# send email on success and get_delivery == 1
+			if ( $S->config->needEmailNotification() && $upload->getGetDelivery() == 1) {
+				warn (__PACKAGE__,"-> Unable to send email !") if ( ! sendMail($S,$upload) );
+			}
 	}
 	$fh->close();
 	
@@ -179,7 +181,7 @@ sub display {
 	my $S = shift;
 	my $T = shift;
 	# base for static include
-	$T->param(STATIC_FILE_BASE=>$S->getStaticUrl()) if ( $T->query(name=>'STATIC_FILE_BASE') );
+	$T->param(FILEX_STATIC_FILE_BASE=>$S->getStaticUrl()) if ( $T->query(name=>'FILEX_STATIC_FILE_BASE') );
 	$S->sendHeader("Content-Type"=>"text/html");
 	$S->apreq->print($T->output()) if ( ! $S->apreq->header_only() );
 	exit(OK);
@@ -187,29 +189,29 @@ sub display {
 
 sub sendMail {
 	my $s = shift;
-	my $file_infos = shift;
+	my $u = shift;
 	# load template
 	my $t = $s->getTemplate(name=>"mail_get") or return undef;
 	# fill template
-	$t->param(FILENAME=>$file_infos->{'real_name'});
-	my ($fsz,$funit) = hrSize($file_infos->{'file_size'});
-	$t->param(FILESIZE=>$fsz." ".$s->i18n->localize($funit));
-	$t->param(FILEDATE=>tsToLocal($file_infos->{'ts_upload_date'}));
-	$t->param(FILEEXPIRE=>tsToLocal($file_infos->{'ts_expire_date'}));
+	$t->param(FILEX_FILE_NAME=>$u->getRealName());
+	my ($fsz,$funit) = hrSize($u->getFileSize());
+	$t->param(FILEX_FILE_SIZE=>$fsz." ".$s->i18n->localize($funit));
+	$t->param(FILEX_FILE_DATE=>tsToLocal($u->getUploadDate()));
+	$t->param(FILEX_FILE_EXPIRE=>tsToLocal($u->getExpireDate()));
 	my $remote_ip = $s->apreq->connection->remote_ip();
 	my $remote_name = rDns($remote_ip) || $s->i18n->localize("unknown");
-	$t->param(DLADDRESS=>$remote_ip);
-	$t->param(DLNAME=>$remote_name);
+	$t->param(FILEX_DOWNLOAD_ADDRESS=>$remote_ip);
+	$t->param(FILEX_DOWNLOAD_NAME=>$remote_name);
 	# make reverse DNS query
-	$t->param(SYSTEMEMAIL=>$s->config->getSystemEmail());
+	$t->param(FILEX_SYSTEM_EMAIL=>$s->config->getSystemEmail());
 	# send email
-	my $to = $s->getMail($file_infos->{'owner'});
+	my $to = $s->getMail($u->getOwner());
 	return undef if !length($to);
 	return $s->sendMail(
 		from=>$s->config->getSystemEmail(),
 		to=>$to,
 		charset=>"ISO-8859-1",
-		subject=>$s->i18n->localize("file downloaded %s",$file_infos->{'real_name'}),
+		subject=>$s->i18n->localize("file downloaded %s",$u->getRealName()),
 		content=>$t->output()
 	);
 }

@@ -2,14 +2,14 @@
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-	<base href="<TMPL_VAR NAME='STATIC_FILE_BASE'>">
-	<title>FileX</title>
+	<base href="<TMPL_VAR NAME='FILEX_STATIC_FILE_BASE'>">
+	<title>FileX : <TMPL_VAR NAME="FILEX_PROGRESS"> %</title>
 	<link href="styles/filex.css" rel="stylesheet" type="text/css">
 	<style type="text/css">
 		p.progressbar {
 			background-color: #99C;
 			border: 1pt solid black;
-			width: <TMPL_VAR NAME="PROGRESS">%;
+			width: <TMPL_VAR NAME="FILEX_PROGRESS">%;
 			text-align: right;
 			font-size: 12pt;
 		}
@@ -20,26 +20,26 @@
 		}
 	</style>
 </head>
-<body <TMPL_IF NAME="HAS_COMPLETE">onLoad="javascript:self.close();"<TMPL_ELSE>onBlur="javascript:self.focus();"</TMPL_IF>>
+<body <TMPL_IF NAME="FILEX_HAS_COMPLETE">onLoad="javascript:self.close();"</TMPL_IF>>
 <div class="body">
 	<div class="main">
-		<TMPL_IF NAME="HAS_ERROR">
-		<p class="error"><TMPL_VAR NAME="ERROR"></p>
-		<TMPL_IF NAME="HAS_ERROR_DESC"><p><TMPL_VAR NAME="ERROR_DESC"></p></TMPL_IF>
-		<p class="center"><a href="javascript:false();" onClick="javascript:self.close();">Fermer la fen&ecirc;tre</a></p>
+		<TMPL_IF NAME="FILEX_HAS_ERROR">
+		<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>
+		<TMPL_IF NAME="FILEX_HAS_ERROR_DESC"><p><TMPL_VAR NAME="FILEX_ERROR_DESC"></p></TMPL_IF>
+		<p class="center"><a href="javascript:;" onClick="javascript:self.close();">Fermer la fen&ecirc;tre</a></p>
 		<TMPL_ELSE>
-		<p class="stats"><strong><TMPL_VAR NAME="FILENAME"></strong></p>
-		<TMPL_IF NAME="HAS_COMPLETE">
+		<h1 class="fileinfo"><TMPL_VAR NAME="FILEX_FILE_NAME"></h1>
+		<TMPL_IF NAME="FILEX_HAS_COMPLETE">
 		<p>T&eacute;l&eacute;chargement effectu&eacute; avec succ&egrave;s</p>
-		<p class="center"><a href="javascript:false();" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
+		<p class="center"><a href="javascript:;" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
 		<TMPL_ELSE>
 		<p class="progressbar">&nbsp;</p>
-		<p class="meter2"><TMPL_VAR NAME="PROGRESS"> %</p>
+		<p class="meter2"><TMPL_VAR NAME="FILEX_PROGRESS"> %</p>
 		<hr>
 		<p class="stats">
-			<strong>Données re&ccedil;ues :</strong> <TMPL_VAR NAME="DATARECEIVED"> / <TMPL_VAR NAME="DATATOTAL"><br>
-			<strong>Temps Restant :</strong> <TMPL_VAR NAME="REMAININGTIME"><br>
-			<strong>Vitesse de transfert :</strong> <TMPL_VAR NAME="DATARATE">
+			<strong>Données re&ccedil;ues :</strong> <TMPL_VAR NAME="FILEX_DATA_RECEIVED"> / <TMPL_VAR NAME="FILEX_DATA_TOTAL"><br>
+			<strong>Temps Restant :</strong> <TMPL_VAR NAME="FILEX_REMAINING_TIME"><br>
+			<strong>Vitesse de transfert :</strong> <TMPL_VAR NAME="FILEX_DATA_RATE">
 		</p>
 		</TMPL_IF>
 		</TMPL_IF>

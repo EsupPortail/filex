@@ -12,6 +12,9 @@ use FILEX::Tools::Utils qw(hrSize);
 use POSIX qw(ceil);
 use Cache::FileCache;
 
+use constant DLID_FIELD_NAME => "dlid";
+use constant INI_FIELD_NAME => "ini";
+
 $VERSION = 1.0;
 
 # param : uid => upload id
@@ -19,21 +22,21 @@ sub handler {
 	my $r = shift; # Apache object
 	my $S = FILEX::System->new($r); # FILEX::System object
 	my $template = $S->getTemplate(name=>"meter");
-	my $dlid = $S->apreq->param('dlid');
-	my $inireq = $S->apreq->param('ini');
+	my $dlid = $S->apreq->param(DLID_FIELD_NAME);
+	my $inireq = $S->apreq->param(INI_FIELD_NAME);
 	my $url = genUrl($S->getCurrentUrl(),$dlid);
 	my $end = undef;
 	my %dl_info;
 	# no dlid 
 	if ( ! $dlid ) {
-		$template->param(HAS_ERROR=>1);
-		$template->param(ERROR=>$S->i18n->localizeToHtml("no progress meter"));
+		$template->param(FILEX_HAS_ERROR=>1);
+		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("no progress meter"));
 		display($S,$template,$url,1); 
 	}
 	my $IPCache = initIPCCache($S->config);
 	if ( ! $IPCache ) {
-		$template->param(HAS_ERROR=>1);
-		$template->param(ERROR=>$S->i18n->localizeToHtml("unable to initialize IPC"));
+		$template->param(FILEX_HAS_ERROR=>1);
+		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to initialize IPC"));
 		display($S,$template,$url,1);
 	}
 	# fetch cache infos
@@ -45,8 +48,8 @@ sub handler {
 	my $tout = 15; # timeout
 	# if it is the initial request the we wait for the cache to update
 	if ( ! $inireq && ! $dl_info{'size'} ) {
-		$template->param(HAS_ERROR=>1);
-		$template->param(ERROR=>$S->i18n->localizeToHtml("no progress meter"));
+		$template->param(FILEX_HAS_ERROR=>1);
+		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("no progress meter"));
 		display($S,$template,$url,1); 
 	}
 	# wait on size because this is the first published key : cf Upload.pm
@@ -61,8 +64,8 @@ sub handler {
 		last if ! $S->isConnected();
 	}
 	if ( $pb ) {
-		$template->param(HAS_ERROR=>1);
-		$template->param(ERROR=>$S->i18n->localizeToHtml("no progress meter"));
+		$template->param(FILEX_HAS_ERROR=>1);
+		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("no progress meter"));
 		display($S,$template,$url,1); 
 	}
 	# fetch other datas
@@ -75,7 +78,7 @@ sub handler {
 	$dl_info{'lastupdatelength'} = $IPCache->get($dlid."lastupdatelength") || 0;
 	$dl_info{'toolarge'} = $IPCache->get($dlid."toolarge") || 0;
 	# fill the filename
-	$template->param(FILENAME=>toHtml($dl_info{'filename'}));
+	$template->param(FILEX_FILE_NAME=>toHtml($dl_info{'filename'}));
 	# if file size toolarge
 	if ( $dl_info{'toolarge'} == 1 ) {
 		# reset 
@@ -84,10 +87,10 @@ sub handler {
 		$IPCache->set($dlid."toolarge",0);
 		$IPCache->set($dlid."lastupdatelength",0);
 		$IPCache->set($dlid."lastupdatetime",0);
-		$template->param(HAS_ERROR=>1);
-		$template->param(ERROR=>$S->i18n->localizeToHtml("file size too large"));
-		$template->param(HAS_ERROR_DESC=>1);
-		$template->param(ERROR_DESC=>$S->i18n->localizeToHtml("too large desc"));
+		$template->param(FILEX_HAS_ERROR=>1);
+		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file size too large"));
+		$template->param(FILEX_HAS_ERROR_DESC=>1);
+		$template->param(FILEX_ERROR_DESC=>$S->i18n->localizeToHtml("too large desc"));
 		display($S,$template,$url,1);
 	}
 	# if upload canceled
@@ -99,14 +102,14 @@ sub handler {
 		$IPCache->set($dlid."lastupdatelength",0);
 		$IPCache->set($dlid."lastupdatetime",0);
 		# display
-		$template->param(HAS_ERROR=>1);
-		$template->param(ERROR=>$S->i18n->localizeToHtml("upload canceled"));
+		$template->param(FILEX_HAS_ERROR=>1);
+		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("upload canceled"));
 		display($S,$template,$url,1);
 	}
 
 	# if upload end
 	if ( $dl_info{'end'} == 1 ) { 
-		$template->param(HAS_COMPLETE=>1);
+		$template->param(FILEX_HAS_COMPLETE=>1);
 		# delete the IPC
 		$IPCache->remove($dlid."size");
 		$IPCache->remove($dlid."canceled");
@@ -135,14 +138,14 @@ sub handler {
 
 	# fill template
 	my ($fsz, $funit);
-	$template->param(PROGRESS=>$progress);
+	$template->param(FILEX_PROGRESS=>$progress);
 	($fsz,$funit) = hrSize($dl_info{'length'});
-	$template->param(DATARECEIVED=>$fsz." ".$S->i18n->localizeToHtml($funit));
+	$template->param(FILEX_DATA_RECEIVED=>$fsz." ".$S->i18n->localizeToHtml($funit));
 	($fsz,$funit) = hrSize($dl_info{'size'});
-	$template->param(DATATOTAL=>$fsz." ".$S->i18n->localizeToHtml($funit));
+	$template->param(FILEX_DATA_TOTAL=>$fsz." ".$S->i18n->localizeToHtml($funit));
 	($fsz,$funit) = hrSize($currate);
-	$template->param(DATARATE=>$fsz." ".$S->i18n->localizeToHtml($funit)."/s");
-	$template->param(REMAININGTIME=>$rtime." ".$S->i18n->localizeToHtml("seconds"));
+	$template->param(FILEX_DATA_RATE=>$fsz." ".$S->i18n->localizeToHtml($funit)."/s");
+	$template->param(FILEX_REMAINING_TIME=>$rtime." ".$S->i18n->localizeToHtml("seconds"));
 	display($S,$template,$url);
 	return OK;
 }
@@ -153,7 +156,7 @@ sub display {
 	my $url = shift;
 	my $end = shift;
 	# base for static include
-	$t->param(STATIC_FILE_BASE=>$s->getStaticUrl()) if ( $t->query(name=>'STATIC_FILE_BASE') );
+	$t->param(FILEX_STATIC_FILE_BASE=>$s->getStaticUrl()) if ( $t->query(name=>'FILEX_STATIC_FILE_BASE') );
 	if ( !$end ) {
 		$s->sendHeader("Content-Type"=>"text/html","Refresh"=>$s->config->getMeterRefreshDelay().";url=$url");
 	} else {
@@ -166,7 +169,7 @@ sub display {
 sub genUrl {
 	my $url = shift;
 	my $dlid = shift;
-	$url .= "?dlid=$dlid";
+	$url .= "?".DLID_FIELD_NAME."=$dlid";
 	return $url;
 }
 

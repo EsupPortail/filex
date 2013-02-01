@@ -16,12 +16,12 @@ sub add {
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
                       string=>"Require a name",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'name'}) || !checkStr($ARGZ{'name'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'name'}) || !$self->checkStr($ARGZ{'name'}) );
 	$self->setLastError(query=>"",
 	                    string=>"Require a rule_id",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'rule_id'}) || !checkStr($ARGZ{'rule_id'}) );
-	delete($ARGZ{'rorder'}) if ( exists($ARGZ{'rorder'}) && !checkInt($ARGZ{'rorder'}) );
-	$ARGZ{'enable'} = 1 if ( exists($ARGZ{'enable'}) && !checkBool($ARGZ{'enable'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'rule_id'}) || !$self->checkStr($ARGZ{'rule_id'}) );
+	delete($ARGZ{'rorder'}) if ( exists($ARGZ{'rorder'}) && !$self->checkInt($ARGZ{'rorder'}) );
+	$ARGZ{'enable'} = 1 if ( exists($ARGZ{'enable'}) && !$self->checkBool($ARGZ{'enable'}) );
 	my $dbh = $self->_dbh();
 	my %fields = (
 		'name' => $dbh->quote($ARGZ{'name'}),
@@ -54,14 +54,14 @@ sub modify {
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
 	                    string=>"Require a id",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !checkUInt($ARGZ{'id'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !$self->checkUInt($ARGZ{'id'}) );
 	my $id = $ARGZ{'id'};
 	delete($ARGZ{'id'});
 	my %valid_fields = (
-		rorder => { check => \&checkInt, quote=>0},
-		enable => { check => \&checkBool, quote=>0},
-		name => { check => \&checkStr, quote=>1},
-		rule_id => 	{ check => \&checkUInt, quote=>0},
+		rorder => { check => sub { $self->checkInt(shift); }, quote=>0},
+		enable => { check => sub { $self->checkBool(shift); }, quote=>0},
+		name => { check => sub { $self->checkStr(shift); }, quote=>1},
+		rule_id => 	{ check => sub { $self->checkUInt(shift); }, quote=>0},
 	);
 	my $dbh = $self->_dbh();
 	my (@strSet);
@@ -95,30 +95,6 @@ sub modify {
 	return 1;
 }
 
-sub checkStr {
-	my $value = shift;
-	return ( defined($value) && length($value) > 0 ) ? 1 : undef;
-}
-
-sub checkUInt {
-	my $value = shift;
-	return ( defined($value) && $value =~ /^[0-9]+$/ ) ? 1 : undef;
-}
-sub checkInt {
-	my $value = shift;
-	return ( defined($value) && $value =~ /^-?[0-9]+$/ ) ? 1 : undef;
-}
-
-sub checkType {
-	my $value = shift;
-	return ( defined($value) && grep($value == $_,getRuleTypes()) ) ? 1 : undef;
-}
-
-sub checkBool {
-	my $value = shift;
-	return ( defined($value) && $value =~ /^[0-1]$/ ) ? 1 : undef;
-}
-
 # id => rule id
 # results => hash ref
 sub get {
@@ -126,7 +102,7 @@ sub get {
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
 	                    string=>"Require a id",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !checkUInt($ARGZ{'id'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !$self->checkUInt($ARGZ{'id'}) );
 	$self->setLastError(query=>"",
 	                    string=>"Require a results hashref",
 	                    code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "HASH");
@@ -140,7 +116,6 @@ sub get {
 		while ( my($k,$v) = each(%$r) ) {
 			$res->{$k} = $v;
 		}
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
@@ -174,7 +149,6 @@ sub list {
 		while ( my $row = $sth->fetchrow_hashref() ) {
 			push(@$res,$row);
 		}
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
@@ -211,7 +185,6 @@ sub listRules {
 		while ( my $row = $sth->fetchrow_hashref() ) {
 			push(@$res,$row);
 		}
-		$sth->finish();
 	};
 	if ($@) {
     $self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());

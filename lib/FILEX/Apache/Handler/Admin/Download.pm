@@ -4,11 +4,12 @@ use vars qw(@ISA);
 use FILEX::Apache::Handler::Admin::base;
 @ISA = qw(FILEX::Apache::Handler::Admin::base);
 
-use constant SUB_FILEINFO => 1;
-use constant SUB_USERINFO => 2;
-use constant SUBACTION => "sa";
+use constant SUB_FILE_INFO => 1;
+use constant SUB_USER_INFO => 2;
+use constant SUB_ACTION_FIELD_NAME=>"sa";
+use constant FILE_ID_FIELD_NAME=>"id";
 
-use FILEX::DB::Admin::Download;
+use FILEX::DB::Download;
 use FILEX::Tools::Utils qw(tsToLocal hrSize);
 use FILEX::Apache::Handler::Admin::Common qw(doFileInfos);
 
@@ -17,20 +18,22 @@ sub process {
 	my $self = shift;
 	my $S = $self->sys();
 	my $T = $S->getTemplate(name=>"admin_download");
-	my $DB = FILEX::DB::Admin::Download->new(
-		name=>$S->config->getDBName(),
-		user=>$S->config->getDBUsername(),
-		password=>$S->config->getDBPassword(),
-		host=>$S->config->getDBHost(),
-		port=>$S->config->getDBPort()
-	);
+	my $DB = eval { FILEX::DB::Download->new(); };
+	if ($@) {
+		$T->param(FILEX_HAS_ERROR=>1);
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
+		return $T;
+	}
 	# if there a sub action
-	my $sub_action = $S->apreq->param(SUBACTION) || -1;
+	my $sub_action = $S->apreq->param(SUB_ACTION_FIELD_NAME) || -1;
 	SWITCH : {
-		if ( $sub_action == SUB_FILEINFO ) {
-			my $file_id = $S->apreq->param('id');
+		if ( $sub_action == SUB_FILE_INFO ) {
+			my $file_id = $S->apreq->param(FILE_ID_FIELD_NAME);
 			last SWITCH if ( !defined($file_id) );
-			my $inT = doFileInfos(system=>$S,id=>$file_id,url=>$self->genFileInfoUrl($file_id),mode=>1);
+			my $inT = doFileInfos(system=>$S,file_id=>$file_id,url=>$self->genFileInfoUrl($file_id),
+			                      mode=>1,sub_action_value=>SUB_FILE_INFO,
+			                      sub_action_field_name=>SUB_ACTION_FIELD_NAME,
+			                      file_id_field_name=>FILE_ID_FIELD_NAME);
 			return ($inT,1);
 			last SWITCH;
 		}
@@ -42,16 +45,16 @@ sub process {
 		for (my $i=0; $i<= $#results; $i++) {
 			($hsz,$hunit) = hrSize($results[$i]->{'file_size'});
 			push(@loop,{
-				URLFILEINFO=>$self->genFileInfoUrl($results[$i]->{'id'}),
-				FILENAME=>$S->toHtml($results[$i]->{'real_name'}),
-				OWNER=>$results[$i]->{'owner'},
-				SIZE=>$hsz." ".$S->i18n->localizeToHtml($hunit),
-				START=>$S->toHtml(tsToLocal($results[$i]->{'start_date'})),
-				IPADDRESS=>$results[$i]->{'ip_address'}
+				FILEX_FILE_INFO_URL=>$self->genFileInfoUrl($results[$i]->{'id'}),
+				FILEX_FILE_NAME=>$S->toHtml($results[$i]->{'real_name'}),
+				FILEX_OWNER=>$results[$i]->{'owner'},
+				FILEX_SIZE=>$hsz." ".$S->i18n->localizeToHtml($hunit),
+				FILEX_START=>$S->toHtml(tsToLocal($results[$i]->{'start_date'})),
+				FILEX_IP_ADDRESS=>$results[$i]->{'ip_address'}
 			});
 		}
-		$T->param(HAS_DOWNLOAD=>1);
-		$T->param(DOWNLOAD_LOOP=>\@loop);
+		$T->param(FILEX_HAS_DOWNLOAD=>1);
+		$T->param(FILEX_DOWNLOAD_LOOP=>\@loop);
 	}
 	return $T;
 }
@@ -59,11 +62,12 @@ sub process {
 sub genFileInfoUrl {
 	my $self = shift;
 	my $file_id = shift;
-	my $sub_action = SUBACTION;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $file_id_field = FILE_ID_FIELD_NAME;
 	my $url = $self->sys->getCurrentUrl();
 	$url .= "?".$self->genQueryString(
-			$sub_action => SUB_FILEINFO,
-			id => $file_id);
+			$sub_action => SUB_FILE_INFO,
+			$file_id_field => $file_id);
 	return $url;
 }
 

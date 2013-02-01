@@ -1,0 +1,43 @@
+#!/bin/sh
+POD2XML=`which pod2xml`
+XSLTPROC=`which xsltproc`
+XMLLINT=`which xmllint`
+PODXSLT=FILEX.xsl
+# check
+if [ ! -x $POD2XML ]; then
+	echo "unable to find pod2xml"
+	exit 1
+fi
+if [ ! -x $XSLTPROC ]; then
+	echo "unable to find xsltproc"
+	exit 1
+fi
+if [ ! -x $XMLLINT ]; then
+	echo "unable to find xmllint"
+	exit 1
+fi
+# begin
+if [ $# -lt 1 ]; then
+	echo "$0 file.pod"
+	exit 1
+fi
+FILE=$1
+if [ ! -f $FILE ]; then
+	echo "$FILE does not exists !"
+	exit 1
+fi
+BASENAME=`basename $FILE`
+TMPFILE=$BASENAME`date +%s`
+TMPFILE2=$TMPFILE.2
+CSSDIR=styles/doc.css
+
+$POD2XML $FILE 1> $TMPFILE && \
+$XSLTPROC --stringparam csspath $CSSDIR --param gentoc 1 -o $TMPFILE2 --noout $PODXSLT $TMPFILE && \
+$XMLLINT --html --format --noblanks $TMPFILE2
+
+if [ -f $TMPFILE ]; then
+	rm $TMPFILE
+fi
+if [ -f $TMPFILE2 ]; then
+	rm $TMPFILE2
+fi

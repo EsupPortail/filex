@@ -1,9 +1,9 @@
 <!-- chunky template for current download -->
 <h1>Fichiers non expir&eacute;s :</h1>
-<TMPL_IF NAME="HAS_ERROR">
-<p class="error"><TMPL_VAR NAME="ERROR"></p>
+<TMPL_IF NAME="FILEX_HAS_ERROR">
+<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>
 </TMPL_IF>
-<TMPL_IF NAME="HAS_FILES">
+<TMPL_IF NAME="FILEX_HAS_FILES">
 	<script language="javascript">
 	<!--
 	function openInfoWindow(url) {
@@ -14,13 +14,21 @@
 	//-->
 	</script>
 	<table class="infos" cellpadding="0" cellspacing="0" width="100%">
-		<caption>Liste des fichiers non expir&eacute;s (<TMPL_VAR NAME="FILECOUNT">), Espace Utilis&eacute; (inclus les fichiers expir&eacute;s non supprim&eacute;s) : <TMPL_VAR NAME="USED_DISK_SPACE"></caption>
+		<caption>Liste des fichiers non expir&eacute;s (<TMPL_VAR NAME="FILEX_FILE_COUNT">), Espace Utilis&eacute; (inclus les fichiers expir&eacute;s non supprim&eacute;s) : <TMPL_VAR NAME="FILEX_USED_DISK_SPACE"></caption>
 		<thead>
-			<tr><td><a href="<TMPL_VAR NAME='SORTNAMEURL'>">Nom</a></td><td><a href="<TMPL_VAR NAME='SORTDISKURL'>">Disque</a></td><td><a href="<TMPL_VAR NAME='SORTOWNERURL'>">Propri&eacute;taire</a></td><td><a href="<TMPL_VAR NAME='SORTSIZEURL'>">Taille</a></td><td><a href="<TMPL_VAR NAME='SORTUPDURL'>">D&eacute;pos&eacute; le</a></td><td><a href="<TMPL_VAR NAME='SORTEXDURL'>">Expire le</a></td><td><a href="<TMPL_VAR NAME='SORTDLCURL'>">T&eacute;l&eacute;charg&eacute;</a></td></tr>
+			<tr>
+				<td><a href="<TMPL_VAR NAME='FILEX_SORT_NAME_ASC_URL'>" title="Trier par Nom de fichier">+</a> Nom <a href="<TMPL_VAR NAME='FILEX_SORT_NAME_DESC_URL'>" title="Trier par Nom de fichier">-</a></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_SORT_DISK_ASC_URL'>" title="Trier par Nom sur le disque">+</a> Disque <a href="<TMPL_VAR NAME='FILEX_SORT_DISK_DESC_URL'>" title="Trier par Nom sur le disque">-</a></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_SORT_OWNER_ASC_URL'>" title="Trier par Propri&eacute;taire">+</a> Propri&eacute;taire <a href="<TMPL_VAR NAME='FILEX_SORT_OWNER_DESC_URL'>" title="Trier par Propri&eacute;taire">-</a></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_ASC_URL'>" title="Trier par Taille">+</a> Taille <a href="<TMPL_VAR NAME='FILEX_SORT_SIZE_DESC_URL'>" title="Trier par Taille">-</a></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_ASC_URL'>" title="Trier par date de D&eacute;pose">+</a> D&eacute;pos&eacute; le <a href="<TMPL_VAR NAME='FILEX_SORT_UPLOAD_DESC_URL'>" title="Trier par date de D&eacute;pose">-</a></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_ASC_URL'>" title="Trier par date d'expiration">+</a> Expire le <a href="<TMPL_VAR NAME='FILEX_SORT_EXPIRE_DESC_URL'>" title="Trier par date d'expiration">-</a></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_ASC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">+</a> T&eacute;l&eacute;charg&eacute; <a href="<TMPL_VAR NAME='FILEX_SORT_DOWNLOAD_COUNT_DESC_URL'>" title="Trier par nombre de t&eacute;l&eacute;chargement">-</a></td>
+			</tr>
 		</thead>
 		<tbody>
-			<TMPL_LOOP NAME="FILES_LOOP">
-			<tr><td><a href="javascript:false();" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEINFOURL'>')" title="Information"><TMPL_VAR NAME="FILENAME"></a></td><td><TMPL_VAR NAME="DISKNAME"></td><td><TMPL_VAR NAME="FILEOWNER"></td><td><TMPL_VAR NAME="FILESIZE"></td><td><TMPL_VAR NAME="UPLOADDATE"></td><td><TMPL_VAR NAME="EXPIREDATE"></td><td><TMPL_VAR NAME="DOWNLOADCOUNT"></td></tr>
+			<TMPL_LOOP NAME="FILEX_FILES_LOOP">
+			<tr<TMPL_UNLESS NAME="__odd__"> id="even"</TMPL_UNLESS>><td><a href="javascript:;" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>')" title="Information"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td><TMPL_VAR NAME="FILEX_DISK_NAME"></td><td><TMPL_VAR NAME="FILEX_FILE_OWNER"></td><td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td><td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td><td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td></tr>
 			</TMPL_LOOP>
 		</tbody>
 	</table>

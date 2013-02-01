@@ -23,7 +23,6 @@ sub isAdmin {
 		my $sth = $dbh->prepare($strQuery);
 		$sth->execute();
 		$res = $sth->fetchrow();
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
@@ -45,7 +44,6 @@ sub getUsedDiskSpace {
 		$sth->execute();
 		$res = $sth->fetchrow();
 		$res = 0 if ( !defined($res) );
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
@@ -70,7 +68,6 @@ sub getUserDiskSpace {
 		my $sth = $dbh->prepare($strQuery);
 		$sth->execute();
 		$res = $sth->fetchrow();
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
@@ -79,6 +76,49 @@ sub getUserDiskSpace {
 	}
 	# if no match then NULL is returned
 	$res = 0 if ( !defined($res) );
+	return $res;
+}
+
+# get total user upload file count
+sub getUserUploadCount {
+	my $self = shift;
+	my $user = shift;
+	return undef if !$user;
+	my $dbh = $self->_dbh();
+	my $strQuery = "SELECT COUNT(id) FROM upload WHERE owner = ".$dbh->quote($user);
+	my $res;
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$res = $sth->fetchrow();
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"-> Database Error : $@");
+		return undef;
+	}
+	return $res;
+}
+
+# get total user active files
+sub getUserActiveCount {
+	my $self = shift;
+	my $user = shift;
+	return undef if !$user;
+	my $dbh = $self->_dbh();
+	my $strQuery = "SELECT COUNT(id) FROM upload WHERE owner = ".$dbh->quote($user).
+	               " AND expire_date > NOW()";
+	my $res;
+	eval {
+		my $sth = $dbh->prepare($strQuery);
+		$sth->execute();
+		$res = $sth->fetchrow();
+	};
+	if ($@) {
+		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
+		warn(__PACKAGE__,"-> Database Error : $@");
+		return undef;
+	}
 	return $res;
 }
 

@@ -1,6 +1,6 @@
 <!-- chunky template for current download -->
 <h1>T&eacute;l&eacute;chargement en cours :</h1>
-<TMPL_IF NAME="HAS_DOWNLOAD">
+<TMPL_IF NAME="FILEX_HAS_DOWNLOAD">
 	<script language="javascript">
 	<!--
 	function openInfoWindow(url) {
@@ -15,8 +15,8 @@
 			<tr><td>Nom</td><td>Propri&eacute;taire</td><td>Taille</td><td>D&eacute;marr&eacute; le</td><td>Adresse</td></tr>
 		</thead>
 		<tbody>
-			<TMPL_LOOP NAME="DOWNLOAD_LOOP">
-			<tr><td><a href="javascript:false();" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='URLFILEINFO'>')" title="Information"><TMPL_VAR NAME="FILENAME"></a></td><td><TMPL_VAR NAME="OWNER"></td><td><TMPL_VAR NAME="SIZE"></td><td><TMPL_VAR NAME="START"></td><td><TMPL_VAR NAME="IPADDRESS"></td></tr>
+			<TMPL_LOOP NAME="FILEX_DOWNLOAD_LOOP">
+			<tr<TMPL_UNLESS NAME="__odd__"> id="even"</TMPL_UNLESS>><td><a href="javascript:;" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>')" title="Information"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td><TMPL_VAR NAME="FILEX_OWNER"></td><td><TMPL_VAR NAME="FILEX_SIZE"></td><td><TMPL_VAR NAME="FILEX_START"></td><td><TMPL_VAR NAME="FILEX_IP_ADDRESS"></td></tr>
 			</TMPL_LOOP>
 		</tbody>
 	</table>

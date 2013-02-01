@@ -6,38 +6,30 @@ $VERSION = 1.0;
 # other libs
 use FILEX::DB::Admin::Quota;
 use FILEX::System::LDAP;
+use FILEX::System::Config;
 
 # sortir DnExclude de Auth.pm
-# config=> requiert FILEX::System::Config object
 # [ldap=>FILEX::System::LDAP object]
 sub new {
 	my $this = shift;
 	my $class = ref($this) || $this;
 	my %ARGZ = @_;
 	my $self = {
-		config => undef,
 		username => undef,
+		_config_ => undef,
 		_ldap_ => undef,
 		_quota_ => undef,
 	};
-	$self->{'config'} = $ARGZ{'config'} if (exists($ARGZ{'config'}) && ref($ARGZ{'config'}) eq "FILEX::System::Config");
-	warn(__PACKAGE__,"=> require a FILEX::System::Config object") && return undef if !defined($self->{'config'});
+	$self->{'_config_'} = FILEX::System::Config->new();
 	# ldap
 	if ( exists($ARGZ{'ldap'}) && ref($ARGZ{'ldap'}) eq "FILEX::System::LDAP" ) {
 		$self->{'_ldap_'} = $ARGZ{'ldap'};
 	} else {
-		$self->{'_ldap_'} = eval { FILEX::System::LDAP->new(config=>$self->{'config'}); };
+		$self->{'_ldap_'} = eval { FILEX::System::LDAP->new(); };
 		warn(__PACKAGE__,"=> unable to load FILEX::System::LDAP : $@") && return undef if ($@);
 	}
 	# dnexclude
-	$self->{'_quota_'} = eval {
-		FILEX::DB::Admin::Quota->new(
-			name=>$self->{'config'}->getDBName(),
-    	user=>$self->{'config'}->getDBUsername(),
-    	password=>$self->{'config'}->getDBPassword(),
-    	host=>$self->{'config'}->getDBHost(),
-    	port=>$self->{'config'}->getDBPort());
-	};
+	$self->{'_quota_'} = eval { FILEX::DB::Admin::Quota->new(); };
 	warn(__PACKAGE__,"=> unable to load FILEX::DB::Admin::Quota : $@") && return undef if ($@);
 	return bless($self,$class);
 }
@@ -54,8 +46,8 @@ sub getQuota {
 	my ($quota_max_file_size,$quota_max_used_space);
 	my ($config_max_file_size,$config_max_used_space);
 	# default quota goes to config ones;
-	$quota_max_file_size = $self->{'config'}->getMaxFileSize();
-	$quota_max_used_space = $self->{'config'}->getMaxUsedSpace();
+	$quota_max_file_size = $self->{'_config_'}->getMaxFileSize();
+	$quota_max_used_space = $self->{'_config_'}->getMaxUsedSpace();
 	# no uid then nothing
 	return (0,0) if ( !$uid || length($uid) <= 0);
 	# list all rules
@@ -67,28 +59,29 @@ sub getQuota {
 	}
 	# loop on rules
 	my $bHaveQuota = 0;
-	for ( my $i = 0; $i <= $#rules; $i++ ) {
+	my $qIdx;
+	for ( $qIdx = 0; $qIdx <= $#rules; $qIdx++ ) {
 		# switch rule type
 		SWITCH : {
-			if ( $rules[$i]->{'rule_type'} == 1 ) {
-				$bHaveQuota = $self->isDnQuota($uid,$rules[$i]->{'rule_exp'});
-				if ( $bHaveQuota ) {
-					$quota_max_file_size = $rules[$i]->{'max_file_size'};
-					$quota_max_used_space = $rules[$i]->{'max_used_space'};
-				}
+			if ( $rules[$qIdx]->{'rule_type'} == 1 ) {
+				$bHaveQuota = $self->isDnQuota($uid,$rules[$qIdx]->{'rule_exp'});
 				last SWITCH;
 			}
-			if ( $rules[$i]->{'rule_type'} == 2 ) {
-				$bHaveQuota = $self->{'_ldap_'}->inGroup(uid=>$uid,gid=>$rules[$i]->{'rule_exp'});
-				if ( $bHaveQuota ) {
-					$quota_max_file_size = $rules[$i]->{'max_file_size'};
-					$quota_max_used_space = $rules[$i]->{'max_used_space'};
-				}
+			if ( $rules[$qIdx]->{'rule_type'} == 2 ) {
+				$bHaveQuota = $self->{'_ldap_'}->inGroup(uid=>$uid,gid=>$rules[$qIdx]->{'rule_exp'});
+				last SWITCH; 
+			}
+			if ( $rules[$qIdx]->{'rule_type'} == 3 ) {
+				$bHaveQuota = ( $uid eq $rules[$qIdx]->{'rule_exp'} ) ? 1 : 0;
 				last SWITCH;
 			}
-			warn(__PACKAGE__,"-> unknown rule type (",$rules[$i]->{'rule_type'},") : ",$rules[$i]->{'rule_exp'});
+			warn(__PACKAGE__,"-> unknown rule type (",$rules[$qIdx]->{'rule_type'},") : ",$rules[$qIdx]->{'rule_exp'});
 		}
 		last if $bHaveQuota;
+	}
+	if ( $bHaveQuota ) {
+		$quota_max_file_size = $rules[$qIdx]->{'max_file_size'};
+		$quota_max_used_space = $rules[$qIdx]->{'max_used_space'};
 	}
 	return ($quota_max_file_size,$quota_max_used_space);
 }

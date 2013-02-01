@@ -7,7 +7,11 @@ use FILEX::Apache::Handler::Admin::base;
 use constant SA_DELETE => 1;
 use constant SA_STATE => 2;
 use constant SA_ADD => 3;
-use constant SUBACTION => "sa";
+
+use constant SUB_ACTION_FIELD_NAME => "sa";
+use constant USR_ADMIN_ADD_FIELD_NAME=>"adduser";
+use constant USER_ID_FIELD_NAME=>"id";
+use constant STATE_FIELD_NAME=>"state";
 
 use FILEX::DB::Admin::UsrAdmin;
 
@@ -16,38 +20,44 @@ sub process {
 	my ($b_err,$errstr);
 	my $S = $self->sys();
 	my $T = $S->getTemplate(name=>"admin_usradmin");
-	my $DB = FILEX::DB::Admin::UsrAdmin->new(
-		name=>$S->config->getDBName(),
-		user=>$S->config->getDBUsername(),
-		password=>$S->config->getDBPassword(),
-		host=>$S->config->getDBHost(),
-		port=>$S->config->getDBPort()
-	);
-
+	# fill template
+	$T->param(FILEX_USR_ADMIN_FORM_ACTION=>$S->getCurrentUrl());
+	$T->param(FILEX_MAIN_ACTION_FIELD_NAME=>$self->getDispatchName());
+	$T->param(FILEX_MAIN_ACTION_ID=>$self->getActionId());
+	$T->param(FILEX_SUB_ACTION_FIELD_NAME=>SUB_ACTION_FIELD_NAME);
+	$T->param(FILEX_USR_ADMIN_ADD_FIELD_NAME=>USR_ADMIN_ADD_FIELD_NAME);
+	$T->param(FILEX_SUB_ACTION_ID=>SA_ADD);
+	# database
+	my $DB = eval { FILEX::DB::Admin::UsrAdmin->new(); };
+	if ($@) {
+		$T->param(FILEX_HAS_ERROR=>1);
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
+		return $T;
+	}
 	# is there a sub action
-	my $sub_action = $S->apreq->param(SUBACTION) || -1;
+	my $sub_action = $S->apreq->param(SUB_ACTION_FIELD_NAME) || -1;
 	SWITCH : {
 		if ( $sub_action == SA_ADD ) {
 			# check if user exists
-			if ( ! $S->ldap->userExists($S->apreq->param('adduser')) ) {
+			if ( ! $S->ldap->userExists($S->apreq->param(USR_ADMIN_ADD_FIELD_NAME)) ) {
 				$errstr = $S->i18n->localize("user does not exists");
 				$b_err = 1;
 			}
-			if ( !$b_err && !$DB->addUser($S->apreq->param('adduser')) ) {
+			if ( !$b_err && !$DB->addUser($S->apreq->param(USR_ADMIN_ADD_FIELD_NAME)) ) {
 				$errstr = ( $DB->getLastErrorCode() == 1062 ) ? $S->i18n->localize("user already exists") : $DB->getLastErrorString();
 				$b_err = 1;
 			}
 			last SWITCH;
 		}
 		if ( $sub_action == SA_DELETE ) {
-			if ( ! $DB->delUser($S->apreq->param('id')) ) {
+			if ( ! $DB->delUser($S->apreq->param(USER_ID_FIELD_NAME)) ) {
 				$errstr = $DB->getLastErrorString(); 
 				$b_err = 1;
 			}
 			last SWITCH;
 		}
 		if ( $sub_action == SA_STATE ) {
-			if ( ! $DB->setEnable($S->apreq->param('id'),$S->apreq->param('state')) ) {
+			if ( ! $DB->setEnable($S->apreq->param(USER_ID_FIELD_NAME),$S->apreq->param(STATE_FIELD_NAME)) ) {
 				$errstr = $DB->getLastErrorString();
 				$b_err = 1;
 			}
@@ -55,16 +65,9 @@ sub process {
 		}
 		# default action if needed
 	}
-
-	# fill template
-	$T->param(FORM_ACTION=>$S->getCurrentUrl());
-	$T->param(MACTION=>$self->getDispatchName());
-	$T->param(MACTIONID=>$self->getActionId());
-	$T->param(SUBACTION=>SUBACTION);
-	$T->param(SUBACTIONID=>SA_ADD);
 	if ( $b_err ) {
-		$T->param(HAS_ERROR=>1);
-		$T->param(ERROR=>$S->toHtml($errstr));
+		$T->param(FILEX_HAS_ERROR=>1);
+		$T->param(FILEX_ERROR=>$S->toHtml($errstr));
 	}
 	my (@results,@loop,$delurl,$stateurl,$state);
 	$DB->listUsers(\@results);
@@ -74,16 +77,16 @@ sub process {
 			$state = $results[$i]->{'enable'};
 			$stateurl = $self->genActivateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 );
 			push(@loop, {
-					ADMINUID=>$results[$i]->{'uid'},
-					ADMININFOS=>$S->toHtml($S->getUserRealName($results[$i]->{'uid'})),
-					ADMINMAIL=>$S->getMail($results[$i]->{'uid'}),
-					ADMINSTATE=>( $state ) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable"),
-					REMOVEURL=>$delurl,
-					STATEURL=>$stateurl
+					FILEX_ADMIN_UID=>$results[$i]->{'uid'},
+					FILEX_ADMIN_INFOS=>$S->toHtml($S->getUserRealName($results[$i]->{'uid'})),
+					FILEX_ADMIN_MAIL=>$S->getMail($results[$i]->{'uid'}),
+					FILEX_ADMIN_STATE=>( $state ) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable"),
+					FILEX_REMOVE_URL=>$delurl,
+					FILEX_STATE_URL=>$stateurl
 			});
+			$T->param(FILEX_HAS_ADMINS=>1);
+			$T->param(FILEX_ADMINS_LOOP=>\@loop);
 		}
-		$T->param(HAS_ADMINS=>1);
-		$T->param(ADMINS_LOOP=>\@loop);
 	}
 	return $T;
 }
@@ -93,23 +96,26 @@ sub genActivateUrl {
 	my $self = shift;
 	my $id = shift;
 	my $enable = shift;
-	my $sub_action = SUBACTION;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $user_id_field = USER_ID_FIELD_NAME;
+	my $state_field = STATE_FIELD_NAME;
 	my $url = $self->sys->getCurrentUrl();
 	$url .= "?".$self->genQueryString(
 			$sub_action=>SA_STATE,
-			id=>$id,
-			state=>$enable);
+			$user_id_field=>$id,
+			$state_field=>$enable);
 	return $url;
 }
 
 sub genDeleteUrl {
 	my $self = shift;
 	my $id = shift;
-	my $sub_action = SUBACTION;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $user_id_field = USER_ID_FIELD_NAME;
 	my $url = $self->sys->getCurrentUrl();
 	$url .= "?".$self->genQueryString(
 		$sub_action=>SA_DELETE,
-		id=>$id);
+		$user_id_field=>$id);
 	return $url;
 }
 

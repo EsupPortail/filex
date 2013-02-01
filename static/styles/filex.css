@@ -15,6 +15,14 @@ h1 {
 	font-weight: bold;
 }
 
+h1.fileinfo {
+	font-size: 12pt;
+	font-weight: bold;
+	text-align: center;
+	background-color: #6172a6;
+	color: white;
+	padding: 2pt;
+}
 h1.login {
 	text-align: center;
 	font-size: 12pt;
@@ -83,15 +91,35 @@ table.infos td {
 	border-bottom: 1pt solid black;
 }
 
+table.infos tr#even {
+	background-color: #c9cad0;
+}
+
 table.infos tbody {
 	font-size: 10pt;
 }
 
 table.infos thead {
 	text-align: center;
-	font-style: italic;
 	font-weight: bold;
-	background: #F0FaFa;
+	color: white;
+	background: #6172a6;
+}
+
+table.infos thead a {
+	font-weight: bold;
+	color: white;
+	font-style: italic;
+}
+table.infos thead a:visited {
+	font-weight: bold;
+	color: white;
+	font-style: italic;
+}
+
+table.infos a#expired {
+	color: red;
+	font-style: italic;
 }
 
 table.infos caption {

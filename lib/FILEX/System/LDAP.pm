@@ -8,7 +8,7 @@ $VERSION = 1.0;
 # simple wrapper for handling ldap query
 
 # 
-# require a FILEX::System::Config object
+# 
 # 
 sub new {
 	my $this = shift;
@@ -17,22 +17,22 @@ sub new {
 	my %ARGZ = @_;
 
 	my $self = {
-		config => undef,
+		_config_ => undef,
 		_ldap_ => undef,
 		_bind_ => undef,
 	};
 
-	if ( !exists($ARGZ{'config'}) || ref($ARGZ{'config'}) ne "FILEX::System::Config" ) {
-		warn(__PACKAGE__,"-> need a FILEX::System::Config Object !");
+	$self->{'_config_'} = FILEX::System::Config->new();
+	if ( !defined($self->{'_config_'}) ) {
+		warn(__PACKAGE__,"-> unable to initialize config !");
 		return undef;
 	}
-	$self->{'config'} = $ARGZ{'config'};
 	# attempt to connect
-	$self->{'_ldap_'} = Net::LDAP->new($self->{'config'}->getLdapServerUrl()) or die $@;
+	$self->{'_ldap_'} = Net::LDAP->new($self->{'_config_'}->getLdapServerUrl()) or die $@;
 	# attempt to bind
 	my $mesg;
-	my $binddn = $self->{'config'}->getLdapBindDn();
-	my $password = $self->{'config'}->getLdapBindPassword();
+	my $binddn = $self->{'_config_'}->getLdapBindDn();
+	my $password = $self->{'_config_'}->getLdapBindPassword();
 
 	if ( $binddn && length($binddn) > 0 ) {
 		$mesg = $self->{'_ldap_'}->bind($binddn,password=>$password);
@@ -64,8 +64,8 @@ sub getUserDn {
 	my $self = shift;
   my $uid = shift;
   my $ldap = $self->srv();
-  my $baseSearch = $self->{'config'}->getLdapSearchBase();
-  my $uidAttr = $self->{'config'}->getLdapUidAttr();
+  my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
+  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
   my %searchArgz;
   $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
   $searchArgz{'scope'} = "sub";
@@ -87,8 +87,8 @@ sub userExists {
   my $self = shift;
   my $uname = shift;
   my $ldap = $self->srv();
-  my $baseSearch = $self->{'config'}->getLdapSearchBase();
-  my $uidAttr = $self->{'config'}->getLdapUidAttr();
+  my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
+  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
   my %searchArgz;
   $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
   $searchArgz{'scope'} = "sub";
@@ -116,8 +116,8 @@ sub getUserAttrs {
   return undef if !defined($attrs);
 
   my $ldap = $self->srv();
-  my $baseSearch = $self->{'config'}->getLdapSearchBase();
-  my $uidAttr = $self->{'config'}->getLdapUidAttr();
+  my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
+  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
   my %searchArgz;
   $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
   $searchArgz{'scope'} = "sub";
@@ -139,7 +139,7 @@ sub getUserAttrs {
 sub getMail {
   my $self = shift;
   my $uname = shift;
-	my $mailAttr = $self->{'config'}->getLdapMailAttr();
+	my $mailAttr = $self->{'_config_'}->getLdapMailAttr();
 	my $res = $self->getUserAttrs(uid=>$uname,attrs=>[$mailAttr]);
 	return undef if !$res;
 	return $res->{$mailAttr}->[0];
@@ -157,9 +157,9 @@ sub inGroup {
 	my $gid = $ARGZ{'gid'};
 
 	my $ldap = $self->srv();
-  my $baseSearch = $self->{'config'}->getLdapSearchBase();
-  my $uidAttr = $self->{'config'}->getLdapUidAttr();
-	my $ldapQuery = $self->{'config'}->getLdapGroupQuery();
+  my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
+  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+	my $ldapQuery = $self->{'_config_'}->getLdapGroupQuery();
 	# replace %U (username), %G (group name), %D (user dn)
 	# check if it require a DN
 	if ( $ldapQuery =~ /\%D/ ) {

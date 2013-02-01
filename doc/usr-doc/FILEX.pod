@@ -1,0 +1,133 @@
+=pod
+
+=head1 Qu'est-ce que FileX ?
+
+FileX est un système de transfert de fichier.
+
+Il à été conçu dans le but de décharger la messagerie électronique de cette tâche. En effet, nombre d'utilisateurs de messagerie utilisent la fonctionnalité des "pièces jointes" pour transmettre des documents volumineux, ce qui occasionne quelques désagréments pour les destinataires :
+
+=over
+
+=item * Boîte de mail saturée
+
+=item * Impossibilité de recevoir les messages s'ils sont trop volumineux
+
+=item * Lenteur de réception des mails
+
+=back
+
+Le principe de fonctionnement du système est le suivant :
+
+=over
+
+=item * Vous déposé un fichier 
+
+=item * Une adresse internet identifiant le fichier est créée
+
+=item * Vous envoyez cette adresse par email au(x) destinataire(s) du fichier
+
+=item * Le(s) destinataire(s) récupère(nt) le fichier en utilisant leur navigateur internet
+
+=back
+
+Le seul outil nécessaire pour effectuer toutes ces opérations est le navigateur internet !
+
+=head1 Déposer un fichier
+
+Pour déposer un fichier : sélectionner un fichier depuis votre disque dur en utilisant le bouton I<parcourir...>, et appuyez sur le bouton I<envoyer>. 
+
+Une fenêtre indiquant la  progression du chargement du fichier sur le serveur apparaîtra. 
+
+Il est possible que cette fenêtre ne soit pas visible, selon la taille du fichier déposé ou le navigateur utilisé.
+
+Lorsque la dépose est terminée, un message vous indiquera l'adresse à laquelle le fichier pourra être téléchargé durant sa période de validité. Vous recevrez également une confirmation de dépose de fichier par courrier électronique. 
+
+Pour qu'une personne récupère votre fichier, faite lui passer cette adresse par courrier électronique ou tout autre moyen de communication.
+
+=head2 Les options de dépose
+
+Les options suivantes sont disponibles lors de la dépose d'un fichier :
+
+=over 1
+
+=item Expiration du fichier
+
+le fichier ne serra plus disponible au téléchargement après le nombre de jour sélectionné.
+
+=item Recevoir un avis de réception à chaque téléchargement
+
+recevoir un e-mail de confirmation à chaque téléchargement du fichier.
+
+=item Recevoir un récapitulatif des téléchargements lorsque le fichier aura expiré
+
+recevoir un e-mail détaillant les téléchargements du fichier lorsque celui-ci arrivera à expiration.
+
+=back
+
+=head1 Gestion de vos fichiers
+
+La I<Gestion de vos fichiers> est accessible depuis la page de dépose de fichier. Elle permet de consulter l'historique de tous les fichiers que vous avez déposé sur le système et d'en modifier certaines options.
+
+La liste de vos fichiers est triée par défaut de manière décroissante sur la date de dépose (le fichier le plus récent en haut).
+
+Vous pouvez trier la liste de vos fichiers en cliquant sur B<+> (ordre croissant) et B<-> (ordre décroissant) dans les entêtes de colonne
+
+Pour avoir des informations détaillées sur un fichier et modifier certaines options, cliquez sur le nom du fichier.
+
+=head2 Modification des options de vos fichiers
+
+Les options suivantes sont modifiable si le fichier B<n'a pas expiré> :
+
+=over 1
+
+=item Augmenter la durée de vie du fichier de
+
+cette option, si elle est active ou si vous n'avez pas dépassé le nombre de renouvellement permit, vous permet de prolonger la durée de vie de votre fichier de B<n> jours.
+
+=item Expiré  
+
+sélectionnez non si vous voulez faire expirer le fichier. Il ne serra alors plus disponible au téléchargement et sera supprimé du système. B<Cette action est définitive>.
+
+=item Recevoir un message à chaque téléchargement 
+
+sélectionnez oui ou non pour recevoir ou ne plus recevoir l'e-mail de confirmation de téléchargement de fichier.
+
+=item Recevoir un récapitulatif lorsque le fichier sera supprimé 
+
+sélectionnez oui ou non pour recevoir un e-mail détaillant les téléchargements du fichier lorsque celui-ci arrivera à expiration.
+
+=back
+
+Cliquez sur le bouton I<"Valider"> pour appliquer vos modifications.
+
+=head1 Auteurs
+
+Cette application à été développée pour les besoins du Centre de Ressource Informatiques de l'INSA de Lyon par Fabien CHAUDIER et Olivier FRANCO.
+
+=head1 FAQ
+
+=head2 Je veux déposer plusieurs fichiers
+
+Il n'est possible de déposé qu'un seul fichier à la fois, aussi, si vous désirez déposer plusieurs fichiers qui doivent être téléchargés simultanément, regroupez les en utilisant des utilitaires tels que zip, rar ...
+
+=head2 Je ne vois pas la fenêtre de progression de dépose de fichier
+
+Il y a deux possibilités à ce "problème" :
+
+=over 1
+
+=item *
+le chargement du fichier est trop rapide, la fenêtre se ferme automatiquement lorsque le chargement est terminé.
+
+=item *
+la fenêtre de progression ne fonctionne que sur des navigateurs de génération supérieur à 4 pour Netscape et Internet Explorer, ainsi que opera, mozilla (et dérivés : phoenix, firebird, galeon ...), konqueror
+
+=back
+
+Quoi qu'il en soit, c'est le message de confirmation de dépose de fichier qui vous indiquera que celui-ci est bien déposé.
+
+=head2 Je ne me rappel plus de l'adresse de téléchargement de mon fichier
+
+Retournez sur la page de dépose de fichier et suivez le lien I<Gestion de vos fichiers>. Localisez votre fichier et cliquez sur son nom. Vous obtiendrez ainsi des informations concernant votre fichier ainsi que son adresse de téléchargement si celui-ci n'a pas expiré.
+
+=cut

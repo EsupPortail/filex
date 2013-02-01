@@ -154,11 +154,6 @@ configuration produite :
 	PerlModule FILEX::HttpConfig
 </IfModule>
 
-Les fichiers statiques du répertoire [srvroot] doivent se trouver à la racine
-du serveur web. Recopiez le contenu de ce répertoire à la racine du serveur
-ou alors faite pointer directement la racine du serveur dans le répertoire
-[srvroot] (DocumentRoot).
-
 4.3 Configurer FileX
 
 Les paramètres de l'application se trouve dans le fichier - FILEX.ini - du

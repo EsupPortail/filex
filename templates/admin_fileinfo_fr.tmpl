@@ -2,36 +2,77 @@
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-	<base href="<TMPL_VAR NAME='STATIC_FILE_BASE'>">
-	<title>FileX</title>
+	<base href="<TMPL_VAR NAME='FILEX_STATIC_FILE_BASE'>">
+	<title>FileX : <TMPL_VAR NAME="FILEX_FILE_NAME"></title>
 	<link href="styles/filex.css" rel="stylesheet" type="text/css">
 </head>
 <body>
 <div class="body">
 	<div class="main">
-		<TMPL_IF NAME="HAS_ERROR">
-		<p class="error"><TMPL_VAR NAME="ERROR"></p>
+		<TMPL_IF NAME="FILEX_HAS_ERROR">
+		<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>
 		<TMPL_ELSE>
+		<TMPL_IF NAME="FILEX_CAN_EXPIRE">
+		<form action="<TMPL_VAR NAME='FILEX_FORM_ACTION_URL'>" method="POST">
+		<input type="hidden" name="<TMPL_VAR NAME='SUB_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='SUB_ACTION_VALUE'>">
+		<input type="hidden" name="<TMPL_VAR NAME='FILE_ID_FIELD_NAME'>" value="<TMPL_VAR NAME='FILE_ID_VALUE'>">
+		</TMPL_IF>
+		<h1 class="fileinfo"><TMPL_VAR NAME="FILEX_FILE_NAME"></h1>
 		<ul>
-			<li><strong>Fichier : </strong><TMPL_VAR NAME="FILENAME">
-			<li><strong>D&eacute;pos&eacute; le : </strong><TMPL_VAR NAME="FILEDATE">
-			<li><strong>Expire le : </strong><TMPL_VAR NAME="FILEEXPIRE">
-			<li><strong>Taille : </strong><TMPL_VAR NAME="FILESIZE">
-			<TMPL_IF NAME="ADMIN_MODE"><li><strong>Depuis la machine : </strong><TMPL_VAR NAME="UL_ADDRESS">
-			<li><strong>Utilise un proxy : </strong><TMPL_VAR NAME="USE_PROXY">
-			<TMPL_IF NAME="IF_USE_PROXY"><li><strong>Information Proxy :</strong><pre style="font-size: 6pt;"><TMPL_VAR NAME="PROXY_INFOS"></pre></TMPL_IF>
-			<li><strong>Propri&eacute;taire : </strong><a href="mailto:<TMPL_VAR NAME='FILEOWNER'>"><TMPL_VAR NAME='FILEOWNER'></a> (<TMPL_VAR NAME="FILEOWNER_ID">)
-			<li><strong>Nom sur le disque</strong> : <TMPL_VAR NAME="DISKNAME"></TMPL_IF>
-			<li><strong>Nombre de t&eacute;l&eacute;chargements : </strong><TMPL_VAR NAME="FILECOUNT">
-			<TMPL_IF NAME="ADMIN_MODE"><li><strong>Etat : </strong><a href="<TMPL_VAR NAME='STATE_URL'>"><TMPL_VAR NAME="STATE"></a></TMPL_IF>
-			<li><strong>Expir&eacute; : </strong><TMPL_IF NAME="CAN_EXPIRE"><a href="<TMPL_VAR NAME='EXPIRE_URL'>"><TMPL_VAR NAME="EXPIRED"></a><TMPL_ELSE><TMPL_VAR NAME="EXPIRED"></TMPL_IF>
-			<li><strong>Recevoir un message &agrave; chaque t&eacute;l&eacute;chargement : </strong><TMPL_IF NAME="CAN_EXPIRE"><a href="<TMPL_VAR NAME='DELIVERY_URL'>"><TMPL_VAR NAME="DELIVERY"></a><TMPL_ELSE><TMPL_VAR NAME="DELIVERY"></TMPL_IF>
-			<li><strong>Recevoir un r&eacute;capitulatif lorsque le fichier sera supprim&eacute; : </strong><TMPL_IF NAME="CAN_EXPIRE"><a href="<TMPL_VAR NAME='RESUME_URL'>"><TMPL_VAR NAME="RESUME"></a><TMPL_ELSE><TMPL_VAR NAME="RESUME"></TMPL_IF>
-			<TMPL_IF NAME="CAN_EXPIRE"><li><strong>Adresse de t&eacute;l&eacute;chargement : </strong><a href="<TMPL_VAR NAME='GETADDRESS'>" target="_blank" title="t&eacute;l&eacute;charger"><TMPL_VAR NAME="GETADDRESS"></a></TMPL_IF>
+			<li><strong>D&eacute;pos&eacute; le : </strong><TMPL_VAR NAME="FILEX_FILE_DATE">
+			<li><strong>Expire le : </strong><TMPL_VAR NAME="FILEX_FILE_EXPIRE">
+			<li><strong>Taille : </strong><TMPL_VAR NAME="FILEX_FILE_SIZE">
+			<TMPL_IF NAME="FILEX_ADMIN_MODE"><li><strong>Depuis la machine : </strong><TMPL_VAR NAME="FILEX_UPLOAD_ADDRESS">
+			<li><strong>Utilise un proxy : </strong><TMPL_VAR NAME="FILEX_USE_PROXY">
+			<TMPL_IF NAME="FILEX_IF_USE_PROXY"><li><strong>Information Proxy :</strong><pre style="font-size: 6pt;"><TMPL_VAR NAME="FILEX_PROXY_INFOS"></pre></TMPL_IF>
+			<li><strong>Propri&eacute;taire : </strong><a href="mailto:<TMPL_VAR NAME='FILEX_FILE_OWNER'>"><TMPL_VAR NAME='FILEX_FILE_OWNER'></a> (<TMPL_VAR NAME="FILEX_FILE_OWNER_ID">)
+			<li><strong>Nom sur le disque</strong> : <TMPL_VAR NAME="FILEX_DISK_NAME"></TMPL_IF>
+			<li><strong>Nombre de t&eacute;l&eacute;chargements : </strong><TMPL_VAR NAME="FILEX_FILE_COUNT">
+			<TMPL_IF NAME="FILEX_ADMIN_MODE"><li><strong>Etat : </strong>
+<input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_ACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_ACTIVATE_CHECKED">checked</TMPL_IF>>Activ&eacute; 
+<input name="<TMPL_VAR NAME='FILEX_FORM_STATE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_STATE_VALUE_DESACTIVATE'>" <TMPL_IF NAME="FILEX_FORM_STATE_VALUE_DESACTIVATE_CHECKED">checked</TMPL_IF>>D&eacute;sactiv&eacute;
+			</TMPL_IF>
+			<li><strong>Expir&eacute; : </strong>
+			<TMPL_IF NAME="FILEX_CAN_EXPIRE">
+<br><input name="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_VALUE_YES'>">Oui 
+<input name="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_EXPIRE_VALUE_NO'>"checked>Non
+			<TMPL_ELSE>
+<TMPL_VAR NAME="FILEX_EXPIRED">
+			</TMPL_IF>
+<TMPL_IF NAME="FILEX_CAN_EXPIRE">
+			<li><strong>Nombre de renouvellement : </strong><TMPL_VAR NAME="FILEX_RENEW_COUNT"> / <TMPL_VAR NAME="FILEX_MAX_RENEW_COUNT">
+	<TMPL_IF NAME="FILEX_CAN_RENEW_FILE_LIFE">
+			<li><strong>Augmenter la dur&eacute;e de vie du fichier de : </strong>
+<select name="<TMPL_VAR NAME='FILEX_FORM_RENEW_NAME'>">
+	<TMPL_LOOP NAME="FILEX_RENEW_LOOP">
+	<option value="<TMPL_VAR NAME='FILEX_FORM_RENEW_VALUE'>"><TMPL_VAR NAME="FILEX_FORM_RENEW_VALUE"></option>
+	</TMPL_LOOP>
+</select> Jours
+	</TMPL_IF>
+</TMPL_IF>
+			<li><strong>Recevoir un message &agrave; chaque t&eacute;l&eacute;chargement : </strong>
+			<TMPL_IF NAME="FILEX_CAN_EXPIRE">
+<br><input name="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_VALUE_YES'>" <TMPL_IF NAME="FILEX_FORM_DELIVERY_VALUE_YES_CHECKED">checked</TMPL_IF>>Oui 
+<input name="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_DELIVERY_VALUE_NO'>" <TMPL_IF NAME="FILEX_FORM_DELIVERY_VALUE_NO_CHECKED">checked</TMPL_IF>>Non
+			<TMPL_ELSE>
+<TMPL_VAR NAME="FILEX_DELIVERY">
+			</TMPL_IF>
+			<li><strong>Recevoir un r&eacute;capitulatif lorsque le fichier sera supprim&eacute; : </strong>
+			<TMPL_IF NAME="FILEX_CAN_EXPIRE">
+<br><input name="<TMPL_VAR NAME='FILEX_FORM_RESUME_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_RESUME_VALUE_YES'>" <TMPL_IF NAME="FILEX_FORM_RESUME_VALUE_YES_CHECKED">checked</TMPL_IF>>Oui 
+<input name="<TMPL_VAR NAME='FILEX_FORM_RESUME_NAME'>" type="radio" value="<TMPL_VAR NAME='FILEX_FORM_RESUME_VALUE_NO'>" <TMPL_IF NAME="FILEX_FORM_RESUME_VALUE_NO_CHECKED">checked</TMPL_IF>>Non
+			<TMPL_ELSE>
+<TMPL_VAR NAME="FILEX_RESUME">
+			</TMPL_IF>
+			<TMPL_IF NAME="FILEX_CAN_EXPIRE"><li><strong>Adresse de t&eacute;l&eacute;chargement : </strong><br><a href="<TMPL_VAR NAME='FILEX_GET_ADDRESS'>" target="_blank" title="t&eacute;l&eacute;charger"><TMPL_VAR NAME="FILEX_GET_ADDRESS"></a></TMPL_IF>
 		</ul>
+		<TMPL_IF NAME="FILEX_CAN_EXPIRE">
+		<div class="center"><input type="submit" value="Validez" class="Submit"></div>
+		</form>
+		</TMPL_IF>
 		</TMPL_IF>
 	</div>
-	<TMPL_IF NAME="HAS_DOWNLOAD">
+	<TMPL_IF NAME="FILEX_HAS_DOWNLOAD">
 	<hr>
 	<div class="main">
 		<table class="infos" cellpadding="0" cellspacing="0" width="100%">
@@ -40,17 +81,17 @@
 			<tr><td>Adresse</td><td>Date</td><td>Annul&eacute;</td></tr>
 		</thead>
 		<tbody>
-		<TMPL_IF NAME="HAS_DOWNLOAD_ERROR">
-			<tr><td colspan="3"><TMPL_VAR NAME="DOWNLOAD_ERROR"></td></tr>
+		<TMPL_IF NAME="FILEX_HAS_DOWNLOAD_ERROR">
+			<tr><td colspan="3"><TMPL_VAR NAME="FILEX_DOWNLOAD_ERROR"></td></tr>
 		<TMPL_ELSE>
-			<TMPL_LOOP NAME="DOWNLOAD_LOOP">
-			<tr><td><TMPL_VAR NAME="DL_ADDRESS"><TMPL_IF NAME="DL_USE_PROXY"><pre style="font-size: 6pt;"><TMPL_VAR NAME="DL_PROXY_INFOS"></pre></TMPL_IF></td><td><TMPL_VAR NAME="DL_DATE"></td><td><TMPL_VAR NAME="DL_STATE"></td></tr>
+			<TMPL_LOOP NAME="FILEX_DOWNLOAD_LOOP">
+			<tr<TMPL_UNLESS NAME="__odd__"> id="even"</TMPL_UNLESS>><td><TMPL_VAR NAME="FILEX_DOWNLOAD_ADDRESS"><TMPL_IF NAME="FILEX_DOWNLOAD_USE_PROXY"><pre style="font-size: 6pt;"><TMPL_VAR NAME="FILEX_DOWNLOAD_PROXY_INFOS"></pre></TMPL_IF></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_DATE"></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_STATE"></td></tr>
 			</TMPL_LOOP>
 		</TMPL_IF>
 		</tbody>
 		</table>
 	</div>
 	</TMPL_IF>
-	<p class="center"><a href="javascript:false();" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
+	<p class="center"><a href="javascript:;" onClick="javascript:self.close()">Fermer la fen&ecirc;tre</a></p>
 </div>
 </body>

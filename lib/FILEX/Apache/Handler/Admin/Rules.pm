@@ -8,7 +8,12 @@ use constant SA_DELETE => 1;
 use constant SA_MODIFY => 2;
 use constant SA_ADD => 3;
 use constant SA_SHOW_MODIFY => 4;
-use constant SUBACTION => "sa";
+
+use constant SUB_ACTION_FIELD_NAME=>"sa";
+use constant RULES_RULE_TYPE_FIELD_NAME=>"rule_type";
+use constant RULES_RULE_NAME_FIELD_NAME=>"rule_name";
+use constant RULES_RULE_EXP_FIELD_NAME=>"rule_exp";
+use constant RULES_RULE_ID_FIELD_NAME=>"rule_id";
 
 use FILEX::DB::Admin::Rules qw(getRuleTypes getRuleTypeName);
 
@@ -17,22 +22,31 @@ sub process {
 	my ($b_err,$errstr,$form_sub_action);
 	my $S = $self->sys();
 	my $T = $S->getTemplate(name=>"admin_rules");
-	my $DB = FILEX::DB::Admin::Rules->new(
-		name=>$S->config->getDBName(),
-		user=>$S->config->getDBUsername(),
-		password=>$S->config->getDBPassword(),
-		host=>$S->config->getDBHost(),
-		port=>$S->config->getDBPort()
-	);
+	# fille template
+	$T->param(FILEX_RULES_FORM_ACTION=>$S->getCurrentUrl());
+	$T->param(FILEX_SUB_ACTION_FIELD_NAME=>SUB_ACTION_FIELD_NAME);
+	$T->param(FILEX_MAIN_ACTION_FIELD_NAME=>$self->getDispatchName());
+	$T->param(FILEX_MAIN_ACTION_ID=>$self->getActionId());
+	$T->param(FILEX_RULES_RULE_TYPE_FIELD_NAME=>RULES_RULE_TYPE_FIELD_NAME);
+	$T->param(FILEX_RULES_RULE_NAME_FIELD_NAME=>RULES_RULE_NAME_FIELD_NAME);
+	$T->param(FILEX_RULES_RULE_EXP_FIELD_NAME=>RULES_RULE_EXP_FIELD_NAME);
+	$T->param(FILEX_RULES_RULE_ID_FIELD_NAME=>RULES_RULE_ID_FIELD_NAME);
+	my $DB = eval { FILEX::DB::Admin::Rules->new(); };
+	if ($@) {
+		$T->param(FILEX_HAS_ERROR=>1);
+		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
+		return $T;
+	}
+
 	my $selected_rule_type = undef;
 	# is there a sub action
-	my $sub_action = $S->apreq->param(SUBACTION) || -1;
+	my $sub_action = $S->apreq->param(SUB_ACTION_FIELD_NAME) || -1;
 	SWITCH : {
 		# add a new rule
 		if ( $sub_action == SA_ADD ) {
-			if ( ! $DB->add(name=>$S->apreq->param('rule_name'),
-				exp=>$S->apreq->param('rule_exp'),
-				type=>$S->apreq->param('rule_type')) ) {
+			if ( ! $DB->add(name=>$S->apreq->param(RULES_RULE_NAME_FIELD_NAME),
+				exp=>$S->apreq->param(RULES_RULE_EXP_FIELD_NAME),
+				type=>$S->apreq->param(RULES_RULE_TYPE_FIELD_NAME)) ) {
 				$errstr = ($DB->getLastErrorCode() == 1062) ? $S->i18n->localize("rule already exists") : $DB->getLastErrorString();
 				$b_err = 1;
 			}
@@ -40,7 +54,7 @@ sub process {
 		}
 		# delete rule
 		if ( $sub_action == SA_DELETE ) {
-			if ( ! $DB->del($S->apreq->param('rule_id')) ) {
+			if ( ! $DB->del($S->apreq->param(RULES_RULE_ID_FIELD_NAME)) ) {
 				$errstr = $DB->getLastErrorString(); 
 				$b_err = 1;
 			}
@@ -49,7 +63,7 @@ sub process {
 		# show a selected rule
 		if ( $sub_action == SA_SHOW_MODIFY ) {
 			my (%hrule,$hkey,$hid);
-			$hid = $S->apreq->param('rule_id');
+			$hid = $S->apreq->param(RULES_RULE_ID_FIELD_NAME);
 			if ( ! $DB->get(id=>$hid,results=>\%hrule) ) {
 				$errstr = $DB->getLastErrorString();
 				$b_err = 1;
@@ -57,9 +71,9 @@ sub process {
 			$hkey = keys(%hrule);
 			if ( $hkey > 0 ) {
 				# fill modify template
-				$T->param(FORM_RULE_NAME=>$hrule{'name'});
-				$T->param(FORM_RULE_EXP=>$hrule{'exp'});
-				$T->param(FORM_RULE_ID=>$hid);
+				$T->param(FILEX_RULES_FORM_RULE_NAME=>$hrule{'name'});
+				$T->param(FILEX_RULES_FORM_RULE_EXP=>$hrule{'exp'});
+				$T->param(FILEX_RULES_FORM_RULE_ID=>$hid);
 				$selected_rule_type = $hrule{'type'};
 				$form_sub_action = SA_MODIFY;
 			}
@@ -67,10 +81,10 @@ sub process {
 		}
 		# modify a selected rule
 		if ( $sub_action == SA_MODIFY ) {
-			if ( ! $DB->modify(id=>$S->apreq->param('rule_id'),
-					name=>$S->apreq->param('rule_name'),
-					exp=>$S->apreq->param('rule_exp'),
-					type=>$S->apreq->param('rule_type')) ) {
+			if ( ! $DB->modify(id=>$S->apreq->param(RULES_RULE_ID_FIELD_NAME),
+					name=>$S->apreq->param(RULES_RULE_NAME_FIELD_NAME),
+					exp=>$S->apreq->param(RULES_RULE_EXP_FIELD_NAME),
+					type=>$S->apreq->param(RULES_RULE_TYPE_FIELD_NAME)) ) {
 				$b_err = 1;
 				$errstr = ( $DB->getLastErrorCode() == 1062 ) ? $S->i18n->localize("rule already exists") : $DB->getLastErrorString();
 			}
@@ -86,21 +100,17 @@ sub process {
 	my @rt_loop;
 	foreach my $rt (@rules_type) {
 		my $record = {};
-		$record->{'RULETYPE_ID'} = $rt;
-		$record->{'RULETYPE_NAME'} = getRuleTypeName($rt);
-		$record->{'RULETYPE_SELECTED'} = "selected" if ( defined($selected_rule_type) && $selected_rule_type == $rt );
+		$record->{'FILEX_RULES_TYPE_ID'} = $rt;
+		$record->{'FILEX_RULES_TYPE_NAME'} = getRuleTypeName($rt);
+		$record->{'FILEX_RULES_TYPE_SELECTED'} = 1 if ( defined($selected_rule_type) && $selected_rule_type == $rt );
 		push(@rt_loop,$record);
 	}
-	$T->param(RULETYPE_LOOP=>\@rt_loop);
+	$T->param(FILEX_RULES_TYPE_LOOP=>\@rt_loop);
 	# the rest
-	$T->param(FORM_ACTION=>$S->getCurrentUrl());
-	$T->param(MACTION=>$self->getDispatchName());
-	$T->param(MACTIONID=>$self->getActionId());
-	$T->param(SUBACTION=>SUBACTION);
-	$T->param(SUBACTIONID=>$form_sub_action);
+	$T->param(FILEX_SUB_ACTION_ID=>$form_sub_action);
 	if ( $b_err ) { 
-		$T->param(HAS_ERROR=>1);
-		$T->param(ERROR=>$S->toHtml($errstr));
+		$T->param(FILEX_HAS_ERROR=>1);
+		$T->param(FILEX_ERROR=>$S->toHtml($errstr));
 	}
 	# already defined rules
 	my (@results,@rules_loop,$state);
@@ -108,16 +118,16 @@ sub process {
 	if ($#results >= 0) {
 		for (my $i=0; $i<=$#results; $i++) {
 			my $record = {};
-			$record->{'RULE_TYPE'} = getRuleTypeName($results[$i]->{'type'});
-			$record->{'RULE_NAME'} = $S->toHtml($results[$i]->{'name'});
-			$record->{'RULE_EXP'} = $S->toHtml($results[$i]->{'exp'});
+			$record->{'FILEX_RULE_TYPE'} = getRuleTypeName($results[$i]->{'type'});
+			$record->{'FILEX_RULE_NAME'} = $S->toHtml($results[$i]->{'name'});
+			$record->{'FILEX_RULE_EXP'} = $S->toHtml($results[$i]->{'exp'});
 			$state = $results[$i]->{'enable'};
-			$record->{'REMOVEURL'} = $self->genRemoveUrl($results[$i]->{'id'});
-			$record->{'MODIFYURL'} = $self->genModifyUrl($results[$i]->{'id'});
+			$record->{'FILEX_REMOVE_URL'} = $self->genRemoveUrl($results[$i]->{'id'});
+			$record->{'FILEX_MODIFY_URL'} = $self->genModifyUrl($results[$i]->{'id'});
 			push(@rules_loop,$record);
 		}
-		$T->param(HAS_RULES=>1);
-		$T->param(RULES_LOOP=>\@rules_loop);
+		$T->param(FILEX_HAS_RULES=>1);
+		$T->param(FILEX_RULES_LOOP=>\@rules_loop);
 	}
 	return $T;
 }
@@ -125,18 +135,20 @@ sub process {
 sub genModifyUrl {
 	my $self = shift;
 	my $id = shift;
-	my $sub_action = SUBACTION;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $rule_id_field = RULES_RULE_ID_FIELD_NAME;
 	my $url = $self->sys->getCurrentUrl();
-	$url .= "?".$self->genQueryString($sub_action=>SA_SHOW_MODIFY,rule_id=>$id);
+	$url .= "?".$self->genQueryString($sub_action=>SA_SHOW_MODIFY,$rule_id_field=>$id);
 	return $url;
 }
 
 sub genRemoveUrl {
 	my $self = shift;
 	my $id = shift;
-	my $sub_action = SUBACTION;
+	my $sub_action = SUB_ACTION_FIELD_NAME;
+	my $rule_id_field = RULES_RULE_ID_FIELD_NAME;
 	my $url = $self->sys->getCurrentUrl();
-	$url .= "?".$self->genQueryString($sub_action=>SA_DELETE,rule_id=>$id);
+	$url .= "?".$self->genQueryString($sub_action=>SA_DELETE,$rule_id_field=>$id);
 	return $url;
 }
 

@@ -23,7 +23,8 @@ sub getFiles {
 	my $strQuery = "SELECT u.*, ".
 	               "UNIX_TIMESTAMP(upload_date) AS ts_upload_date, ".
 	               "UNIX_TIMESTAMP(expire_date) AS ts_expire_date, ".
-	               "COUNT(g.upload_id) AS download_count ".
+	               "COUNT(g.upload_id) AS download_count, ".
+	               "NOW() > expire_date AS expired ".
 	               "FROM upload AS u ".
 	               "LEFT JOIN get AS g ON u.id = g.upload_id ".
 	               "WHERE owner=$owner ".
@@ -40,7 +41,6 @@ sub getFiles {
 		while ( my $r = $sth->fetchrow_hashref() ) {
 			push(@$res,$r);
 		}
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(string=>$dbh->errstr(),code=>$dbh->err(),query=>$strQuery);

@@ -15,7 +15,8 @@ $VERSION = 1.0;
 
 my %RULE_TYPES = (
   1 => "DN",
-  2 => "GROUP"
+  2 => "GROUP",
+	3 => "UID"
 );
 
 # exported functions
@@ -36,10 +37,10 @@ sub add {
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
                       string=>"Require a rule name",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'name'}) || !checkStr($ARGZ{'name'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'name'}) || !$self->checkStr($ARGZ{'name'}) );
 	$self->setLastError(query=>"",
 	                    string=>"Require a exp",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'exp'}) || !checkStr($ARGZ{'exp'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'exp'}) || !$self->checkStr($ARGZ{'exp'}) );
 	$self->setLastError(query=>"",
 	                    string=>"Require a type",
                       code=>-1) && return undef if ( !exists($ARGZ{'type'}) || !checkType($ARGZ{'type'}) );
@@ -73,12 +74,12 @@ sub modify {
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
 	                    string=>"Require a rule id",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !checkUInt($ARGZ{'id'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !$self->checkUInt($ARGZ{'id'}) );
 	my $id = $ARGZ{'id'};
 	delete($ARGZ{'id'});
 	my %valid_fields = (
-		name => { check => \&checkStr, quote=>1},
-		exp => 	{ check => \&checkStr, quote=>1},
+		name => { check => sub { $self->checkStr(shift); }, quote=>1},
+		exp => 	{ check => sub { $self->checkStr(shift); }, quote=>1},
 		type => { check => \&checkType, quote=>0},
 	);
 	my $dbh = $self->_dbh();
@@ -113,28 +114,9 @@ sub modify {
 	return 1;
 }
 
-sub checkStr {
-	my $value = shift;
-	return ( defined($value) && length($value) > 0 ) ? 1 : undef;
-}
-
-sub checkUInt {
-	my $value = shift;
-	return ( defined($value) && $value =~ /^[0-9]+$/ ) ? 1 : undef;
-}
-sub checkInt {
-	my $value = shift;
-	return ( defined($value) && $value =~ /^-?[0-9]+$/ ) ? 1 : undef;
-}
-
 sub checkType {
 	my $value = shift;
 	return ( defined($value) && grep($value == $_,getRuleTypes()) ) ? 1 : undef;
-}
-
-sub checkBool {
-	my $value = shift;
-	return ( defined($value) && $value =~ /^[0-1]$/ ) ? 1 : undef;
 }
 
 # id => rule id
@@ -144,7 +126,7 @@ sub get {
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
 	                    string=>"Require a rule id",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !checkUInt($ARGZ{'id'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'id'}) || !$self->checkUInt($ARGZ{'id'}) );
 	$self->setLastError(query=>"",
 	                    string=>"Require a results hashref",
 	                    code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "HASH");
@@ -158,7 +140,6 @@ sub get {
 		while ( my($k,$v) = each(%$r) ) {
 			$res->{$k} = $v;
 		}
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
@@ -183,7 +164,6 @@ sub list {
 		while ( my $row = $sth->fetchrow_hashref() ) {
 			push(@$res,$row);
 		}
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());

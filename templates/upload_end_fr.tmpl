@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-	<base href="<TMPL_VAR NAME='STATIC_FILE_BASE'>">
+	<base href="<TMPL_VAR NAME='FILEX_STATIC_FILE_BASE'>">
   <title>FileX</title>
 	<link href="styles/filex.css" rel="stylesheet" type="text/css">
 </head>
@@ -10,25 +10,25 @@
 <body>
 <div class="body">
 	<div class="logo">
-		<h1><span>FileX</span> [ <TMPL_VAR NAME="USERNAME"> ]</h1>
+		<h1><span>FileX</span> [ <TMPL_VAR NAME="FILEX_USER_NAME"> ]</h1>
 	</div>
 	<div class="main">
-		<p>Le fichier <strong><TMPL_VAR NAME="FILENAME"></strong> &agrave; &eacute;t&eacute; d&eacute;pos&eacute;.</p>
+		<p>Le fichier <strong><TMPL_VAR NAME="FILEX_FILE_NAME"></strong> &agrave; &eacute;t&eacute; d&eacute;pos&eacute;.</p>
 		<p>Pour qu'un utilisateur t&eacute;l&eacute;charge votre fichier, envoyez lui cette adresse :</p>
-		<p><strong><TMPL_VAR NAME="GETURL"></strong></p>
-		<p>Votre fichier sera automatiquement supprim&eacute; du serveur dans <strong><TMPL_VAR NAME="DAYS"></strong> jours.</p>
-		<TMPL_IF NAME="HAS_ERROR"><p class=error><TMPL_VAR NAME="error"></p></TMPL_IF>
+		<p><strong><TMPL_VAR NAME="FILEX_GET_URL"></strong></p>
+		<p>Votre fichier sera automatiquement supprim&eacute; du serveur dans <strong><TMPL_VAR NAME="FILEX_DAY_KEEP"></strong> jours.</p>
+		<TMPL_IF NAME="FILEX_HAS_ERROR"><p class=error><TMPL_VAR NAME="FILEX_ERROR"></p></TMPL_IF>
 		<p>Informations :
 			<ul>
-				<li><strong>Taille :</strong> <TMPL_VAR NAME="FILESIZE">
-				<li><strong>Disponible jusqu'au :</strong> <TMPL_VAR NAME="FILEEXPIRE">
+				<li><strong>Taille :</strong> <TMPL_VAR NAME="FILEX_FILE_SIZE">
+				<li><strong>Disponible jusqu'au :</strong> <TMPL_VAR NAME="FILEX_FILE_EXPIRE">
 			</ul>
 		</p>
-		<p class="center"><a href="<TMPL_VAR NAME='UPLOADURL'>">Retour</a></p>
+		<p class="center"><a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>">Retour</a></p>
 	</div>
 	<hr>
 	<div class="footer">
-		<p>En cas de probl&egrave;mes ou pour toutes informations, veuillez adresser vos messages à l'adresse suivante : <a href="mailto:<TMPL_VAR NAME='SYSTEMEMAIL'>"><TMPL_VAR NAME="SYSTEMEMAIL"></a></p>
+		<p>En cas de probl&egrave;mes ou pour toutes informations, veuillez adresser vos messages à l'adresse suivante : <a href="mailto:<TMPL_VAR NAME='FILEX_SYSTEM_EMAIL'>"><TMPL_VAR NAME="FILEX_SYSTEM_EMAIL"></a></p>
 	</div>
 </div>
 <div class="img">

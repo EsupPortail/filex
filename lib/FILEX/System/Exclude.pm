@@ -8,36 +8,25 @@ use FILEX::DB::Admin::Exclude;
 use FILEX::System::LDAP;
 
 # sortir DnExclude de Auth.pm
-# config=> requiert FILEX::System::Config object
 # [ldap=>FILEX::System::LDAP object]
 sub new {
 	my $this = shift;
 	my $class = ref($this) || $this;
 	my %ARGZ = @_;
 	my $self = {
-		config => undef,
 		username => undef,
 		_ldap_ => undef,
 		_exclude_ => undef,
 	};
-	$self->{'config'} = $ARGZ{'config'} if (exists($ARGZ{'config'}) && ref($ARGZ{'config'}) eq "FILEX::System::Config");
-	warn(__PACKAGE__,"=> require a FILEX::System::Config object") && return undef if !defined($self->{'config'});
 	# ldap
 	if ( exists($ARGZ{'ldap'}) && ref($ARGZ{'ldap'}) eq "FILEX::System::LDAP" ) {
 		$self->{'_ldap_'} = $ARGZ{'ldap'};
 	} else {
-		$self->{'_ldap_'} = eval { FILEX::System::LDAP->new(config=>$self->{'config'}); };
+		$self->{'_ldap_'} = eval { FILEX::System::LDAP->new(); };
 		warn(__PACKAGE__,"=> unable to load FILEX::System::LDAP : $@") && return undef if ($@);
 	}
 	# dnexclude
-	$self->{'_exclude_'} = eval {
-		FILEX::DB::Admin::Exclude->new(
-			name=>$self->{'config'}->getDBName(),
-    	user=>$self->{'config'}->getDBUsername(),
-    	password=>$self->{'config'}->getDBPassword(),
-    	host=>$self->{'config'}->getDBHost(),
-    	port=>$self->{'config'}->getDBPort());
-	};
+	$self->{'_exclude_'} = eval { FILEX::DB::Admin::Exclude->new(); };
 	warn(__PACKAGE__,"=> unable to load FILEX::DB::Admin::Exclude : $@") && return undef if ($@);
 	return bless($self,$class);
 }
@@ -61,12 +50,19 @@ sub isExclude {
 	for (my $i = 0; $i <= $#rules; $i++) {
 		# switch rule type (1=DN, 2=GROUP)
 		SWITCH : {
+			# user's DN
 			if ( $rules[$i]->{'rule_type'} == 1 ) {
 				$bIsExclude = $self->isDnExclude($uid,$rules[$i]->{'rule_exp'});
 				last SWITCH;
 			}
+			# groups
 			if ( $rules[$i]->{'rule_type'} == 2 ) {
 				$bIsExclude = $self->{'_ldap_'}->inGroup(uid=>$uid,gid=>$rules[$i]->{'rule_exp'});
+				last SWITCH;
+			}
+			# users UID
+			if ( $rules[$i]->{'rule_type'} == 3 ) {
+				$bIsExclude = ( $uid eq $rules[$i]->{'rule_exp'} ) ? 1 : 0;
 				last SWITCH;
 			}
 			warn(__PACKAGE__,"-> unknown rule type (",$rules[$i]->{'rule_type'},") : ",$rules[$i]->{'rule_exp'});

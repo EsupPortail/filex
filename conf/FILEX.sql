@@ -40,7 +40,7 @@ USE FILEX;
 -- ip_adress = adresse ip lors du téléchargement
 -- use_proxy = un proxy à t-il été utilisé
 -- proxy_infos = information de proxy si proxy utilisé
-
+-- renew_count = nombre de fois où l'expiration du fichier a été renouvellée
 CREATE TABLE upload (
   id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   real_name VARCHAR(255) NOT NULL,
@@ -57,6 +57,7 @@ CREATE TABLE upload (
 	ip_address VARCHAR(15) DEFAULT NULL,
 	use_proxy BOOL NOT NULL DEFAULT 0,
 	proxy_infos VARCHAR(255) DEFAULT NULL,
+	renew_count INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
   INDEX idx_filename (file_name),
   INDEX idx_expire (expire_date)

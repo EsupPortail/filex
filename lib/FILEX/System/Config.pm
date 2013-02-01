@@ -12,7 +12,15 @@ use constant LDAPSECTION => "Ldap";
 use constant URISECTION => "Uri";
 use constant SMTPSECTION => "Smtp";
 
-$VERSION = 1.0;
+$VERSION = 1.1;
+
+# the unique configuration path
+our $ConfigPath = undef;
+our $Reload = undef;
+our $DieOnReload = undef;
+# 
+my $_ref_counter = 0;
+my $_self = undef;
 
 # maybe reload on SIGUP (Config::IniFiles->Reload)
 # Die on error
@@ -23,49 +31,52 @@ $VERSION = 1.0;
 sub new {
 	my $this = shift;
 	my $class = ref($this) || $this;
-
-	my $self = {
-		FileName => undef,
-		_config_ => undef,
-		_cmtime_ => undef,
-		_reload_ => undef,
-		_dieonreload => undef,
-	};
-
-	# initialize 
-	return undef if ( !_INITIALIZE_($self,@_) );
-	#
-	bless($self,$class);
-	return $self;
+	# check if our Unique instance is defined
+	if ( !defined($FILEX::System::Config::_self) ) {
+		$FILEX::System::Config::_self = {
+			_config_path_ => \$ConfigPath,
+			_ref_counter_ => \$_ref_counter,
+			_config_ => undef,
+			_cmtime_ => undef,
+			_reload_ => \$Reload,
+			_dieonreload_ => \$DieOnReload,
+		};
+		# initialize 
+		return undef if ( !_INITIALIZE_($FILEX::System::Config::_self,@_) );
+		bless($FILEX::System::Config::_self,$class);
+	}
+	${$FILEX::System::Config::_self->{'_ref_counter_'}} ++;
+	return $FILEX::System::Config::_self;
 }
 
 # initialize structure
 sub _INITIALIZE_ {
 	my $self = shift;
 	my %ARGZ = @_;
-	if ( ! exists($ARGZ{'file'}) ) {
+	if ( !defined($FILEX::System::Config::ConfigPath) && !exists($ARGZ{'file'}) ) {
 		warn (__PACKAGE__,"-> Require a Configuration file");
 		return undef;
 	}
-	$self->{'FileName'} = $ARGZ{'file'};
-	$self->{'_reload_'} = 1 if ( exists($ARGZ{'reload'}) && $ARGZ{'reload'} == 1 );
-	$self->{'_dieonreload_'} = 1 if ( exists($ARGZ{'dieonreload'}) && $ARGZ{'dieonreload'} == 1 );
+	# override globals
+	${$self->{'_config_path_'}} = $ARGZ{'file'} if exists($ARGZ{'file'});
+	${$self->{'_reload_'}} = 1 if (exists($ARGZ{'reload'}) && $ARGZ{'reload'} == 1);
+	${$self->{'_dieonreload_'}} = 1 if ( exists($ARGZ{'dieonreload'}) && $ARGZ{'dieonreload'} == 1 );
 	# create new Config::IniFile
-	$self->{'_config_'} = new Config::IniFiles(-file=>$self->{'FileName'},-reloadwarn=>1);
+	$self->{'_config_'} = new Config::IniFiles(-file=>${$self->{'_config_path_'}},-reloadwarn=>1);
 	# die on error
 	if ( !defined($self->{'_config_'}) ) {
-		warn (__PACKAGE__,"-> Unable to Read Config File : ",$self->{'FileName'});
+		warn (__PACKAGE__,"-> Unable to Read Config File : ",${$self->{'_config_path'}});
 		return undef;
 	}
 	# check values
 	if ( ! _VALIDATE_($self->{'_config_'}) ) {
-		warn (__PACKAGE__,"-> Config File : ",$self->{'FileName'}," contains error !");
+		warn (__PACKAGE__,"-> Config File : ",${$self->{'_config_path_'}}," contains error !");
 		return undef;
 	}
 	# stat the file
-	my $st = stat($self->{'FileName'});
+	my $st = stat(${$self->{'_config_path_'}});
  	if ( ! $st ) {
-		warn(__PACKAGE__,"-> Unable to stat ",$self->{'FileName'});
+		warn(__PACKAGE__,"-> Unable to stat ",${$self->{'_config_path_'}});
 		return undef;
 	}
 	# mtime is gmt
@@ -136,6 +147,22 @@ sub _VALIDATE_ {
 		warn(__PACKAGE__,"-> [".SYSSECTION."].TemplateIniFile is mandatory !");
 		return undef;
 	}
+	# [System].DefaultFileExpire
+	# [System].MaxFileExpire
+	# [System].MinFileExpire
+	my ($dfe,$maxfe,$minfe);
+	$minfe = abs(int($config->val(SYSSECTION,"MinFileExpire",1)));
+	$dfe = abs(int($config->val(SYSSECTION,"DefaultFileExpire",7)));
+	$maxfe = abs(int($config->val(SYSSECTION,"MaxFileExpire",7)));
+	if ( $minfe > $maxfe ) {
+		warn(__PACKAGE__,"-> [".SYSSECTION."].MinFileExpire > [".SYSSECTION."]MaxFileExpire");
+		return undef;
+	}
+	if ( $dfe > $maxfe ) {
+		warn(__PACKAGE__,"-> [".SYSSECTION."].DefaultFileExpire > [".SYSSECTION."]MaxFileExpire");
+		return undef;
+	}
+	#
 	if ( ! -f $tst_value ) {
 		warn(__PACKAGE__,"-> [".SYSSECTION."].TemplateIniFile does not exists : $tst_value !");
 		return undef;
@@ -230,7 +257,7 @@ sub _VALIDATE_ {
 		return undef;
 	}
 	warn(__PACKAGE__,"-> [".URISECTION."].manage : invalid uri : $tst_value !") && return undef if ( $tst_value !~ /^\//);
-	#
+	
 	return 1;
 }
 
@@ -238,19 +265,19 @@ sub _VALIDATE_ {
 sub _reload {
 	my $self = shift;
 	# return if we don't need reload
-	return if ( ! $self->{'_reload_'} );
+	return if ( ! ${$self->{'_reload_'}} );
 	# inline error function
 	my $errfunc;
-	if ( $self->{'_dieonreload_'} ) {
+	if ( ${$self->{'_dieonreload_'}} ) {
 		$errfunc = sub { die(__PACKAGE__,"-> ",@_); }; 
 	} else { 
 		$errfunc = sub { warn(__PACKAGE__,"-> ",@_); };
 	}
 	# stat file
-	my $st = stat($self->{'FileName'});
+	my $st = stat(${$self->{'_config_path_'}});
 	# if no file
 	if ( !$st ) {
-		$errfunc->("Unable to stat ",$self->{'FileName'});
+		$errfunc->("Unable to stat ",${$self->{'_config_path_'}});
 		return undef;
 	}
 	my $st_mtime = $st->mtime();
@@ -260,14 +287,14 @@ sub _reload {
 	} else {
 		return;
 	}
-	warn(__PACKAGE__,"-> Need to Reload ",$self->{'FileName'});
+	warn(__PACKAGE__,"-> Need to Reload ",${$self->{'_config_path_'}},":",$self->{'_cmtime_'});
 	if ( ! $self->{'_config_'}->ReadConfig() ) {
-		$errfunc->("Unable to Re-Read Configuration File ",$self->{'FileName'});
+		$errfunc->("Unable to Re-Read Configuration File ",${$self->{'_config_path_'}});
 		return undef;
 	}
 	# Finaly check for values
 	if ( ! _VALIDATE_($self->{'_config_'}) ) {
-		$errfunc->("Configuration File ",$self->{'FileName'}, " contains error !");
+		$errfunc->("Configuration File ",${$self->{'_config_path_'}}, " contains error !");
 		return undef;
 	}
 	return 1;
@@ -480,7 +507,7 @@ sub getCacheNamespace {
 sub getCacheDefaultExpire {
 	my $self = shift;
 	$self->_reload();
-	return $self->{'_config_'}->val(CASECTION,"DefaultExpire",3600);
+	return abs(int($self->{'_config_'}->val(CASECTION,"DefaultExpire",3600)));
 }
 
 # get autopure interval
@@ -488,7 +515,7 @@ sub getCacheDefaultExpire {
 sub getCacheAutoPurge {
 	my $self = shift;
 	$self->_reload();
-	return $self->{'_config_'}->val(CASECTION,"AutoPurge",60);
+	return abs(int($self->{'_config_'}->val(CASECTION,"AutoPurge",60)));
 }
 
 # get Ldap server url
@@ -558,7 +585,25 @@ sub getSystemEmail {
 sub getDefaultFileExpire {
 	my $self = shift;
 	$self->_reload();
-	return $self->{'_config_'}->val(SYSSECTION,"DefaultFileExpire",7);
+	return abs(int($self->{'_config_'}->val(SYSSECTION,"DefaultFileExpire",$self->getMaxFileExpire())));
+}
+
+sub getMaxFileExpire {
+	my $self = shift;
+	$self->_reload();
+	return abs(int($self->{'_config_'}->val(SYSSECTION,"MaxFileExpire",7)));
+}
+
+sub getMinFileExpire {
+	my $self = shift;
+	$self->_reload();
+	return abs(int($self->{'_config_'}->val(SYSSECTION,"MinFileExpire",1)));
+}
+
+sub getRenewFileExpire {
+	my $self = shift;
+	$self->_reload();
+	return abs(int($self->{'_config_'}->val(SYSSECTION,"RenewFileExpire",0)));
 }
 
 sub getUriGet {
@@ -595,6 +640,10 @@ sub getUriStatic {
 	my $self = shift;
 	$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"static");
+}
+
+sub isSetup {
+	return( defined($FILEX::System::Config::ConfigPath) ) ? 1 : 0;
 }
 
 1;

@@ -35,7 +35,10 @@ use Crypt::CBC;
 use Crypt::Blowfish;
 use HTML::Entities ();
 
-use constant FILEX_CONFIG_NAME => "FILEXConfig";
+use constant FILEX_CONFIG_NAME=>"FILEXConfig";
+use constant LOGIN_FORM_LOGIN_FIELD_NAME=>"login";
+use constant LOGIN_FORM_PASSWORD_FIELD_NAME=>"password";
+use constant LOGIN_FORM_CAS_TICKET_FIELD_NAME=>"ticket";
 
 # first args = Apache object [mandatory]
 # [opt]
@@ -76,10 +79,14 @@ sub _INITIALIZE_ {
 	die(__PACKAGE__,"-> Require an Apache object") if ( ref($r) ne "Apache" );
 
 	# first initialize config file
-	my $FILEXConfig = exists($ARGZ{'with_config'}) ? $ARGZ{'with_config'} : $r->dir_config(FILEX_CONFIG_NAME);
-	$self->{'_config_'} = FILEX::System::Config->new(file=>$FILEXConfig, reload=>1, dieonreload=>1);
+	my $FILEXConfig;
+	if ( ! FILEX::System::Config::isSetup() ) {
+		$FILEXConfig = exists($ARGZ{'with_config'}) ? $ARGZ{'with_config'} : $r->dir_config(FILEX_CONFIG_NAME);
+		$self->{'_config_'} = FILEX::System::Config->new(file=>$FILEXConfig, reload=>1, dieonreload=>1);
+	} else {
+		$self->{'_config_'} = FILEX::System::Config->new();
+	}
 	die(__PACKAGE__,"-> Unable to load Config File : $FILEXConfig") if ! defined($self->{'_config_'});
-
 	# initialize the Apache::Request object
 	if ( exists($ARGZ{'with_upload'}) && $ARGZ{'with_upload'} == 1 ) {
 		my %ReqParams = (
@@ -183,14 +190,7 @@ sub _systemdb {
 	my $self = shift;
 	# load on demand
 	if ( !$self->{'_systemdb_'} ) {
-		$self->{'_systemdb_'} = eval { 
-			FILEX::DB::System->new(
-				name=>$self->config->getDBName(),
-				user=>$self->config->getDBUsername(),
-				password=>$self->config->getDBPassword(),
-				host=>$self->config->getDBHost(),
-				port=>$self->config->getDBPort());
-		};
+		$self->{'_systemdb_'} = eval { FILEX::DB::System->new(); };
 		warn(__PACKAGE__,"-> Unable to Load FILEX::DB::System object : $@") if ($@);
 	}
 	return $self->{'_systemdb_'};
@@ -201,7 +201,7 @@ sub _exclude {
 	my $self = shift;
 	# load on demand
 	if ( !$self->{'_exclude_'} ) {
-		$self->{'_exclude_'} = FILEX::System::Exclude->new(config=>$self->config(),ldap=>$self->ldap());
+		$self->{'_exclude_'} = FILEX::System::Exclude->new(ldap=>$self->ldap());
 	}
 	return $self->{'_exclude_'};
 }
@@ -331,6 +331,7 @@ sub _doProcessAuthParam {
 	my $result = $ARGZ{'result'} if ( exists($ARGZ{'result'}) && ref($ARGZ{'result'}) eq "HASH" ) or warn(__PACKAGE__,"-> _doProcessAuthParam(param=>ARRAY_REF,result=>HASH_REF}") && return undef;
 	# counter for mandatory auth parameters.
 	my $mandatory = 0;
+warn("processing auth");
 	# loop on param
 	while ( my $key = shift(@$param) ) {
 		if ( $key eq "currenturl" ) {
@@ -339,16 +340,16 @@ sub _doProcessAuthParam {
 		if ( $key eq "ldap" ) {
 			$result->{'ldap'} = $self->ldap();
 		}
-		if ( $key eq "ticket" ) {
-			$result->{'ticket'} = $self->apreq->param("ticket");
+		if ( $key eq LOGIN_FORM_CAS_TICKET_FIELD_NAME ) {
+			$result->{'ticket'} = $self->apreq->param(LOGIN_FORM_CAS_TICKET_FIELD_NAME);
 			$mandatory++ if defined($result->{'ticket'});
 		}
-		if ( $key eq "login" ) {
-			$result->{'login'} = $self->apreq->param("login");
+		if ( $key eq LOGIN_FORM_LOGIN_FIELD_NAME ) {
+			$result->{'login'} = $self->apreq->param(LOGIN_FORM_LOGIN_FIELD_NAME);
 			$mandatory++ if defined($result->{'login'});
 		}
-		if ( $key eq "password" ) {
-			$result->{'password'} = $self->apreq->param("password");
+		if ( $key eq LOGIN_FORM_PASSWORD_FIELD_NAME ) {
+			$result->{'password'} = $self->apreq->param(LOGIN_FORM_PASSWORD_FIELD_NAME);
 			$mandatory++ if defined($result->{'password'});
 		}
 	}
@@ -443,12 +444,14 @@ sub _doLogin {
 	# load template
 	my $t = $self->getTemplate(name=>"login");
 	# fill template
-	$t->param(STATIC_FILE_BASE=>$self->getStaticUrl());
-	$t->param(SYSTEMEMAIL=>$self->config->getSystemEmail());
-	$t->param(FORM_LOGIN_ACTION=>$self->getCurrentUrl());
+	$t->param(FILEX_STATIC_FILE_BASE=>$self->getStaticUrl());
+	$t->param(FILEX_SYSTEM_EMAIL=>$self->config->getSystemEmail());
+	$t->param(FILEX_LOGIN_FORM_ACTION=>$self->getCurrentUrl());
+	$t->param(FILEX_LOGIN_FORM_LOGIN_FIELD_NAME=>LOGIN_FORM_LOGIN_FIELD_NAME);
+	$t->param(FILEX_LOGIN_FORM_PASSWORD_FIELD_NAME=>LOGIN_FORM_PASSWORD_FIELD_NAME);
 	if ( $mesg ) {
-		$t->param(HAS_ERROR=>1);
-		$t->param(ERROR=>$self->i18n->localizeToHtml($mesg));
+		$t->param(FILEX_HAS_ERROR=>1);
+		$t->param(FILEX_ERROR=>$self->i18n->localizeToHtml($mesg));
 	}
 	$self->sendHeader('Content-Type'=>"text/html");
 	$self->apreq->print($t->output()) if ( $t && !$self->apreq->header_only() );
@@ -596,6 +599,20 @@ sub getUsedDiskSpace {
 	my $self = shift;
 	my $sdb = $self->_systemdb();
 	return ($sdb) ? $sdb->getUsedDiskSpace() : undef;
+}
+
+sub getUserActiveCount {
+	my $self = shift;
+	my $uid = shift;
+	my $sdb = $self->_systemdb();
+	return ($sdb) ? $sdb->getUserActiveCount($uid) : undef;
+}
+
+sub getUserUploadCount {
+	my $self = shift;
+	my $uid = shift;
+	my $sdb = $self->_systemdb();
+	return ($sdb) ? $sdb->getUserUploadCount($uid) : undef;
 }
 
 sub getUserMaxFileSize {

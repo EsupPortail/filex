@@ -1,4 +1,4 @@
-package FILEX::DB::Sys;
+package FILEX::DB::Purge;
 use vars qw($VERSION @ISA);
 use FILEX::DB::base 1.0;
 
@@ -25,27 +25,6 @@ sub getExpiredFiles {
 		while ( my $row = $sth->fetchrow_hashref() ) {
 			push(@$results,$row);
 		}
-		$sth->finish();
-	};
-	if ($@) {
-		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());
-		warn(__PACKAGE__,"-> Database Error : $@ : $strQuery");
-		return undef;
-	}
-	return 1;
-}
-
-# mark file as deleted
-# require a file id
-sub markDeleted {
-	my $self = shift;
-	my $id = shift;
-	my $strQuery = "UPDATE upload SET deleted = 1 WHERE id = $id";
-	my $dbh = $self->_dbh();
-	eval {
-		my $sth = $dbh->prepare($strQuery);
-		$sth->execute();
-		$dbh->commit();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());

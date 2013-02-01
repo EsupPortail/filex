@@ -4,9 +4,7 @@ use lib qw(/usr/local/FILEX/lib);
 use constant FILEX_CONFIG_FILE => "/usr/local/FILEX/conf/FILEX.ini";
 
 use FILEX::System::Config;
-use FILEX::DB::Sys;
-use FILEX::DB::Admin::Stats;
-use FILEX::System::LDAP;
+use FILEX::System::Purge;
 use FILEX::System::Mail;
 use FILEX::System::Template;
 use FILEX::System::I18N;
@@ -15,141 +13,78 @@ use File::Spec;
 use POSIX qw(strftime);
 
 # BEGIN
-my $FILEXConf = FILEX::System::Config->new(file=>FILEX_CONFIG_FILE) or die("Unable to load Configuration File : $@");
-my $FILEXDb = eval { FILEX::DB::Sys->new(name=>$FILEXConf->getDBName(),
-                              user=>$FILEXConf->getDBUsername(),
-                              password=>$FILEXConf->getDBPassword(),
-                              host=>$FILEXConf->getDBHost(),
-                              port=>$FILEXConf->getDBPort()); };
-die("Unable to connect to the database : $@") if $@;
-# statistics
-my $FILEXDbStats = eval { FILEX::DB::Admin::Stats->new(name=>$FILEXConf->getDBName(),
-	                      user=>$FILEXConf->getDBUsername(),
-	                      password=>$FILEXConf->getDBPassword(),
-	                      host=>$FILEXConf->getDBHost(),
-	                      port=>$FILEXConf->getDBPort()); };
-die("Unable to connect to the database : $@") if $@;
+$FILEX::System::Config::ConfigPath=FILEX_CONFIG_FILE;
+my $config = FILEX::System::Config->new() or die("Unable to load Configuration File : $@");
+# Purge
+my $purge = eval { FILEX::System::Purge->new(); };
+die($@) if ($@);
 # ldap
-my $Ldap = eval { FILEX::System::LDAP->new(server=>$FILEXConf->getLdapServerUrl(),
-                    binddn=>$FILEXConf->getLdapBindDn(),
-                    password=>$FILEXConf->getLdapBindPassword()); };
+my $ldap = eval { FILEX::System::LDAP->new(); };
 die("Unable to bind to ldap : $@") if ($@);
 # template
-my $Template = eval { FILEX::System::Template->new(inifile=>$FILEXConf->getTemplateIniFile()); };
+my $template = eval { FILEX::System::Template->new(inifile=>$config->getTemplateIniFile()); };
 die("Unable to load template module : $@") if ($@);
 # mail
-my $Mail = FILEX::System::Mail->new(server=>$FILEXConf->getSmtpServer(),
-                                  hello=>$FILEXConf->getSmtpHello(),
-                                  timeout=>$FILEXConf->getSmtpTimeout());
-die("Unable to load Mail module") if !$Mail;
+my $mail = FILEX::System::Mail->new(server=>$config->getSmtpServer(),
+                                  hello=>$config->getSmtpHello(),
+                                  timeout=>$config->getSmtpTimeout());
+die("Unable to load Mail module") if !$mail;
 # i18n
-my $I18n = FILEX::System::I18N->new(inifile=>$FILEXConf->getI18nIniFile());
-die("Unable to load I18N module") if !$I18n;
+my $i18n = FILEX::System::I18N->new(inifile=>$config->getI18nIniFile());
+die("Unable to load I18N module") if !$i18n;
 
 # get outdated files
 my @records;
-my $r = $FILEXDb->getExpiredFiles(\@records);
+my $r = $purge->getExpiredFiles(\@records);
 if ( ! $r ) {
-	::log("An error occured while retrieving expired files");
+	::log("An error occured while retrieving expired files : ",$purge->getLastError());
 	exit 1;
 }
 
 # loop on results
-my ($path,$file_name,$id,$is_downloaded,$bFileNotFound,$baserep,@file_downloads,$usr_mail);
-$baserep = $FILEXConf->getFileRepository();
-
+my $upload;
 foreach my $idx (0 .. $#records) {
-	$bFileNotFound = undef;
-	$file_name = $records[$idx]->{'file_name'};
-	$id = $records[$idx]->{'id'};
-	$is_downloaded = $records[$idx]->{'is_downloaded'};
-	$path = File::Spec->catfile($baserep,$file_name);
-	# if there is downloads for the file skip it
-	if ( $is_downloaded != 0 ) {
-		::log("file is currently downloaded [name=>$file_name,id=>$id,path=>$path]");
-		next;
-	}
-	# file not found !
-	if ( ! -f $path ) {
-		$bFileNotFound = 1;
-		::log("File not found [name=>$file_name,id=>$id,path=>$path] marking as deleted");
-	}
-	# first mark as deleted next delete the file
-	::log("Cannot mark file as deleted [name=>$file_name,id=>$id,path=>$path]") if ! $FILEXDb->markDeleted($id);
-	next if $bFileNotFound; # next if file was not found on disk
-	# delete the file
-	::log("deleting file [name=>$file_name,id=>$id,path=>$path]");
-	unlink($path) or ::log("Cannot delete file [name=>$file_name,id=>$id,path=>$path]");
-	# now send resume to the owner of the file
-	next if ( $records[$idx]->{'get_resume'} != 1 );
-	# get file downloads
-	if ( ! $FILEXDbStats->listDownload(id=>$records[$idx]->{'id'},results=>\@file_downloads) ) {
-		::log("Unable to retrieve file download statistics [name=>$file_name,id=>$id,path=>$path]");
-		next;
-	}
-	# get users email
-	$usr_mail = getMail($records[$idx]->{'owner'});
-	::log("unable to retrieve user mail for : ".$records[$idx]->{'owner'}) && next if !$usr_mail;
-	# now send email
-	if ( ! sendMail($usr_mail,$records[$idx],\@file_downloads) ) {
-		::log("unable to send mail to : $usr_mail");
+	$upload = $purge->purge($records[$idx]->{'id'});
+	::log("An error occured :",$purge->getLastError()) if !$upload;
+	if ( $upload && $upload->getGetResume() == 1 && $config->needEmailNotification() ) {
+		sendMail($upload);
 	}
 }
 
 exit 0;
 
-# functions
-sub getMail {
-	my $uname = shift;
-	my $baseSearch = $FILEXConf->getLdapSearchBase();
-	my $mailAttr = $FILEXConf->getLdapMailAttr();
-	my $uidAttr = $FILEXConf->getLdapUidAttr();
-	my %searchArgz;
-	$searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
-	$searchArgz{'scope'} = "sub";
-	$searchArgz{'attrs'} = [$mailAttr];
-	$searchArgz{'filter'} = "($uidAttr=$uname)";
-	my $mesg = $Ldap->srv->search(%searchArgz);
-	if ( $mesg->is_error() || $mesg->code() ) {
-		::log(__PACKAGE__,"-> LDAP error : ",$mesg->error());
-		return undef;
-	}
-	my $h = $mesg->as_struct();
-	my ($dn,$res) = each(%$h);
-	return $res->{$mailAttr}->[0];
-}
-
 # to
 # file_info
 # downloads
-sub sendMail($\%\@) {
-	my $to = shift;
-	my $file_infos = shift;
-	my $dl_infos = shift;
+sub sendMail() {
+	my $u = shift;
 	# load template
-	my $t = $Template->getTemplate(name=>"mail_resume");
+	my $t = $template->getTemplate(name=>"mail_resume");
 	::log("unable to load template : mail_resume") && return undef if !$t;
+	my $to = $ldap->getMail($u->getOwner());
+	::log("unable to get email address for : ",$u->getOwner()) && return undef if !$to;
 	# fill template
-	$t->param(SYSTEMEMAIL=>$FILEXConf->getSystemEmail());
-	$t->param(FILENAME=>$file_infos->{'real_name'});
-	$t->param(FILEDATE=>tsToLocal($file_infos->{'ts_upload_date'}));
-	$t->param(FILEEXPIRE=>tsToLocal($file_infos->{'ts_expire_date'}));
-	my ($sz,$su) = hrSize($file_infos->{'file_size'});
-	$t->param(FILESIZE=>"$sz ".$I18n->localize($su));
-	$t->param(DOWNLOADCOUNT=>($#$dl_infos+1));
+	$t->param(FILEX_SYSTEM_EMAIL=>$config->getSystemEmail());
+	$t->param(FILEX_FILE_NAME=>$u->getRealName());
+	$t->param(FILEX_FILE_DATE=>tsToLocal($u->getUploadDate()));
+	$t->param(FILEX_FILE_EXPIRE=>tsToLocal($u->getExpireDate()));
+	my ($sz,$su) = hrSize($u->getFileSize());
+	$t->param(FILEX_FILE_SIZE=>"$sz ".$i18n->localize($su));
+	$t->param(FILEX_DOWNLOAD_COUNT=>$u->getDownloadCount());
 	# loop
-	my @dl_loop;
-	for ( my $i = 0; $i <= $#$dl_infos; $i++ ) {
-		push(@dl_loop,{DLADDRESS=>rDns($dl_infos->[$i]->{'ip_address'}) || $dl_infos->[$i]->{'ip_address'},DLDATE=>tsToLocal($dl_infos->[$i]->{'ts_date'})});
+	my (@downloads,@download_loop);
+	if ( $u->getDownloads(\@downloads) ) {
+		for ( my $i = 0; $i <= $#downloads; $i++ ) {
+			push(@download_loop,{FILEX_DOWNLOAD_ADDRESS=>rDns($downloads[$i]->{'ip_address'}) || $downloads[$i]->{'ip_address'},FILEX_DOWNLOAD_DATE=>tsToLocal($downloads[$i]->{'ts_date'})});
+		}
+		$t->param(FILEX_DOWNLOAD_LOOP=>\@download_loop) if ($#download_loop >= 0);
 	}
-	$t->param(DL_LOOP=>\@dl_loop) if ($#dl_loop >= 0);
-
 	# send email
-	return $Mail->send(
-		from=>$FILEXConf->getSystemEmail(),
+	return $mail->send(
+		from=>$config->getSystemEmail(),
 		to=>$to,
 		charset=>"ISO-8859-1",
-		subject=>$I18n->localize("mail subject %s",$file_infos->{'real_name'}),
+		subject=>$i18n->localize("mail subject %s",$u->getRealName()),
 		content=>$t->output()
 	);
 }
@@ -159,3 +94,27 @@ sub log {
 	warn("[",strftime("%a %b %e %H:%M:%S %Y",localtime()),"] $str");
 	return 1;
 }
+
+=pod
+
+=head1 AUTHOR AND COPYRIGHT
+
+FileX - a web file exchange system.
+
+Copyright (c) 2004-2005 Olivier FRANCO
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; see the file COPYING . If not, write to the
+Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+=cut

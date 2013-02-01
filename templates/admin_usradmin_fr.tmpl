@@ -1,24 +1,24 @@
 <!-- chunky template for current download -->
 <h1>Gestion des administrateurs :</h1>
-	<form method="post" action="<TMPL_VAR NAME='FORM_ACTION'>">
-	<p>Ajouter un utilisateur <input id="Field" type="text" name="adduser" size="30"><input id="Submit" type="submit" value="Envoyer"></p>
-	<input type="hidden" name="<TMPL_VAR NAME='MACTION'>" value="<TMPL_VAR NAME='MACTIONID'>">
-	<input type="hidden" name="<TMPL_VAR NAME='SUBACTION'>" value="<TMPL_VAR NAME='SUBACTIONID'>">
+	<form method="post" action="<TMPL_VAR NAME='FILEX_USR_ADMIN_FORM_ACTION'>">
+	<p>Ajouter un utilisateur <input id="Field" type="text" name="<TMPL_VAR NAME='FILEX_USR_ADMIN_ADD_FIELD_NAME'>" size="30"><input id="Submit" type="submit" value="Envoyer"></p>
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_MAIN_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_MAIN_ACTION_ID'>">
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_SUB_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_SUB_ACTION_ID'>">
 	</form>
-	<TMPL_IF NAME="HAS_ERROR"><p class="error"><TMPL_VAR NAME="ERROR"></p></TMPL_IF>
-<TMPL_IF NAME="HAS_ADMINS">
+	<TMPL_IF NAME="FILEX_HAS_ERROR"><p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p></TMPL_IF>
+<TMPL_IF NAME="FILEX_HAS_ADMINS">
 	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%">
 		<thead>
 			<tr><td>Identifiant</td><td>Informations</td><td>Email</td><td>Etat</td><td>Actions</td></tr>
 		</thead>
 		<tbody>
-			<TMPL_LOOP NAME="ADMINS_LOOP">
-			<tr>
-				<td><TMPL_VAR NAME="ADMINUID"></td>
-				<td><TMPL_VAR NAME="ADMININFOS"></td>
-				<td><a href="mailto:<TMPL_VAR NAME='ADMINMAIL'>"><TMPL_VAR NAME="ADMINMAIL"></a></td>
-				<td><TMPL_VAR NAME="ADMINSTATE"></td>
-				<td><a href="<TMPL_VAR NAME='REMOVEURL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='STATEURL'>" title="[A|De]activer">S</a></td>
+			<TMPL_LOOP NAME="FILEX_ADMINS_LOOP">
+			<tr<TMPL_UNLESS NAME="__odd__"> id="even"</TMPL_UNLESS>>
+				<td><TMPL_VAR NAME="FILEX_ADMIN_UID"></td>
+				<td><TMPL_VAR NAME="FILEX_ADMIN_INFOS"></td>
+				<td><a href="mailto:<TMPL_VAR NAME='FILEX_ADMIN_MAIL'>"><TMPL_VAR NAME="FILEX_ADMIN_MAIL"></a></td>
+				<td><TMPL_VAR NAME="FILEX_ADMIN_STATE"></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="[A|De]activer">S</a></td>
 			</tr>
 			</TMPL_LOOP>
 		</tbody>

@@ -20,7 +20,6 @@ sub listUsers {
 		while ( my $row = $sth->fetchrow_hashref() ) {
 			push(@$res,$row);
 		}
-		$sth->finish();
 	};
 	if ($@) {
 		$self->setLastError(query=>$strQuery,string=>$dbh->errstr(),code=>$dbh->err());

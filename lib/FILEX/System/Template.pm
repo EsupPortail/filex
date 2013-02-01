@@ -66,6 +66,7 @@ sub getTemplate {
 	my $t = eval { HTML::Template->new(filename=>$template,
 	                            path=>$self->getTemplatePath(),
 	                            die_on_bad_params=>1,
+	                            loop_context_vars=>1,
 	                            cache=>1);
 	        };
 	if ($@) {

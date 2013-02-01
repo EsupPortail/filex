@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-	<base href="<TMPL_VAR NAME='STATIC_FILE_BASE'>">
+	<base href="<TMPL_VAR NAME='FILEX_STATIC_FILE_BASE'>">
   <title>FileX</title>
 	<link href="styles/filex.css" rel="stylesheet" type="text/css">
 </head>
@@ -10,30 +10,30 @@
 <body>
 <div class="body">
 	<div class="logo">
-		<h1><span>FileX</span> [ <TMPL_VAR NAME="USERNAME"> ]</h1>
+		<h1><span>FileX</span> [ <TMPL_VAR NAME="FILEX_USER_NAME"> ]</h1>
 	</div>
-	<p class="gobackfilex"><a href="<TMPL_VAR NAME='UPLOADURL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
-	<TMPL_IF NAME="HAS_ERROR">
-	<p class="error"><TMPL_VAR NAME="ERROR"></p>
+	<p class="gobackfilex"><a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
+	<TMPL_IF NAME="FILEX_HAS_ERROR">
+	<p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p>
 	<TMPL_ELSE>
 	<div class="admenu">
-		<form method="post" action="<TMPL_VAR NAME='FORM_MENU_ACTION'>">
+		<form method="post" action="<TMPL_VAR NAME='FILEX_FORM_MENU_ACTION'>">
 			<p>Actions : <select name="maction" id="Select">
-				<TMPL_LOOP NAME="ACTION_MENU_LOOP">
-				<option <TMPL_VAR NAME="FORM_MENU_OPT_SELECTED"> value="<TMPL_VAR NAME='FORM_MENU_OPT_VALUE'>"><TMPL_VAR NAME='FORM_MENU_OPT_LABEL'></option>
+				<TMPL_LOOP NAME="FILEX_ACTION_MENU_LOOP">
+				<option <TMPL_VAR NAME="FILEX_FORM_MENU_OPT_SELECTED"> value="<TMPL_VAR NAME='FILEX_FORM_MENU_OPT_VALUE'>"><TMPL_VAR NAME='FILEX_FORM_MENU_OPT_LABEL'></option>
 				</TMPL_LOOP>
 			</select><input type="submit" class="Submit" value="Envoyer"></p>
 		</form>
 	</div>
 	<hr>
 	<div class="main">
-	<TMPL_VAR NAME="MAIN_CONTENT">
+	<TMPL_VAR NAME="FILEX_MAIN_CONTENT">
 	</div>
-	<p class="gobackfilex"><a href="<TMPL_VAR NAME='UPLOADURL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
+	<p class="gobackfilex"><a href="<TMPL_VAR NAME='FILEX_UPLOAD_URL'>" title="Retour &agrave; FileX">Retour &agrave; FileX</a></p>
 	<hr>
 	</TMPL_IF>
 	<div class="footer">
-		<p>En cas de probl&egrave;mes ou pour toutes informations, veuillez adresser vos messages à l'adresse suivante : <a href="mailto:<TMPL_VAR NAME='SYSTEMEMAIL'>"><TMPL_VAR NAME="SYSTEMEMAIL"></a></p>
+		<p>En cas de probl&egrave;mes ou pour toutes informations, veuillez adresser vos messages à l'adresse suivante : <a href="mailto:<TMPL_VAR NAME='FILEX_SYSTEM_EMAIL'>"><TMPL_VAR NAME="FILEX_SYSTEM_EMAIL"></a></p>
 	</div>
 </div>
 <div class="img">

@@ -38,10 +38,10 @@ sub handler {
 		# load the main template
 		$main_template = $S->getTemplate(name=>"admin");
 		do_action_menu($S,$main_template,$disp,$main_action); 
-		$main_template->param(MAIN_CONTENT=>$T->output());
-		$main_template->param(SYSTEMEMAIL=>$S->config->getSystemEmail());
-		$main_template->param(USERNAME=>$S->toHtml($S->getUserRealName($S->getAuthUser())));
-		$main_template->param(UPLOADURL=>$S->getUploadUrl());
+		$main_template->param(FILEX_MAIN_CONTENT=>$T->output());
+		$main_template->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
+		$main_template->param(FILEX_USER_NAME=>$S->toHtml($S->getUserRealName($S->getAuthUser())));
+		$main_template->param(FILEX_UPLOAD_URL=>$S->getUploadUrl());
 	} else {
 		$main_template = $T;
 	}
@@ -54,7 +54,7 @@ sub display {
 	my $S = shift;
 	my $T = shift;
 	# base for static include
-	$T->param(STATIC_FILE_BASE=>$S->getStaticUrl()) if ( $T->query(name=>'STATIC_FILE_BASE') );
+	$T->param(FILEX_STATIC_FILE_BASE=>$S->getStaticUrl()) if ( $T->query(name=>'FILEX_STATIC_FILE_BASE') );
 	$S->sendHeader("Content-Type"=>"text/html");
 	$S->apreq->print($T->output()) if ( ! $S->apreq->header_only() );
 	exit(OK);
@@ -71,19 +71,19 @@ sub do_action_menu {
 	my $k;
 	foreach $k ( $disp->enumDispatch() ) {
 		my $r = {
-			FORM_MENU_OPT_VALUE=>$k,
-			FORM_MENU_OPT_LABEL=>$s->i18n->localizeToHtml($disp->getDispatchLabel($k))
+			FILEX_FORM_MENU_OPT_VALUE=>$k,
+			FILEX_FORM_MENU_OPT_LABEL=>$s->i18n->localizeToHtml($disp->getDispatchLabel($k))
 		};
 		# current action
 		$def_action = $r if ( $ca eq $k );
 		push(@form_menu,$r);
 	}
 	# set default action
-	$def_action->{'FORM_MENU_OPT_SELECTED'} = "selected" if defined($def_action);
+	$def_action->{'FILEX_FORM_MENU_OPT_SELECTED'} = "selected" if defined($def_action);
 	# the form action
-	$t->param(FORM_MENU_ACTION=>$s->getCurrentUrl());
+	$t->param(FILEX_FORM_MENU_ACTION=>$s->getCurrentUrl());
 	# the menu
-	$t->param(ACTION_MENU_LOOP=>\@form_menu);
+	$t->param(FILEX_ACTION_MENU_LOOP=>\@form_menu);
 }
 
 1;

@@ -2,10 +2,10 @@ package FILEX::System::Auth::base;
 use strict;
 use vars qw($VERSION);
 
+use FILEX::System::Config;
+
 $VERSION=1.0;
 
-# param :
-# config=>FILEX::System::Config object
 #
 sub new {
 	my $this = shift;
@@ -14,12 +14,8 @@ sub new {
 		_config_ => undef,
 		_error_ => undef,
 	};
-	my %ARGZ = @_;
-	if ( !exists($ARGZ{'config'}) || !defined($ARGZ{'config'}) || ref($ARGZ{'config'}) ne "FILEX::System::Config" ) {
-		warn(__PACKAGE__,"-> Require a FILEX::System::Config object !");
-		return undef;
-	}
-	$self->{'_config_'} = $ARGZ{'config'};
+	$self->{'_config_'} = FILEX::System::Config->new();
+	warn(__PACKAGE__,"-> Unable to load config !") && return undef if !defined($self->{'_config_'});
 	bless($self,$class);
 	return $self;
 }

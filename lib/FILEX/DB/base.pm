@@ -1,6 +1,7 @@
 package FILEX::DB::base;
 use strict;
 use vars qw($VERSION);
+use FILEX::System::Config;
 use DBI;
 
 $VERSION = 1.0;
@@ -14,31 +15,28 @@ sub new {
 	my $this = shift;
 	my $class = ref($this)||$this;
 
-	my %ARGZ = @_;
-
 	my $self = {
-		dbname => undef,
-		dbuser => undef,
-		dbpassword => undef,
-		dbhost => undef,
-		dbport => undef,
 		_DBH_ => undef,
 		_LASTERRORSTRING_ => undef,
 		_LASTERRORQUERY_ => undef,
-		_LASTERRORCODE_ => undef
+		_LASTERRORCODE_ => undef,
+		_CONFIG_ => undef,
 	};
+	
+	# first initialize config
+	$self->{'_CONFIG_'} = FILEX::System::Config->new();
+	die(__PACKAGE__," -> Unable to initialize Config") if !defined($self->{'_CONFIG_'});
 
-	$self->{'dbname'} = $ARGZ{'name'} if exists($ARGZ{'name'}) or die(__PACKAGE__,"-> Require a database name !");
-	$self->{'dbuser'} = $ARGZ{'user'} if exists($ARGZ{'user'}) or die(__PACKAGE__,"-> Require a database user name !");
-	$self->{'dbhost'} = $ARGZ{'host'} if exists($ARGZ{'host'}) or die(__PACKAGE__,"-> Require a database host name!");
-	$self->{'dbpassword'} = $ARGZ{'password'} if exists($ARGZ{'password'});
-	$self->{'dbport'} = $ARGZ{'port'} if exists($ARGZ{'port'});
-
+	my $dbname = $self->{'_CONFIG_'}->getDBName();
+	my $dbuser = $self->{'_CONFIG_'}->getDBUsername();
+	my $dbpassword = $self->{'_CONFIG_'}->getDBPassword();
+	my $dbhost = $self->{'_CONFIG_'}->getDBHost();
+	my $dbport = $self->{'_CONFIG_'}->getDBPort();
 	# attempt to connect
 	$self->{'_DBH_'} = eval {
-		my $dsn = "DBI:mysql:database=".$self->{'dbname'}.";host=".$self->{'dbhost'};
-		$dsn .= ";port=".$self->{'dbport'} if $self->{'dbport'};
-		DBI->connect($dsn,$self->{'dbuser'},$self->{'dbpassword'},{'AutoCommit'=>0, 'RaiseError'=>1});
+		my $dsn = "DBI:mysql:database=".$dbname.";host=".$dbhost;
+		$dsn .= ";port=".$dbport if $dbport;
+		DBI->connect($dsn,$dbuser,$dbpassword,{AutoCommit=>0,RaiseError=>1});
 	};
 	die(__PACKAGE__,"-> Unable to Connect to the Database : $@") if ($@);
 	bless($self,$class);
@@ -54,6 +52,12 @@ sub DESTROY {
 sub _dbh {
 	my $self = shift;
 	return $self->{'_DBH_'};
+}
+
+# return underlying config module
+sub _config {
+	my $self = shift;
+	return $self->{'_CONFIG_'};
 }
 
 # set last error
@@ -81,6 +85,38 @@ sub getLastErrorCode {
 sub getLastErrorQuery {
 	my $self = shift;
 	return $self->{'_LASTERRORQUERY_'};
+}
+
+sub checkInt {
+	my $self = shift;
+	my $value = ( ref($self) ) ? shift : $self;
+	return ( defined($value) && $value =~ /^-?[0-9]+$/ ) ? 1 : undef;
+}
+
+sub checkBool {
+	my $self = shift;
+	my $value = ( ref($self) ) ? shift : $self;
+	return ( defined($value) && $value =~ /^[0-1]$/ ) ? 1 : undef;
+}
+
+sub checkUInt {
+	my $self = shift;
+	my $value = ( ref($self) ) ? shift : $self;
+	return ( defined($value) && $value =~ /^[0-9]+$/ ) ? 1 : undef;
+}
+
+sub checkStr {
+	my $self = shift;
+	my $value = ( ref($self) ) ? shift : $self;
+	return ( defined($value) && length($value) > 0 ) ? 1 : undef;
+}
+
+sub checkStrLength {
+	my $self = shift;
+	my $value = ( ref($self) ) ? shift : $self;
+	my $min = shift;
+	my $max = shift;
+	return ( defined($value) && (length($value) > $min && length($value) < $max) ) ? 1 : undef;
 }
 
 1;

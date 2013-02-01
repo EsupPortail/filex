@@ -1,0 +1,209 @@
+1. INTRODUCTION
+
+FileX est un système de transfert de fichier créé à la demande du centre de 
+ressources informatiques de l'INSA de Lyon.
+Le but est de permettre aux utilisateurs de pouvoir échanger des fichiers de 
+grande taille aussi bien en interne qu'en externe sans avoir à mettre en oeuvre
+des mécanismes trop complexes pour ceux-ci et surtout sans avoir à déployer de
+logiciel sur les postes utilisateurs.
+
+Le principe de fonctionnement du système est le suivant :
+
+  1- L'utilisateur s'identifie
+  2- Il sélectionne un fichier à déposer
+  3- Un message de confirmation contenant l'adresse de téléchargement du fichier
+     lui est envoyé
+  4- Il transmet - par messagerie - cette adresse pour permettre le téléchargment
+     par un tiers
+  5- Lorsque la date d'expiration du fichier est atteinte, celui-ci est supprimé
+     du système
+
+2. ARCHITECTURE
+
+FileX est écrit en PERL et utilise plus particulièrement la technologie mod_perl 
+(voir http://perl.apache.org). L'application se présente donc sous la forme 
+d'Handler intégrés dans Apache.
+
+Les informations concernant le gestion des fichiers sont stockées dans une base
+de donnée MySQL.
+
+FileX a été développé en tenant compte de l'architecture du système d'information
+de l'INSA de Lyon, aussi :
+
+- il peut utiliser le système d'authentification CAS de Yale
+(http://tp.its.yale.edu/tiki/tiki-index.php?page=CentralAuthenticationService) 
+- il peut utiliser l'authentification LDAP
+- il récupère les informations utilisateurs depuis un annuaire LDAP.
+
+Il n'est pas pour le moment possible d'utiliser cette application sans un
+annuaire LDAP.
+
+3. PRERECQUIS
+
+3.1 Mysql
+
+Utiliser une version de MySQL avec le support des tables InnoDB.
+
+3.2 Apache + mod_perl
+
+FileX fonctionne dans l'environnement apache 1.3.x + mod_perl 1.x. Le système n'a
+pas été testé sous Apache 2 + mod_perl 2. Un portage est envisagé.
+
+3.3 Modules PERL
+
+Les modules suivants sont nécessaires :
+
+  Apache::Constants
+  Apache::Cookie
+  Apache::File
+  Apache::Request
+  Apache::Util
+  Cache::FileCache
+  Config::IniFiles
+  Crypt::Blowfish
+  Crypt::CBC
+  Data::Uniqid
+  DBI
+  DBD::mysql
+  Encode
+  Exporter
+  File::Spec
+  File::stat
+  HTML::Entities
+  HTML::Template
+  IO::Select
+  IO::Socket::SSL
+  LWP::UserAgent
+  MIME::Entity
+  MIME::Words
+  Net::DNS
+  Net::LDAP
+  Net::SMTP
+  Socket
+  Time::HiRes
+
+4. INSTALLATION
+
+Le paquetage contient les répertoires suivants :
+
+/FILEX
+  /bin         -> contient l'utilitaire FILEX.pl de purge des fichiers expirés
+  /conf        -> les différents fichiers de configuration
+  /lib         -> les librairies PERL
+  /doc         -> documentation
+  /static     -> les fichiers statiques (feuille de style, images)
+  /templates   -> les modèles d'affichage
+
+Recopier le répertoire [FILEX] dans le chemin de votre choix.
+
+Nous prendrons comme exemple : /usr/local/FILEX
+
+4.1 Créer la base de donnée
+
+Le fichier de définition de la base de donnée se trouve dans le répertoire
+[conf].
+Editez ce fichier pour modifier le mot de passe de l'utilisateur de la
+base de donnée et n'oubliez pas de reporter ce changement dans le fichier
+de paramètres - FILEX.ini -.
+
+Vous pouvez aussi définir un administrateur du système en remplaçant 
+'ldap_uid' à la ligne INSERT INTO usr_admin VALUES (1,'ldap_uid',1);
+
+'ldap_uid' doit être remplacer par le login d'un utilisateur ldap.
+
+Pour créer la base, utilisez la commande suivante :
+
+mysql -u root -p < /usr/local/FILEX/conf/FILEX.sql
+
+Note: n'oubliez pas d'activer les tables InnoDB !
+
+4.2 Configurer Apache
+
+Tout d'abord, activer le module PERL. Si vous avez compilé se module sous le
+forme de DSO :
+
+LoadModule perl_module libexec/libperl.so
+AddModule mod_perl.c
+
+Si mod_perl est compilé en statique :
+
+AddModule mod_perl.c
+
+Utilisez l'utilitaire - genhttp.pl - du répertoire [doc] pour générer la 
+configuration nécessaire à l'intégration de FileX dans apache et recopiez la
+sortie dans le fichier de configuration d'apache.
+
+Usage :
+
+genhttp.pl -l /chemin/vers/les/librairies/FileX -c /chemin/vers/FILEX.ini
+
+dans notre cas :
+
+genhttp.pl -l /usr/local/FILEX/lib -c /usr/local/FILEX/conf/FILEX.ini
+
+configuration produite :
+
+<IfModule mod_perl.c>
+	# Positionner le chemin vers les librairies FILEX
+	<PERL>
+		use lib qw(/usr/local/FILEX/lib);
+	</PERL>
+	# positionner le chemin vers le fichier de configuration
+	PerlSetEnv FILEXConfig /usr/local/FILEX/conf/FILEX.ini
+	# configurer les différents handlers
+	PerlModule FILEX::HttpConfig
+</IfModule>
+
+4.3 Configurer FileX
+
+Les paramètres de l'application se trouve dans le fichier - FILEX.ini - du
+répertoire [conf].
+
+Vous trouverez les explications pour chaque paramètre dans ce fichier.
+
+Veillez à paramétrer correctement les différents chemin dans - FILEX.ini - 
+
+  I18nIniFile
+  TemplateIniFile
+  TmpFileDir
+  FileRepository
+  CacheRoot
+  StaticFileDir
+
+et - templates.ini -
+
+  Path
+
+La purge des fichiers expirés est effectuée par le script FILEX.pl du répertoire 
+[bin]. Si vous voulez que les fichiers soit purgés de manière automatique,
+créez une entrée dans la crontab.
+
+Par exemple : 0 */1 * * * /usr/local/FILEX/bin/FILEX.pl
+
+Note : 
+
+N'oubliez pas de modifier le chemin des librairies 
+	use lib qw(/usr/local/FILEX/lib);
+et du fichier de configuration
+	use constant FILEX_CONFIG_FILE => "/usr/local/FILEX/conf/FILEX.ini";
+si nécéssaire dans le fichier FILEX.pl
+
+===============================================================================
+
+Copyright (C) 2005  Olivier FRANCO
+
+Ce programme est un logiciel libre: vous pouvez le redistribuer
+et/ou le modifier selon les termes de la "GNU General Public
+License", tels que publiés par la "Free Software Foundation"; soit
+la version 2 de cette licence ou (à votre choix) toute version
+ultérieure.
+
+Ce programme est distribué dans l'espoir qu'il sera utile, mais
+SANS AUCUNE GARANTIE, ni explicite ni implicite; sans même les
+garanties de commercialisation ou d'adaptation dans un but spécifique.
+
+Se référer à la "GNU General Public License" pour plus de détails.
+
+Vous devriez avoir reçu une copie de la "GNU General Public License"
+en même temps que ce programme; sinon, écrivez a la "Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA".
