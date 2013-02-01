@@ -51,6 +51,8 @@ sub send {
 	$ARGZ{'charset'} = "ISO-8859-1" if ( ! exists($ARGZ{'charset'}) );
 	$ARGZ{'encoding'} = "quoted-printable" if ( ! exists($ARGZ{'encoding'}) );
 	$ARGZ{'type'} = "text/plain" if ( ! exists($ARGZ{'type'}) );
+	# split on ',' for smtp
+	my @to = split(",",$ARGZ{'to'});
 	# create email
 	my $mesg = MIME::Entity->build(
 		Charset=>$ARGZ{'charset'},
@@ -64,7 +66,7 @@ sub send {
 	$mesg->sync_headers(Length=>'COMPUTE');
 	# send
 	$smtp->mail($ARGZ{'from'});
-	$smtp->to($ARGZ{'to'});
+	$smtp->to(@to);
 	my $r = $smtp->data($mesg->stringify());
 	$smtp->quit();
 	return ( $r == 1 ) ? 1 : undef;

@@ -75,6 +75,11 @@ sub getQuota {
 				$bHaveQuota = ( $uid eq $rules[$qIdx]->{'rule_exp'} ) ? 1 : 0;
 				last SWITCH;
 			}
+			# ldap query
+			if ( $rules[$qIdx]->{'rule_type'} == 4 ) {
+				$bHaveQuota = $self->{'_ldap_'}->inQuery(uid=>$uid,query=>$rules[$qIdx]->{'rule_exp'});
+				last SWITCH;
+			}
 			warn(__PACKAGE__,"-> unknown rule type (",$rules[$qIdx]->{'rule_type'},") : ",$rules[$qIdx]->{'rule_exp'});
 		}
 		last if $bHaveQuota;

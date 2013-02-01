@@ -45,7 +45,7 @@ sub process {
 		for (my $i=0; $i<= $#results; $i++) {
 			($hsz,$hunit) = hrSize($results[$i]->{'file_size'});
 			push(@loop,{
-				FILEX_FILE_INFO_URL=>$self->genFileInfoUrl($results[$i]->{'id'}),
+				FILEX_FILE_INFO_URL=>$S->toHtml($self->genFileInfoUrl($results[$i]->{'id'})),
 				FILEX_FILE_NAME=>$S->toHtml($results[$i]->{'real_name'}),
 				FILEX_OWNER=>$results[$i]->{'owner'},
 				FILEX_SIZE=>$hsz." ".$S->i18n->localizeToHtml($hunit),

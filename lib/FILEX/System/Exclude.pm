@@ -47,22 +47,32 @@ sub isExclude {
 	}
 	# now for each rules 
 	my $bIsExclude = 0;
+	my $excludeReason;
 	for (my $i = 0; $i <= $#rules; $i++) {
 		# switch rule type (1=DN, 2=GROUP)
 		SWITCH : {
 			# user's DN
 			if ( $rules[$i]->{'rule_type'} == 1 ) {
 				$bIsExclude = $self->isDnExclude($uid,$rules[$i]->{'rule_exp'});
+				$excludeReason = $rules[$i]->{'reason'};
 				last SWITCH;
 			}
 			# groups
 			if ( $rules[$i]->{'rule_type'} == 2 ) {
 				$bIsExclude = $self->{'_ldap_'}->inGroup(uid=>$uid,gid=>$rules[$i]->{'rule_exp'});
+				$excludeReason = $rules[$i]->{'reason'};
 				last SWITCH;
 			}
 			# users UID
 			if ( $rules[$i]->{'rule_type'} == 3 ) {
 				$bIsExclude = ( $uid eq $rules[$i]->{'rule_exp'} ) ? 1 : 0;
+				$excludeReason = $rules[$i]->{'reason'};
+				last SWITCH;
+			}
+			# ldap query
+			if ( $rules[$i]->{'rule_type'} == 4 ) {
+				$bIsExclude = $self->{'_ldap_'}->inQuery(uid=>$uid,query=>$rules[$i]->{'rule_exp'});
+				$excludeReason = $rules[$i]->{'reason'};
 				last SWITCH;
 			}
 			warn(__PACKAGE__,"-> unknown rule type (",$rules[$i]->{'rule_type'},") : ",$rules[$i]->{'rule_exp'});
@@ -70,7 +80,7 @@ sub isExclude {
 		last if ($bIsExclude);
 	}
 	# return
-	return $bIsExclude;
+	return wantarray?($bIsExclude,$excludeReason):$bIsExclude;
 }
 
 # load rules

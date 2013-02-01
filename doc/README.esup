@@ -1,0 +1,14 @@
+Il existe maintenant un module permettant l'intégration dans le portail ESUP/Uportal.
+
+Pour activer ce module il faut configurer le paramètre useManageXml=1 dans le fichier FILEX.ini.
+
+L'intégration dans ESUP/uportal s'effectue grâce au canal WebProxy :
+
+Le canal récupère le flux XML et applique une feuille de transformation XSLT sur celui-ci.
+
+L'authentification s'effectue via un proxyTicket CAS.
+
+Les fichiers nécessaire à l'intégration dans ESUP/uportal se trouvent dans le répertoire doc/esup :
+
+- filex_fr.xsl -> feuille de transformation xslt
+- pubchan_FILEX.xml -> configuration d'un canal WebProxy pour FILEX

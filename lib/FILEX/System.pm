@@ -6,7 +6,6 @@ use Exporter;
 @EXPORT = qw();
 @EXPORT_OK = qw(
 	genUniqId
-	genQueryString
 	toHtml
 );
 %EXPORT_TAGS = (all=>[@EXPORT_OK]);
@@ -27,12 +26,13 @@ use FILEX::System::LDAP;
 use FILEX::System::Mail;
 use FILEX::System::Exclude;
 use FILEX::System::Quota;
+use FILEX::System::BigBrother;
 use FILEX::DB::System;
+use FILEX::System::User;
 
 # others
 use Data::Uniqid;
-use Crypt::CBC;
-use Crypt::Blowfish;
+use Apache::Session::File;
 use HTML::Entities ();
 
 use constant FILEX_CONFIG_NAME=>"FILEXConfig";
@@ -59,12 +59,14 @@ sub new {
 		_cookie_ => undef,
 		_dropcookie_ => 0,
 		_havecookie_ => 0,
-		_username_ => undef,
+		_user_ => undef,
+		_session_ => undef,
 		_cas_ => undef,
 		_ldap_ => undef,
 		_mail_ => undef,
 		_systemdb_ => undef,
 		_exclude_=> undef,
+		_watch_=> undef,
 		_quota_=>undef,
 		_auth_=>undef,
 	};
@@ -205,7 +207,15 @@ sub _exclude {
 	}
 	return $self->{'_exclude_'};
 }
-
+# return bigbrother object
+sub _watch {
+	my $self = shift;
+	# load on demand
+	if ( !$self->{'_watch_'} ) {
+		$self->{'_watch_'} = FILEX::System::BigBrother->new(ldap=>$self->ldap());
+	}
+	return $self->{'_watch_'};
+}
 # return quota object
 sub _quota {
 	my $self = shift;
@@ -237,26 +247,37 @@ sub getTemplate {
 	return $self->{'_template_'}->getTemplate(@_);
 }
 
-# get the authentified user
-sub getAuthUser {
+# return current authenticated user
+sub getUser {
 	my $self = shift;
-	return $self->{'_username_'}
+	return $self->{'_user_'};
 }
 
 # get quota for a user
 # return both MFS & MUS
 sub getQuota {
 	my $self = shift;
-	my $uid = shift;
+	my $user = shift;
+	warn(__PACKAGE__,"=>require a FILEX::System::User") && return (0,0) if (!defined($user) || ref($user) ne "FILEX::System::User");
 	my $q = $self->_quota();
-	return ( $q ) ? $q->getQuota($uid) : (0,0);
+	return ( $q ) ? $q->getQuota($user->getId()) : (0,0);
 }
 
+#
+# get User real name
+sub getUserRealName {
+	my $self = shift;
+	my $uid = shift;
+	my $attr = $self->config->getLdapUsernameAttr();
+	my $res = $self->ldap->getUserAttrs(uid=>$uid,attrs=>[$attr]);
+	$attr = lc($attr);
+	return ($res) ? $res->{$attr}->[0] : "unknown";
+}
 #
 # begin session
 # 
 # with no_auth => 1 then only cookie is read but authentification is not processed
-#
+# with no_login => 1 then the user will not be redirected to authentification form
 sub beginSession {
 	my $self = shift;
 	my %ARGZ = @_;
@@ -265,10 +286,11 @@ sub beginSession {
 	my $err_mesg = undef;
 	# check if in no_auth mode (ie : simply read cookie)
 	my $noAuth = ( exists($ARGZ{'no_auth'}) && defined($ARGZ{'no_auth'}) && ($ARGZ{'no_auth'} == 1) ) ? 1 : 0;
+	my $noLogin = ( exists($ARGZ{'no_login'}) && defined($ARGZ{'no_login'}) && ($ARGZ{'no_login'}) == 1) ? 1 : 0;
 	# cookie
 	my $ckname = $self->config->getCookieName();
 	my $cktime = $self->config->getCookieExpires();
-	my $ckmagik = $self->config->getCookieMagik();
+
 	my $acookie = Apache::Cookie->new($r);
 	my $cookie = $acookie->parse();
 	#
@@ -276,24 +298,32 @@ sub beginSession {
 	#
 
 	# reset username before begin
-	$self->{'_username_'} = undef;
+	$self->{'_user_'} = undef;
+	$self->{'_session_'} = undef;
 	if ( $cookie && exists($cookie->{$ckname}) ) {
 		$self->{'_havecookie_'} = 1;
-		my $ckvalue = _decryptData($ckmagik,$cookie->{$ckname}->value());
-		# retrieve cookie expire time & username
-		my ($cketime,$ckuname) = split("\t",$ckvalue);
-		my $ctime = time;
-		# if cookie expires then re-auth
-		if ( $ctime < $cketime ) {
-			$self->{'_username_'} = $ckuname;
-			$isValid = 1 if ( defined($self->{'_username_'}) && length($self->{'_username_'}) > 0 );
+		my $session_id = $cookie->{$ckname}->value();
+		if ( $self->_loadSession($session_id) ) {
+			# retrieve cookie expire time & username
+			my $cketime = $self->{'_session_'}->{'expire'};
+			my $ckuname = $self->{'_session_'}->{'username'};
+			my $ctime = time;
+			# if cookie expires then re-auth
+			if ( $ctime < $cketime ) {
+				# user's login
+				$self->{'_user_'} = FILEX::System::User->new(uid=>$ckuname,ldap=>$self->ldap());
+				$isValid = 1 if ( defined($self->{'_user_'}) );
+			} else {
+				$self->_dropSession();
+			}
 		}
 	}
 	# 
 	# if no authentification mode then return here
 	# you can check if a user is auth with the method getAuthUser()
 	# 
-	return 1 if ($noAuth == 1);
+	#return 1 if ($noAuth == 1);
+	return $self->{'_user_'} if ($noAuth == 1);
 	#
 	# here there is no auth 
 	#
@@ -304,15 +334,24 @@ sub beginSession {
 		if ( $go_auth ) {
 			my $user = $self->{'_auth_'}->processAuth(%process_auth_param);
 			if ( ! defined($user) ) {
-				warn(__PACKAGE__,"-> Unable to retrieve user : ",$self->{'_auth_'}->get_error());
+				warn(__PACKAGE__," => Unable to retrieve user : ",$self->{'_auth_'}->get_error());
 				$err_mesg = "invalid credential";
 			}
 			if ( defined($user) && length($user) > 0 ) {
-				$self->{'_username_'} = $user;
-				# get current time for expiration
-				my $cketime = time + $cktime;
-				$self->{'_cookie_'} = _genCookie($r,-name=>$ckname,-value=>_encryptData($ckmagik,"$cketime\t$user"));
-				$isValid = 1;
+				$self->{'_user_'} = FILEX::System::User->new(uid=>$user,ldap=>$self->ldap());
+				if ( defined($self->{'_user_'}) ) {
+					# get current time for expiration
+					my $cketime = time + $cktime;
+					if ( $self->_startSession() ) {
+						$self->{'_session_'}->{'expire'} = $cketime;
+						$self->{'_session_'}->{'username'} = $user;
+						$self->{'_cookie_'} = _genCookie($r,-name=>$ckname,-value=>$self->{'_session_'}->{'_session_id'});
+						$isValid = 1;
+					}
+				} else {
+					return undef if ($noLogin == 1);
+					$self->denyAccess();
+				}
 			}
 		}
 	}
@@ -320,21 +359,81 @@ sub beginSession {
 	# if valid then check for exclude
 	#
 	if ( $isValid ) {
-		if ( $self->_isExclude($self->{'_username_'}) ) {
+		my ($bIsExclude,$excludeReason) = $self->isExclude($self->{'_user_'});
+		if ( $bIsExclude ) {
 			$isValid = undef;
-			warn(__PACKAGE__,"-> user [$self->{'_username_'}] is Excluded !");
+			warn(__PACKAGE__,"-> user [".$self->{'_user_'}->getId()."] is Excluded !");
 			# do access deny
-			$self->denyAccess();
+			return undef if ($noLogin == 1);
+			$self->denyAccess($excludeReason);
 		} else {
-			return 1;
+			return $self->{'_user_'};
 		}
 	}
 	# No ticket, no user, no cookie, cookie expires => require auth
+	return undef if ($noLogin == 1);
 	if ( $self->{'_auth_'}->needRedirect() ) {
-		$self->_redirectAuth($self->{'_auth_'}->getRedirect($self->getCurrentUrl()));
+		# maybe append the query string if any
+		$self->_redirectAuth($self->{'_auth_'}->getRedirect($self->getCurrentUrl(1)));
 	} else {
 		$self->_doLogin($err_mesg);
 	}
+}
+
+sub _loadSession {
+	my $self = shift;
+	my $session_id = shift;
+	return undef if ( !defined($session_id) );
+	if ( defined($self->{'_session_'}) ) {
+		warn(__PACKAGE__," => loading the session while a current one exists; droping session !");
+		tied(%{$self->{'_session_'}})->delete;
+	}
+	$self->{'_session_'} = {};
+	eval {
+		tie %{$self->{'_session_'}},'Apache::Session::File',$session_id,{
+			Directory=>$self->config->getSessionDirectory(),
+			LockDirectory=>$self->config->getSessionLockDirectory()
+		};
+	};
+	if ($@) {
+		warn(__PACKAGE__," => Unable to load session $session_id : ",$@);
+		$self->{'_session_'} = undef;
+		return undef;
+	}
+	return 1;
+}
+
+# drop the current session
+sub _dropSession {
+	my $self = shift;
+	if ( !defined($self->{'_session_'}) || ref($self->{'_session_'}) ne "HASH") {
+		warn(__PACKAGE__," => _dropSession called but no session defined !");
+		return undef;
+	}
+	tied(%{$self->{'_session_'}})->delete;
+	$self->{'_session_'} = undef;
+	$self->{'_dropcookie_'} = 1;
+}
+
+# start a new session
+sub _startSession {
+	my $self = shift;
+	if ( defined($self->{'_session_'}) ) {
+		warn(__PACKAGE__," => starting a new session while a current one exists; droping session");
+		tied(%{$self->{'_session_'}})->delete;
+	}
+	$self->{'_session_'} = {};
+	eval {
+		tie %{$self->{'_session_'}},'Apache::Session::File',undef,{
+			Directory=>$self->config->getSessionDirectory(),
+			LockDirectory=>$self->config->getSessionLockDirectory()
+		};
+	};
+	if ($@) {
+		warn(__PACKAGE__," => Unable to start new session : ",$@);
+		return undef;
+	}
+	return 1;
 }
 
 # require : param=> ARRAY_REF, results=>HASH_REF
@@ -345,10 +444,11 @@ sub _doProcessAuthParam {
 	my $result = $ARGZ{'result'} if ( exists($ARGZ{'result'}) && ref($ARGZ{'result'}) eq "HASH" ) or warn(__PACKAGE__,"-> _doProcessAuthParam(param=>ARRAY_REF,result=>HASH_REF}") && return undef;
 	# counter for mandatory auth parameters.
 	my $mandatory = 0;
+
 	# loop on param
 	while ( my $key = shift(@$param) ) {
 		if ( $key eq "currenturl" ) {
-			$result->{'currenturl'} = $self->getCurrentUrl();
+			$result->{'currenturl'} = $self->getCurrentUrl(1);
 		}
 		if ( $key eq "ldap" ) {
 			$result->{'ldap'} = $self->ldap();
@@ -368,6 +468,7 @@ sub _doProcessAuthParam {
 	}
 	return $mandatory;
 }
+
 # Automatic Module loading
 sub _require {
   my($filename) = @_;
@@ -415,21 +516,29 @@ sub getPreferedLanguage {
 }
 
 # check if a given user is exclude 
-sub _isExclude {
+sub isExclude {
 	my $self = shift;
-	my $uid = shift;
+	my $user = shift;
+	warn(__PACKAGE__,"=> require a FILEX::System::User") && return 1 if (!defined($user) || (ref($user) ne "FILEX::System::User"));
 	# get exclude object
 	my $exclude = $self->_exclude();
-	return ( $exclude ) ? $exclude->isExclude($uid) : 1;
+	if ( $exclude ) {
+		return $exclude->isExclude($user->getId());
+	} 
+	# deny everybody if failed
+	return 1;
 }
 
-# process authentification
-# return a username if successfull
-sub _processAuth {
+sub isWatched {
 	my $self = shift;
-	my $ticket = shift;
-	my $user = $self->{'_cas_'}->validateST($self->getCurrentUrl(), $ticket);
-	return $user;
+	my $user = shift;
+	warn(__PACKAGE__,"=> require a FILEX::System::User") && return undef if (!defined($user) || (ref($user) ne "FILEX::System::User"));
+	# check if usemail and watchuser
+	if ( $self->config->needEmailNotification() && $self->config->useBigBrother() ) {
+		my $watch = $self->_watch();
+		return ($watch) ? $watch->isWatched($user->getId()) : undef;
+	} 
+	return undef;
 }
 
 # here we quit the application
@@ -453,7 +562,8 @@ sub _redirectAuth {
 sub _doLogin {
 	my $self = shift;
 	my $mesg = shift;
-	$self->{'_dropcookie_'} = 1;
+	#$self->{'_dropcookie_'} = 1;
+	$self->_dropSession();
 	# load template
 	my $t = $self->getTemplate(name=>"login");
 	# fill template
@@ -473,15 +583,21 @@ sub _doLogin {
 
 sub denyAccess {
 	my $self = shift;
+	my $reason = shift;
 	my $r = $self->apreq();
 	# if we have a cookie then destroy it
-	$self->{'_dropcookie_'} = 1;
+	#$self->{'_dropcookie_'} = 1;
+	$self->_dropSession();
 	# load access deny template
 	my $t = $self->getTemplate(name=>"access_deny");
 	# fill template
 	$t->param(STATIC_FILE_BASE=>$self->getStaticUrl());
 	$t->param(ERROR=>$self->i18n->localizeToHtml("access deny"));
 	$t->param(SYSTEMEMAIL=>$self->config->getSystemEmail());
+	# reason
+	if ( defined($reason) && length($reason) > 0 ) {
+		$t->param(REASON=>$self->toHtml($reason));
+	}
 	$self->sendHeader('Content-Type'=>"text/html");
 	$r->print($t->output()) if ( $t && ! $r->header_only() );
 	exit(OK);
@@ -494,38 +610,6 @@ sub _genCookie {
 	return $c->as_string;
 }
 
-# encrypt datas (CF : Apache::Cookie::Encrypted)
-sub _encryptData {
-	my $key = shift;
-	my $data = shift;
-	my $cipher = new Crypt::CBC($key,'Blowfish');
-                                                                                                                      
-	if (ref($data) eq "ARRAY") {
-		for (my $i = 0; $i <= $#$data; $i++) {
-			$data->[$i] = $cipher->encrypt_hex($data->[$i]);
-		}
-	} else {
-		$data = $cipher->encrypt_hex( $data );
-	}
-	return $data;
-}
-
-# decrypt datas
-sub _decryptData {
-	my $key = shift;
-	my $data = shift;
-	my $cipher = new Crypt::CBC($key,'Blowfish');
-	
-	if (ref($data) eq "ARRAY") {
-		for (my $i = 0; $i <= $#$data; $i++) {
-			$data->[$i] = $cipher->decrypt_hex($data->[$i]);
-		}
-	} else {
-		$data = $cipher->decrypt_hex( $data );
-	}
-	return $data;
-}
-
 # mandatory : content-type
 sub sendHeader {
 	my $self = shift;
@@ -534,19 +618,26 @@ sub sendHeader {
 	$r->send_http_header();
 }
 
+# common header params +
+# no_cookie => 1 if you don't want to send cookie !
+#
 sub prepareHeader {
 	my $self = shift;
 	my $r = $self->apreq();
 	my %ARGZ = @_;
+	my $no_cookie = delete($ARGZ{'no_cookie'});
+	$no_cookie = 0 if !defined($no_cookie);
 	# put cookie if needed
-	if ( defined($self->{'_cookie_'}) && $self->{'_dropcookie_'} != 1 ) {
-		$r->header_out("Set-Cookie",$self->{'_cookie_'});
-	} elsif ( $self->{'_dropcookie_'} == 1 && $self->{'_havecookie_'} == 1 ) {
-		# destroy cookie
-		$r->header_out("Set-Cookie",_genCookie(
-			$r,-name=>$self->config->getCookieName(),
-			-value=>"",
-			-expires=>"-1Y")); 
+	if ( $no_cookie != 1 ) {
+		if ( defined($self->{'_cookie_'}) && $self->{'_dropcookie_'} != 1 ) {
+			$r->header_out("Set-Cookie",$self->{'_cookie_'});
+		} elsif ( $self->{'_dropcookie_'} == 1 && $self->{'_havecookie_'} == 1 ) {
+			# destroy cookie
+			$r->header_out("Set-Cookie",_genCookie(
+				$r,-name=>$self->config->getCookieName(),
+				-value=>"",
+				-expires=>"-1Y")); 
+		}
 	}
 	# set content-type
 	my $ct = delete($ARGZ{'Content-Type'});
@@ -584,28 +675,13 @@ sub getMail {
 	return $self->ldap->getMail(@_);
 }
 
-# get user real name (cn)
-sub getUserRealName {
-	my $self = shift;
-	my $uid = shift;
-	my $attr = $self->config->getLdapUsernameAttr();
-	my $res = $self->ldap->getUserAttrs(uid=>$uid,attrs=>[$attr]);
-	$attr = lc($attr);
-	return ($res) ? $res->{$attr}->[0] : "unknown";
-}
-
 # check if admin
 sub isAdmin {
 	my $self = shift;
-	my $uid = shift;
+	my $user = shift;
+	warn(__PACKAGE__,"=> isAdmin require a FILEX::System::User object") && return 0 if ( !defined($user) || (ref($user) ne "FILEX::System::User") );
 	my $sdb = $self->_systemdb();
-	return ($sdb) ? $sdb->isAdmin($uid) : 0;
-}
-
-sub getUserDiskSpace {
-	my $self = shift;
-	my $sdb = $self->_systemdb();
-	return ($sdb) ? $sdb->getUserDiskSpace(@_) : undef;
+	return ($sdb) ? $sdb->isAdmin($user->getId()) : 0;
 }
 
 sub getUsedDiskSpace {
@@ -614,29 +690,22 @@ sub getUsedDiskSpace {
 	return ($sdb) ? $sdb->getUsedDiskSpace() : undef;
 }
 
-sub getUserActiveCount {
-	my $self = shift;
-	my $uid = shift;
-	my $sdb = $self->_systemdb();
-	return ($sdb) ? $sdb->getUserActiveCount($uid) : undef;
-}
-
-sub getUserUploadCount {
-	my $self = shift;
-	my $uid = shift;
-	my $sdb = $self->_systemdb();
-	return ($sdb) ? $sdb->getUserUploadCount($uid) : undef;
-}
-
 sub getUserMaxFileSize {
 	my $self = shift;
-	my $uid = shift;
-	my ($quota_max_file_size,$quota_max_used_space) = $self->getQuota($uid);
-	my $current_user_space = $self->getUserDiskSpace($uid);
-	return $self->getUserMaxFileSizeQuick($quota_max_file_size,$quota_max_used_space,$current_user_space);
+	my $user = shift;
+	warn(__PACKAGE__,"=>require a FILEX::System::User") && return 0 if (!defined($user) || ref($user) ne "FILEX::System::User");
+	my ($quota_max_file_size,$quota_max_used_space) = $self->getQuota($user);
+	my $current_user_space = $user->getDiskSpace();
+	return $self->getMaxFileSizeQuick($quota_max_file_size,$quota_max_used_space,$current_user_space);
 }
 
-sub getUserMaxFileSizeQuick {
+#
+# return :
+# 0 => quota exceed or upload is disabled
+# <0 => no quota to apply
+# >0 => max upload size
+#
+sub getMaxFileSizeQuick {
 	my $self = shift;
 	my $quota_max_file_size = shift || 0;
 	my $quota_max_used_space = shift || 0; 
@@ -647,11 +716,11 @@ sub getUserMaxFileSizeQuick {
 	# since quota_max_used_space == -1 if unlimited it's always < current_user_space 
 	# because the minimal value of current_user_space is ZERO
 	return 0 if (  $quota_max_used_space <= $current_user_space && $quota_max_used_space != -1 );
-	# if quota_max_used_space == unlimited ( < 0 )
+	# if quota_max_used_space == unlimited ( < 0 ) then return the max permitted file size
 	return $quota_max_file_size if ( $quota_max_used_space < 0 );
-	# now we have a max_used_space
+	# now we have a remaining space
 	my $remaining_space = $quota_max_used_space - $current_user_space;
-	# if quota_max_file_size == unlimited ( < 0 )
+	# if quota_max_file_size == unlimited ( < 0 ) then return the remaining space 
 	return $remaining_space if ( $quota_max_file_size < 0 || $quota_max_file_size >= $remaining_space );
 	# otherwise return the quota_max_file_size
 	return $quota_max_file_size;
@@ -678,16 +747,26 @@ sub _isHttps {
 
 # generate service url
 # get current url without query string
+# if getCurrentUrl(1) then append query string
 sub getCurrentUrl {
 	my $self = shift;
+	my $with_qs = shift;
+	$with_qs = 0 if ( !defined($with_qs) || $with_qs != 1 );
 	# scheme
 	my $url = $self->getServerUrl();
 	# if you want the query string, use :
-	# $uri = Apache::Uri->parse($r);
 	# $r->parsed_uri
 	# $qs = $uri->query()
 	# uri
-	$url .= Apache::Util::escape_uri($self->apreq->uri());
+	$url .= $self->apreq->uri();
+	if ( $with_qs ) {
+		# rebuild the query string because we don't need the tichet in !
+		my %args = $self->apreq->args();
+		my $key = LOGIN_FORM_CAS_TICKET_FIELD_NAME;
+		delete($args{$key}) if exists($args{$key});
+		my $qs = $self->genQueryString(params=>\%args);
+		$url .= "?$qs" if length($qs);
+	}
 	return $url;
 }
 
@@ -696,7 +775,7 @@ sub getServerUrl {
 	my $self = shift;
 	my $s = $self->apreq->server();
 	my $url = ( $self->apreq->subprocess_env('https') ) ? "https://" : "http://";
-	# host_name
+	# host_name 
 	$url .= $s->server_hostname();
 	# port if not standard (0==80);
 	$url .= ":".$s->port() if ( $s->port() != 80 && $s->port() != 443 && $s->port() != 0 );
@@ -711,16 +790,18 @@ sub genUniqId {
 # generate query string
 # require a hash ref
 sub genQueryString {
-	my $qs = shift;
-	$qs = shift if (ref($qs) eq "FILEX::System");
-	return if ! (ref($qs) eq "HASH");
+	my $self = shift;
+	my %ARGZ = @_;
+	return if ( !exists($ARGZ{'params'}) || ref($ARGZ{'params'}) ne "HASH" );
+	my $separator = ( exists($ARGZ{'separator'}) && defined($ARGZ{'separator'}) ) ? $ARGZ{'separator'} : '&';
 	my @res;
 	my ($k,$v,$tmp);
-	while ( ($k,$v) = each(%$qs) ) {
+	while ( ($k,$v) = each(%{$ARGZ{'params'}}) ) {
+		# escape parmeter name and parameter value
 		$tmp = Apache::Util::escape_uri($k)."=".Apache::Util::escape_uri($v);
 		push(@res,$tmp);
 	}
-	return join("&amp;",@res);
+	return join($separator,@res);
 }
 
 sub getManageUrl {

@@ -12,7 +12,7 @@ use constant SA_ADD => 3;
 
 use constant SUB_ACTION_FIELD_NAME => "sa";
 use constant QUOTA_RULE_ID_FIELD_NAME=>"quota_rule_id";
-use constant QUOTA_NAME_FIELD_NAME=>"quota_name";
+use constant QUOTA_DESCRIPTION_FIELD_NAME=>"quota_desc";
 use constant QUOTA_QORDER_FIELD_NAME=>"quota_qorder";
 use constant QUOTA_MAX_FILE_SIZE_FIELD_NAME=>"quota_max_file_size";
 use constant QUOTA_MAX_FILE_SIZE_UNIT_FIELD_NAME=>"quota_max_file_size_unit";
@@ -32,7 +32,7 @@ sub process {
 	# fill template
 	$T->param(FILEX_QUOTA_FORM_ACTION=>$S->getCurrentUrl());
 	$T->param(FILEX_QUOTA_RULE_ID_FIELD_NAME=>QUOTA_RULE_ID_FIELD_NAME);
-	$T->param(FILEX_QUOTA_NAME_FIELD_NAME=>QUOTA_NAME_FIELD_NAME);
+	$T->param(FILEX_QUOTA_DESCRIPTION_FIELD_NAME=>QUOTA_DESCRIPTION_FIELD_NAME);
 	$T->param(FILEX_QUOTA_QORDER_FIELD_NAME=>QUOTA_QORDER_FIELD_NAME);
 	$T->param(FILEX_QUOTA_MAX_FILE_SIZE_FIELD_NAME=>QUOTA_MAX_FILE_SIZE_FIELD_NAME);
 	$T->param(FILEX_QUOTA_MAX_FILE_SIZE_UNIT_FIELD_NAME=>QUOTA_MAX_FILE_SIZE_UNIT_FIELD_NAME);
@@ -60,7 +60,7 @@ sub process {
 		if ( $sub_action == SA_ADD ) {
 			my $max_file_size = $self->getMaxFileSize();
 			my $max_used_space = $self->getMaxUsedSpace();
-			if ( ! $quota_DB->add(name=>$S->apreq->param(QUOTA_NAME_FIELD_NAME),
+			if ( ! $quota_DB->add(description=>$S->apreq->param(QUOTA_DESCRIPTION_FIELD_NAME),
 				rule_id=>$S->apreq->param(QUOTA_RULE_ID_FIELD_NAME),
 				qorder=>$S->apreq->param(QUOTA_QORDER_FIELD_NAME),
 				max_file_size=>$max_file_size,
@@ -97,7 +97,7 @@ sub process {
 			$hkey = keys(%hquota);
 			if ( $hkey > 0 ) {
 				# fill modify template
-				$T->param(FILEX_QUOTA_FORM_QUOTA_NAME=>$hquota{'name'});
+				$T->param(FILEX_QUOTA_FORM_QUOTA_DESCRIPTION=>$hquota{'description'});
 				$T->param(FILEX_QUOTA_FORM_QUOTA_ID=>$hid);
 				$T->param(FILEX_QUOTA_FORM_QUOTA_QORDER=>$hquota{'qorder'});
 				($hrsize,$hrunit) = hrSize($hquota{'max_file_size'});
@@ -116,7 +116,7 @@ sub process {
 			my $max_file_size = $self->getMaxFileSize();
 			my $max_used_space = $self->getMaxUsedSpace();
 			if ( ! $quota_DB->modify(id=>$S->apreq->param(QUOTA_ID_FIELD_NAME),
-					name=>$S->apreq->param(QUOTA_NAME_FIELD_NAME),
+					description=>$S->apreq->param(QUOTA_DESCRIPTION_FIELD_NAME),
 					rule_id=>$S->apreq->param(QUOTA_RULE_ID_FIELD_NAME),
 					qorder=>$S->apreq->param(QUOTA_QORDER_FIELD_NAME),
 					max_file_size=>$max_file_size,
@@ -186,7 +186,7 @@ sub process {
 			my $record = {};
 			$record->{'FILEX_QUOTA_DATE'} = tsToLocal($results[$i]->{'ts_create_date'});
 			$record->{'FILEX_QUOTA_ORDER'} = $results[$i]->{'qorder'};
-			$record->{'FILEX_QUOTA_NAME'} = $S->toHtml($results[$i]->{'name'});
+			$record->{'FILEX_QUOTA_DESCRIPTION'} = $S->toHtml($results[$i]->{'description'}||'');
 			$record->{'FILEX_QUOTA_STATE'} = ($results[$i]->{'enable'} == 1) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable");
 			$record->{'FILEX_QUOTA_RULE'} = $S->toHtml($results[$i]->{'rule_name'});
 			($hrsize,$hrunit) = hrSize($results[$i]->{'max_file_size'});
@@ -194,9 +194,9 @@ sub process {
 			($hrsize,$hrunit) = hrSize($results[$i]->{'max_used_space'});
 			$record->{'FILEX_QUOTA_MAX_USED_SPACE'} = "$hrsize ".$S->i18n->localizeToHtml($hrunit);
 			$state = $results[$i]->{'enable'};
-			$record->{'FILEX_STATE_URL'} = $self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 );
-			$record->{'FILEX_REMOVE_URL'} = $self->genRemoveUrl($results[$i]->{'id'});
-			$record->{'FILEX_MODIFY_URL'} = $self->genModifyUrl($results[$i]->{'id'});
+			$record->{'FILEX_STATE_URL'} = $S->toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
+			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
+			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@exclude_loop,$record);
 		}
 		$T->param(FILEX_HAS_QUOTA=>1);

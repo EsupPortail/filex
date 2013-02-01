@@ -61,7 +61,6 @@ sub handler {
 	$FILEX::System::Config::Reload = 1;
 	$FILEX::System::Config::DieOnReload = 1;
 	# init config object (because we need info to initialize the IPCache
-	#$Config = FILEX::System::Config->new(file=>$r->dir_config(FILEX_CONFIG_NAME), reload=>1, dieonreload=>1);
 	$Config = FILEX::System::Config->new();
 	# get maximum file upload size and check it
 	my $posted_content_length = $r->header_in('Content-Length');
@@ -104,8 +103,7 @@ sub handler {
 		$S = FILEX::System->new($r,with_upload=>1);
 	}
 	# beginSession will redirect the user if required
-	$S->beginSession(); 
-	my $username = $S->getAuthUser();
+	my $user = $S->beginSession(); 
 	# load template
 	$t_begin = $S->getTemplate(name=>"upload");
 	$t_end = $S->getTemplate(name=>"upload_end");
@@ -121,9 +119,9 @@ sub handler {
 	$t_begin->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
 	$t_begin->param(FILEX_MAX_DAY_KEEP=>$S->config->getMaxFileExpire());
 	$t_begin->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
-	$t_begin->param(FILEX_USER_NAME=>$S->toHtml($S->getUserRealName($username)));
+	$t_begin->param(FILEX_USER_NAME=>$S->toHtml($user->getRealName()));
 	$t_end->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
-	$t_end->param(FILEX_USER_NAME=>$S->toHtml($S->getUserRealName($username)));
+	$t_end->param(FILEX_USER_NAME=>$S->toHtml($user->getRealName()));
 
 	# generate the uniq download id
 	my $old_download_id = $S->apreq->param(OLD_DLID_FIELD_NAME);
@@ -139,14 +137,14 @@ sub handler {
 	}
 
 	# fill in the first template
-	$t_begin->param(FILEX_MANAGE_UPLOADED_FILES_COUNT=>$S->getUserUploadCount($username));
-	$t_begin->param(FILEX_MANAGE_ACTIVE_FILES_COUNT=>$S->getUserActiveCount($username));
-	$t_begin->param(FILEX_MANAGE_URL=>$S->getManageUrl());
+	$t_begin->param(FILEX_MANAGE_UPLOADED_FILES_COUNT=>$user->getUploadCount());
+	$t_begin->param(FILEX_MANAGE_ACTIVE_FILES_COUNT=>$user->getActiveCount());
+	$t_begin->param(FILEX_MANAGE_URL=>$S->toHtml($S->getManageUrl()));
 	$t_begin->param(FILEX_CAN_UPLOAD=>1);
-	$t_begin->param(FILEX_FORM_UPLOAD_ACTION=>genFormAction($S,$download_id));
+	$t_begin->param(FILEX_FORM_UPLOAD_ACTION=>$S->toHtml(genFormAction($S,$download_id)));
 	$t_begin->param(FILEX_OLD_DLID=>$download_id);
-	$t_begin->param(FILEX_METER_URL=>genMeterUrl($S,$download_id));
-	if ( $S->isAdmin($username) ) {
+	$t_begin->param(FILEX_METER_URL=>$S->toHtml(genMeterUrl($S,$download_id)));
+	if ( $S->isAdmin($user) ) {
 		$t_begin->param(FILEX_MANAGE_IS_ADMIN=>1);
 		$t_begin->param(FILEX_MANAGE_ADMIN_URL=>$S->getAdminUrl());
 	}
@@ -168,18 +166,18 @@ sub handler {
 	$t_begin->param(FILEX_EXPIRE_LOOP=>\@expire_loop);
 
 	# check for quotas
-	my ($quota_max_file_size,$quota_max_used_space) = $S->getQuota($username);
+	my ($quota_max_file_size,$quota_max_used_space) = $S->getQuota($user);
 	my ($hrsize,$hrunit);
 	if ( $quota_max_used_space > 0 ) {
 		($hrsize,$hrunit) = hrSize($quota_max_used_space);
 		$t_begin->param(FILEX_MANAGE_HAVE_QUOTA=>1);
 		$t_begin->param(FILEX_MANAGE_MAX_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
 	}
-	my $current_user_space = $S->getUserDiskSpace($username);
+	my $current_user_space = $user->getDiskSpace();
  	($hrsize,$hrunit) = hrSize($current_user_space);
 	$t_begin->param(FILEX_MANAGE_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
 
-	my $max_file_size = $S->getUserMaxFileSizeQuick($quota_max_file_size,$quota_max_used_space,$current_user_space);
+	my $max_file_size = $S->getMaxFileSizeQuick($quota_max_file_size,$quota_max_used_space,$current_user_space);
 	# if max_file_size < 0 then unlimited upload size
 	# if max_file_size == 0 then we cannot upload (quota reached)
 	#$bCanUpload = 0 if ( $max_file_size == 0 );
@@ -278,7 +276,8 @@ sub handler {
 	}
 	$record->setFileName($upload_infos{'file_name'});
 	$record->setRealName($upload_infos{'real_filename'});
-	$record->setOwner($S->getAuthUser());
+	$record->setOwner($user->getId());
+	$record->setOwnerUniqId($user->getUniqId());
 	$record->setIpAddress($S->getRemoteIP());
 	if ( $S->isBehindProxy() ) {
 		$record->setUseProxy(1);
@@ -322,9 +321,9 @@ sub handler {
 	my ($fsz,$funit) = hrSize($record->getFileSize());
 	$t_end->param(FILEX_FILE_SIZE=>$fsz." ".$S->i18n->localizeToHtml($funit));
 	$t_end->param(FILEX_FILE_EXPIRE=>toHtml(tsToLocal($record->getExpireDate())));
-	$t_end->param(FILEX_GET_URL=>genGetUrl($S,$record->getFileName()));
+	$t_end->param(FILEX_GET_URL=>$S->toHtml(genGetUrl($S,$record->getFileName())));
 	$t_end->param(FILEX_DAY_KEEP=>$upload_infos{'daykeep'});
-	$t_end->param(FILEX_UPLOAD_URL=>$S->getUploadUrl());
+	$t_end->param(FILEX_UPLOAD_URL=>$S->toHtml($S->getUploadUrl()));
 	if ( $record->needPassword() ) {
 		$t_end->param(FILEX_HAS_PASSWORD=>1);
 		$t_end->param(FILEX_PASSWORD=>toHtml($upload_infos{'password'}));
@@ -351,7 +350,7 @@ sub genFormAction {
 	my $dlid = shift;
 	my $dlid_field = DLID_FIELD_NAME;
 	my $url = $s->getCurrentUrl();
-	$url .= "?".$s->genQueryString({$dlid_field=>$dlid});
+	$url .= "?".$s->genQueryString(params=>{$dlid_field=>$dlid});
 	return $url;
 }
 
@@ -360,7 +359,7 @@ sub genGetUrl {
 	my $s = shift; # FILEX::System
 	my $fn = shift; 
 	my $url = $s->getGetUrl();
-	$url .= "?".$s->genQueryString({k=>$fn});
+	$url .= "?".$s->genQueryString(params=>{k=>$fn});
 	return $url;
 }
 
@@ -370,7 +369,7 @@ sub genMeterUrl {
 	my $dlid = shift; # download id
 	my $dlid_field = DLID_FIELD_NAME;
 	my $url = $s->getMeterUrl();
-	$url .= "?".$s->genQueryString({$dlid_field=>$dlid,ini=>1});
+	$url .= "?".$s->genQueryString(params=>{$dlid_field=>$dlid,ini=>1});
 	return $url;
 }
 
@@ -396,38 +395,6 @@ sub storeFile {
 	return 1;
 }
 
-sub sendMail {
-	my $s = shift;
-	my $record = shift;
-	my $password = shift;
-	# load template
-	my $t = $s->getTemplate(name=>"mail_upload") or return undef;
-	# fill template
-	$t->param(FILEX_FILE_NAME=>$record->getRealName());
-	$t->param(FILEX_GET_URL=>genGetUrl($s,$record->getFileName()));
-	my ($fsz,$funit) = hrSize($record->getFileSize());
-	$t->param(FILEX_FILE_SIZE=>$fsz." ".$s->i18n->localize($funit));
-	$t->param(FILEX_FILE_DATE=>tsToLocal($record->getUploadDate()));
-	$t->param(FILEX_FILE_EXPIRE=>tsToLocal($record->getExpireDate()));
-	$t->param(FILEX_SYSTEM_EMAIL=>$s->config->getSystemEmail());
-	$t->param(FILEX_GET_DELIVERY=>$s->i18n->localize($record->getGetDelivery() ? "yes" : "no"));
-	$t->param(FILEX_GET_RESUME=>$s->i18n->localize($record->getGetResume() ? "yes" : "no"));
-	if ( $record->needPassword() ) {
-		$t->param(FILEX_HAS_PASSWORD=>1);
-		$t->param(FILEX_PASSWORD=>$password);
-	}
-	# now it time to send email
-	my $to = $s->getMail($s->getAuthUser());
-	return undef if !length($to);
-	return $s->sendMail(
-		from=>$s->config->getSystemEmail(),
-		to=>$to,
-		charset=>"ISO-8859-1",
-		subject=>$s->i18n->localize("mail subject %s",$record->getRealName()),
-		content=>$t->output()
-	);
-}
-
 # initialize IPC Cache
 sub initIPCCache {
 	my $conf = shift; # FILEX::System::Config object
@@ -445,6 +412,76 @@ sub normalize {
 	my $file = shift;
 	$file =~ s/.*[\\|\/](.+)$/$1/;
 	return $file;
+}
+
+sub sendMail {
+	my $s = shift;
+	my $record = shift;
+	my $password = shift;
+	my $return_value = undef;
+	my ($fsz,$funit,$user,$to);
+	# load template
+	my $t = $s->getTemplate(name=>"mail_upload");
+	if ( !$t ) {
+		warn(__PACKAGE__,"=> unable to load template : mail_upload");
+		$return_value = undef;
+	} else {
+		# fill template
+		$t->param(FILEX_FILE_NAME=>$record->getRealName());
+		$t->param(FILEX_GET_URL=>genGetUrl($s,$record->getFileName()));
+		($fsz,$funit) = hrSize($record->getFileSize());
+		$t->param(FILEX_FILE_SIZE=>$fsz." ".$s->i18n->localize($funit));
+		$t->param(FILEX_FILE_DATE=>tsToLocal($record->getUploadDate()));
+		$t->param(FILEX_FILE_EXPIRE=>tsToLocal($record->getExpireDate()));
+		$t->param(FILEX_SYSTEM_EMAIL=>$s->config->getSystemEmail());
+		$t->param(FILEX_GET_DELIVERY=>$s->i18n->localize($record->getGetDelivery() ? "yes" : "no"));
+		$t->param(FILEX_GET_RESUME=>$s->i18n->localize($record->getGetResume() ? "yes" : "no"));
+		if ( $record->needPassword() ) {
+			$t->param(FILEX_HAS_PASSWORD=>1);
+			$t->param(FILEX_PASSWORD=>$password);
+		}
+		# now it time to send email
+		$user = $s->getUser();
+		$to = $user->getMail() if ($user);
+		if ( $to && length($to) ) {
+			$return_value = $s->sendMail(
+				from=>$s->config->getSystemEmail(),
+				to=>$to,
+				charset=>"ISO-8859-1",
+				subject=>$s->i18n->localize("mail subject %s",$record->getRealName()),
+				content=>$t->output()
+			);
+		} else {
+			warn(__PACKAGE__," => unable to get user's mail");
+			$return_value = undef;
+		}
+	}
+	# go for bigbrother
+	my $iswatched = $s->isWatched($user) if ($user);
+	if ( $iswatched && length($iswatched) ) {
+		my $tw = $s->getTemplate(name=>"mail_big_brother");
+		if ( $tw ) {
+			$tw->param(FILEX_USER_NAME=>$user->getRealName());
+			$tw->param(FILEX_USER_ID=>$user->getId());
+			$tw->param(FILEX_USER_MAIL=>$user->getMail());
+			$tw->param(FILEX_FILE_NAME=>$record->getRealName());
+			$tw->param(FILEX_FILE_SIZE=>$fsz." ".$s->i18n->localize($funit));
+			$tw->param(FILEX_FILE_DATE=>tsToLocal($record->getUploadDate()));
+			$tw->param(FILEX_FILE_EXPIRE=>tsToLocal($record->getExpireDate()));
+			#http://pc401-189.insa-lyon.fr/admin?sa=1&id=108&maction=ac4
+			my $admin_url = $s->getAdminUrl();
+			$admin_url .= "?".$s->genQueryString(params=>{sa=>1,maction=>"ac4",id=>$record->getId()});
+			$tw->param(FILEX_FILE_GET_URL=>$admin_url);
+			$s->sendMail(from=>$s->config->getSystemEmail(),
+				to=>$iswatched,
+				charset=>"ISO-8859-1",
+				subject=>$s->i18n->localize("%s upload a file",$user->getId()),
+				content=>$tw->output()) or warn(__PACKAGE__,"=> unable to send watch mail : $iswatched!");
+			} else {
+				warn(__PACKAGE__,"=> unable to load template : mail_big_brother");
+			}
+	}
+	return $return_value;
 }
 
 1;

@@ -41,7 +41,15 @@ sub processAuth {
 	my %ARGZ = @_;
 	warn(__PACKAGE__,"-> require an url") && return undef if ( !exists($ARGZ{'currenturl'}) || !defined($ARGZ{'currenturl'}) );
 	warn(__PACKAGE__,"-> require a ticket") && return undef if ( !exists($ARGZ{'ticket'}) || !defined($ARGZ{'ticket'}) );
-	my $user = $self->_cas->validateST($ARGZ{'currenturl'},$ARGZ{'ticket'});
+	# switch ticket type
+	my ($user,@proxies);
+	# if we have a proxy ticket 
+	if ( $ARGZ{'ticket'} =~ /^PT/ ) {
+		($user,@proxies) = $self->_cas->validatePT($ARGZ{'currenturl'},$ARGZ{'ticket'});
+		# maybe we should check proxies for additionnal security
+	} else {
+		$user = $self->_cas->validateST($ARGZ{'currenturl'},$ARGZ{'ticket'});
+	}
 	$self->_set_error($self->_cas->get_errors()) if ( !defined($user) );
 	return $user;
 }

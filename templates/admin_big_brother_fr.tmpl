@@ -1,0 +1,45 @@
+<!-- chunky template for current download -->
+<h1>Supervision de d&eacute;pose de fichier :</h1>
+	<p>Ce module permet de superviser les d&eacute;poses de fichier de certains utilisateur.</p>
+	<p class="hlight">Vous devez activer l'option <strong>UseBigBrother</strong> et l'option <strong>MailNotification</strong> dans le fichier de configuration pour recevoir les messages de supervision</p>
+	<p>Utilisez la &quot;,&quot; comme s&eacute;parateur d'adresses mail pour un envoi de message &agrave; plusieurs destinataires.</p>
+	<form method="post" action="<TMPL_VAR NAME='FILEX_BB_FORM_ACTION'>">
+	<h2>Ajouter une supervision :</h2>
+	<p><label for="rtype">R&egrave;gles : </label>
+		<select name="<TMPL_VAR NAME='FILEX_BB_RULE_ID_FIELD_NAME'>" id="rtype" class="Field">
+			<TMPL_LOOP NAME="FILEX_BB_RULES_LOOP">
+				<option <TMPL_IF NAME="FILEX_BB_RULE_SELECTED">selected</TMPL_IF> value="<TMPL_VAR NAME='FILEX_BB_RULE_ID'>"><TMPL_VAR NAME="FILEX_BB_RULE_NAME"></option>
+			</TMPL_LOOP>
+		</select><br>
+	<label for="idqname">Description : </label><input class="Field" id="idqname" type="text" name="<TMPL_VAR NAME='FILEX_BB_DESCRIPTION_FIELD_NAME'>" size="30" maxlength="50" value="<TMPL_VAR NAME='FILEX_BB_FORM_BB_DESCRIPTION'>">
+	<label for="idqorder">Ordre : </label><input class="Field" id="idqorder" type="text" name="<TMPL_VAR NAME='FILEX_BB_NORDER_FIELD_NAME'>" size="10" maxlength="10" VALUE="<TMPL_VAR NAME='FILEX_BB_FORM_BB_NORDER'>"><br>
+	<label for="idqmail">Mail(s) : </label><input class="Field" id="idqmail" type="text" name="<TMPL_VAR NAME='FILEX_BB_MAIL_FIELD_NAME'>" size="50" maxlength="255" value="<TMPL_VAR NAME='FILEX_BB_FORM_BB_MAIL'>"><br>
+	<input class="Submit" type="submit" value="Envoyer"></p>
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_BB_ID_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_BB_FORM_BB_ID'>">
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_MAIN_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_MAIN_ACTION_ID'>">
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_SUB_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_SUB_ACTION_ID'>">
+	</form>
+	<TMPL_IF NAME="FILEX_HAS_ERROR"><p class="error"><TMPL_VAR NAME="FILEX_ERROR"></p></TMPL_IF>
+<TMPL_IF NAME="FILEX_HAS_BB">
+	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des supervisions">
+		<caption>Liste des supervisions</caption>
+		<thead>
+			<tr><td>Date</td><td>Ordre</td><td>Description</td><td>R&egrave;gle</td><td>mail(s)</td><td>Etat</td><td>Actions</td></tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="FILEX_BB_LOOP">
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
+				<td><TMPL_VAR NAME="FILEX_BB_DATE"></td>
+				<td><TMPL_VAR NAME="FILEX_BB_ORDER"></td>
+				<td><TMPL_VAR NAME="FILEX_BB_DESCRIPTION"></td>
+				<td><TMPL_VAR NAME="FILEX_BB_RULE"></td>
+				<td><TMPL_VAR NAME="FILEX_BB_MAIL"></td>
+				<td><TMPL_VAR NAME="FILEX_BB_STATE"></td>
+				<td><a href="<TMPL_VAR NAME='FILEX_REMOVE_URL'>" title="Supprimer">D</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_STATE_URL'>" title="[A|De]activer">S</a>&nbsp;<a href="<TMPL_VAR NAME='FILEX_MODIFY_URL'>" title="Modifier">M</a></td>
+			</tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+<TMPL_ELSE>
+<p>Pas de r&egrave;gles</p>
+</TMPL_IF>

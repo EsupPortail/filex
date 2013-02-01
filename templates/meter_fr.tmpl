@@ -36,6 +36,10 @@
 		<p class="progressbar">&nbsp;</p>
 		<p class="meter2"><TMPL_VAR NAME="FILEX_PROGRESS"> %</p>
 		<hr>
+		<TMPL_IF NAME="FILEX_NOB_ERROR">
+		<p class="hlight"><TMPL_VAR NAME="FILEX_NOB_ERROR"><TMPL_IF NAME="FILEX_NOB_ERROR_DESC"><br><TMPL_VAR NAME="FILEX_NOB_ERROR_DESC"></TMPL_IF></p>
+		<hr>
+    </TMPL_IF>
 		<p class="stats">
 			<strong>Données re&ccedil;ues :</strong> <TMPL_VAR NAME="FILEX_DATA_RECEIVED"> / <TMPL_VAR NAME="FILEX_DATA_TOTAL"><br>
 			<strong>Temps Restant :</strong> <TMPL_VAR NAME="FILEX_REMAINING_TIME"><br>

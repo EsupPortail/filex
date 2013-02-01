@@ -58,6 +58,7 @@ Les modules suivants sont nécessaires :
   Apache::File
   Apache::Request
   Apache::Util
+	Apache::Session
   Cache::FileCache
   Config::IniFiles
   Crypt::Blowfish

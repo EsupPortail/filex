@@ -7,29 +7,34 @@ use FILEX::DB::base 1.0;
 @ISA = qw(FILEX::DB::base Exporter);
 $VERSION = 1.0;
 
-# name => rule name
+# description => rule description
 # rule_id => associated rule id
 # rorder
 # enable
+# reason
 sub add {
 	my $self = shift;
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
-                      string=>"Require a name",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'name'}) || !$self->checkStr($ARGZ{'name'}) );
-	$self->setLastError(query=>"",
 	                    string=>"Require a rule_id",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'rule_id'}) || !$self->checkStr($ARGZ{'rule_id'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'rule_id'}) || !$self->checkUInt($ARGZ{'rule_id'}) );
 	delete($ARGZ{'rorder'}) if ( exists($ARGZ{'rorder'}) && !$self->checkInt($ARGZ{'rorder'}) );
 	$ARGZ{'enable'} = 1 if ( exists($ARGZ{'enable'}) && !$self->checkBool($ARGZ{'enable'}) );
 	my $dbh = $self->_dbh();
 	my %fields = (
-		'name' => $dbh->quote($ARGZ{'name'}),
-		'rule_id' => $dbh->quote($ARGZ{'rule_id'}),
+		'rule_id' => $ARGZ{'rule_id'},
 		'create_date' => "now()"
 	);
 	$fields{'rorder'} = $ARGZ{'rorder'} if exists($ARGZ{'rorder'});
 	$fields{'enable'} = $ARGZ{'enable'} if exists($ARGZ{'enable'});
+	# description
+	if ( exists($ARGZ{'description'}) && $self->checkStrLength($ARGZ{'description'},0,51) ) {
+		$fields{'description'} = $dbh->quote($ARGZ{'description'});
+	}
+	# reason
+	if ( exists($ARGZ{'reason'}) && $self->checkStrLength($ARGZ{'reason'},0,256) ) {
+		$fields{'reason'} = $dbh->quote($ARGZ{'reason'});
+	}
 	my (@f,@v);
 	foreach my $k ( keys(%fields) ) {
 		push(@f,$k);
@@ -60,7 +65,8 @@ sub modify {
 	my %valid_fields = (
 		rorder => { check => sub { $self->checkInt(shift); }, quote=>0},
 		enable => { check => sub { $self->checkBool(shift); }, quote=>0},
-		name => { check => sub { $self->checkStr(shift); }, quote=>1},
+		description => { check => sub { $self->checkStrLength(shift,-1,51); }, quote=>1},
+		reason => { check => sub { $self->checkStrLength(shift,-1,256); }, quote=>1},
 		rule_id => 	{ check => sub { $self->checkUInt(shift); }, quote=>0},
 	);
 	my $dbh = $self->_dbh();
@@ -167,7 +173,7 @@ sub listRules {
                       string=>"Require an ARRAY REF",
                       code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY" );
 	my $res = $ARGZ{'results'};
-	my $include = ( exists($ARGZ{'including'}) && defined($ARGZ{'including'}) && $ARGZ{'including'} =~ /^[0-9]$/ ) ? $ARGZ{'including'} : undef;
+	my $include = ( exists($ARGZ{'including'}) && defined($ARGZ{'including'}) && $ARGZ{'including'} =~ /^[0-9]+$/ ) ? $ARGZ{'including'} : undef;
 	my $dbh = $self->_dbh();
 	# the left join 
 	# all row from the the rules table will be returned 

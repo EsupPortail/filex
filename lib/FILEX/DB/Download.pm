@@ -91,10 +91,10 @@ sub currentFiles {
 	               "GROUP BY u.id ";
 	my $order_by = ( exists($ARGZ{'orderby'}) && length($ARGZ{'orderby'}) ) ? $ARGZ{'orderby'} : 'upload_date';
 	my $order = $ARGZ{'order'} if ( exists($ARGZ{'order'}) );
-	if ( defined($order) && $order == 1 ) {
+	if ( defined($order) ) {
+		$order = ( $order == 1 )?"DESC":"ASC";
+	} else {
 		$order = "DESC";
-	} else { 
-		$order = "ASC";
 	}
 	$strQuery .= ( $order_by eq "download_count" ) ? "ORDER BY $order_by $order" : "ORDER BY u.$order_by $order";
 	# LIMIT offset, row_count

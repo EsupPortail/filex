@@ -184,6 +184,38 @@ sub inGroup {
 	# return
 	return $mesg->count();
 }
+
+# 
+# generic ldap query
+# uid
+# query
+sub inQuery {
+	my $self = shift;
+	my %ARGZ = @_;
+	warn(__PACKAGE__,"-> require a user id !") && return undef if ( !exists($ARGZ{'uid'}) || length($ARGZ{'uid'}) <= 0 );
+	my $uid = $ARGZ{'uid'};
+	warn(__PACKAGE__,"-> require a query !") && return undef if ( !exists($ARGZ{'query'})||length($ARGZ{'query'}) <= 0 );
+	my $query = $ARGZ{'query'};
+
+ 	my $ldap = $self->srv();
+  my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
+  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+	# build the filter
+	my $filter = "(&($uidAttr=$uid)$query)";
+  my %searchArgz;
+  $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
+  $searchArgz{'scope'} = "sub";
+  $searchArgz{'filter'} = $filter;
+  $searchArgz{'attrs'} = [$uidAttr];
+  my $mesg = $ldap->search(%searchArgz);
+  if ( $mesg->is_error() || $mesg->code() ) {
+    warn(__PACKAGE__,"-> LDAP error : ",$mesg->error());
+    return undef;
+  }
+	# return count
+	return $mesg->count();
+}
+
 # 
 1;
 =pod

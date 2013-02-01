@@ -7,7 +7,7 @@ use FILEX::DB::base 1.0;
 @ISA = qw(FILEX::DB::base Exporter);
 $VERSION = 1.0;
 
-# name => rule name
+# description => rule description
 # rule_id => associated rule id
 # max_file_size
 # max_used_space
@@ -17,25 +17,25 @@ sub add {
 	my $self = shift;
 	my %ARGZ = @_;
 	$self->setLastError(query=>"",
-                      string=>"Require a name",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'name'}) || !$self->checkStr($ARGZ{'name'}) );
-	$self->setLastError(query=>"",
 	                    string=>"Require a rule_id",
-	                    code=>-1) && return undef if ( !exists($ARGZ{'rule_id'}) || !$self->checkStr($ARGZ{'rule_id'}) );
+	                    code=>-1) && return undef if ( !exists($ARGZ{'rule_id'}) || !$self->checkUInt($ARGZ{'rule_id'}) );
 	delete($ARGZ{'qorder'}) if ( exists($ARGZ{'qorder'}) && !$self->checkInt($ARGZ{'qorder'}) );
 	$ARGZ{'enable'} = 1 if ( exists($ARGZ{'enable'}) && !$self->checkBool($ARGZ{'enable'}) );
 	delete($ARGZ{'max_file_size'}) if ( exists($ARGZ{'max_file_size'}) && !$self->checkInt($ARGZ{'max_file_size'}) );
 	delete($ARGZ{'max_used_space'}) if ( exists($ARGZ{'max_file_size'}) && !$self->checkInt($ARGZ{'max_used_space'}) );
 	my $dbh = $self->_dbh();
 	my %fields = (
-		'name' => $dbh->quote($ARGZ{'name'}),
-		'rule_id' => $dbh->quote($ARGZ{'rule_id'}),
+		'rule_id' => $ARGZ{'rule_id'},
 		'create_date' => "now()"
 	);
 	$fields{'qorder'} = $ARGZ{'qorder'} if exists($ARGZ{'qorder'});
 	$fields{'enable'} = $ARGZ{'enable'} if exists($ARGZ{'enable'});
 	$fields{'max_file_size'} = $ARGZ{'max_file_size'} if exists($ARGZ{'max_file_size'});
 	$fields{'max_used_space'} = $ARGZ{'max_used_space'} if exists($ARGZ{'max_used_space'});
+	# description
+	if ( exists($ARGZ{'description'}) && $self->checkStrLength($ARGZ{'description'},0,51) ) {
+		$fields{'description'} = $dbh->quote($ARGZ{'description'});
+	}
 	my (@f,@v);
 	foreach my $k ( keys(%fields) ) {
 		push(@f,$k);
@@ -66,7 +66,7 @@ sub modify {
 	my %valid_fields = (
 		qorder => { check => sub { $self->checkInt(shift); }, quote=>0},
 		enable => { check => sub { $self->checkBool(shift); }, quote=>0},
-		name => { check => sub { $self->checkStr(shift); }, quote=>1 },
+		description => { check => sub { $self->checkStrLength(shift,-1,51); }, quote=>1 },
 		rule_id => 	{ check => sub { $self->checkUInt(shift); }, quote=>0 },
 		max_file_size => { check => sub { $self->checkInt(shift); }, quote=>0 },
 		max_used_space => { check => sub { $self->checkInt(shift); }, quote=> 0 }
@@ -175,7 +175,7 @@ sub listRules {
                       string=>"Require an ARRAY REF",
                       code=>-1) && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY" );
 	my $res = $ARGZ{'results'};
-	my $include = ( exists($ARGZ{'including'}) && defined($ARGZ{'including'}) && $ARGZ{'including'} =~ /^[0-9]$/ ) ? $ARGZ{'including'} : undef;
+	my $include = ( exists($ARGZ{'including'}) && defined($ARGZ{'including'}) && $ARGZ{'including'} =~ /^[0-9]+$/ ) ? $ARGZ{'including'} : undef;
 	my $dbh = $self->_dbh();
 	my $strQuery = "SELECT rules.* FROM rules ".
                  "LEFT JOIN quota ON rules.id = quota.rule_id ".

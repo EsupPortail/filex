@@ -9,7 +9,7 @@
 				<option <TMPL_IF NAME="FILEX_QUOTA_RULE_SELECTED">selected</TMPL_IF> value="<TMPL_VAR NAME='FILEX_QUOTA_RULE_ID'>"><TMPL_VAR NAME="FILEX_QUOTA_RULE_NAME"></option>
 			</TMPL_LOOP>
 		</select><br>
-	<label for="idqname">Nom : </label><input class="Field" id="idqname" type="text" name="<TMPL_VAR NAME='FILEX_QUOTA_NAME_FIELD_NAME'>" size="30" maxlength="50" value="<TMPL_VAR NAME='FILEX_QUOTA_FORM_QUOTA_NAME'>">
+	<label for="idqname">Description : </label><input class="Field" id="idqname" type="text" name="<TMPL_VAR NAME='FILEX_QUOTA_DESCRIPTION_FIELD_NAME'>" size="30" maxlength="50" value="<TMPL_VAR NAME='FILEX_QUOTA_FORM_QUOTA_DESCRIPTION'>">
 	<label for="idqorder">Ordre : </label><input class="Field" id="idqorder" type="text" name="<TMPL_VAR NAME='FILEX_QUOTA_QORDER_FIELD_NAME'>" size="10" maxlength="10" VALUE="<TMPL_VAR NAME='FILEX_QUOTA_FORM_QUOTA_QORDER'>"><br>
 	<label for="idqmfs">Taille de fichier max. : </label><input class="Field" id="idqmfs" type="text" name="<TMPL_VAR NAME='FILEX_QUOTA_MAX_FILE_SIZE_FIELD_NAME'>" size="10" maxlength="10" value="<TMPL_VAR NAME='FILEX_QUOTA_FORM_QUOTA_MAX_FILE_SIZE'>">
 	<select name="<TMPL_VAR NAME='FILEX_QUOTA_MAX_FILE_SIZE_UNIT_FIELD_NAME'>" class="Field">
@@ -33,14 +33,14 @@
 	<table class="infos" border="0" cellpadding="0" cellspacing="0" width="100%" summary="Liste des quotas">
 		<caption>Liste des quotas</caption>
 		<thead>
-			<tr><td>Date</td><td>Ordre</td><td>Nom</td><td>R&egrave;gle</td><td>MFS</td><td>TUS</td><td>Etat</td><td>Actions</td></tr>
+			<tr><td>Date</td><td>Ordre</td><td>Description</td><td>R&egrave;gle</td><td>MFS</td><td>TUS</td><td>Etat</td><td>Actions</td></tr>
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_QUOTA_LOOP">
 			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_DATE"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_ORDER"></td>
-				<td><TMPL_VAR NAME="FILEX_QUOTA_NAME"></td>
+				<td><TMPL_VAR NAME="FILEX_QUOTA_DESCRIPTION"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_RULE"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_MAX_FILE_SIZE"></td>
 				<td><TMPL_VAR NAME="FILEX_QUOTA_MAX_USED_SPACE"></td>

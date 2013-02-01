@@ -45,19 +45,18 @@ sub handler {
 	# administrative download mode
 	my $admin_download = $S->apreq->param(ADMIN_DOWNLOAD_FIELD_NAME) || 0;
 	$admin_download = ($admin_download =~ /^1$/) ? 1 : 0;
+	my $user = undef;
 	# if in administrative download mode :
 	if ( $admin_download == 1 ) {
 		# start session without authentification
-		$S->beginSession(no_auth=>1);
+		$user = $S->beginSession(no_auth=>1);
 		# check if user is an administrator
-		my $auth_user = $S->getAuthUser();
-		if ( defined($auth_user) && $S->isAdmin($auth_user) && ($S->_isExclude($auth_user)!=1) ) {
+		if ( defined($user) && $S->isAdmin($user) && ( $S->isExclude($user) != 1) ) {
 			$admin_download = 1;
 		} else {
 			$admin_download = 0;
 		}
 	}
-warn("Admin download ? $admin_download");
 
 	$Template->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	# no filename to download then show it
@@ -81,13 +80,15 @@ warn("Admin download ? $admin_download");
 		display($S,$Template);
 	}
 	# file expired
-	if ( $upload->isExpired() == 1 ) {
+	if ( $upload->isExpired() == 1 || $upload->getDeleted() == 1 ) {
 		$Template->param(FILEX_HAS_ERROR=>1);
 		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file expire"));
 		display($S,$Template);
 	}
 	# file disabled
-	if ( $upload->getEnable() != 1 || $upload->getDeleted() == 1 ) {
+	#if ( $upload->getEnable() != 1 || $upload->getDeleted() == 1 ) {
+	# permit download of disabled file if it is an administrative download
+	if ( $upload->getEnable() != 1 && $admin_download != 1 ) {
 		$Template->param(FILEX_HAS_ERROR=>1);
 		$Template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file disabled"));
 		display($S,$Template);
@@ -148,11 +149,11 @@ warn("Admin download ? $admin_download");
 			my $download_url = $S->getCurrentUrl()."?";
 			# in administrative download ?
 			if ( $admin_download == 1 ) {
-				$download_url .= $S->genQueryString({$fk=>$file_name,$fauto=>1,$fadm=>1});
+				$download_url .= $S->genQueryString(params=>{$fk=>$file_name,$fauto=>1,$fadm=>1});
 			} else {
-				$download_url .= $S->genQueryString({$fk=>$file_name,$fauto=>1});
+				$download_url .= $S->genQueryString(params=>{$fk=>$file_name,$fauto=>1});
 			}
-			$Template->param(FILEX_DOWNLOAD_URL=>$download_url);
+			$Template->param(FILEX_DOWNLOAD_URL=>$S->toHtml($download_url));
 		}
 		display($S,$Template);
 	}

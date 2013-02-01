@@ -11,7 +11,9 @@ use constant DISPATCH_NAME => "maction";
 	"ac4" => { package=>"FILEX::Apache::Handler::Admin::CurrentFiles", label=>"action menu : current files"},
 	"ac5" => { package=>"FILEX::Apache::Handler::Admin::Rules", label=>"action menu : rules"},
 	"ac6" => { package=>"FILEX::Apache::Handler::Admin::Exclude", label=>"action menu : excludes"},
-	"ac7" => { package=>"FILEX::Apache::Handler::Admin::Quota", label=>"action menu : quotas"}
+	"ac7" => { package=>"FILEX::Apache::Handler::Admin::Quota", label=>"action menu : quotas"},
+	"ac8" => { package=>"FILEX::Apache::Handler::Admin::BigBrother", label=>"action menu : big brother"},
+	"ac9" => { package=>"FILEX::Apache::Handler::Admin::Search", label=>"action menu : search"}
 );
 
 # system => FILEX::System
@@ -20,51 +22,73 @@ sub new {
 	my $this = shift;
 	my $class = ref($this) || $this;
 	my $self = {
-		'_SYS_'=>undef,
+		_SYS_=>undef,
+		_route_prefix_ => undef,
+		_default_mod_ => undef,
+		_modules_ => undef,
 	};
 	$self->{'_SYS_'} = shift;
 	die(__PACKAGE__,"-> require a FILEX::System object") if (ref($self->{'_SYS_'}) ne "FILEX::System");
+	# loading parameters
+	$self->{'_route_prefix_'} = $self->{'_SYS_'}->config()->getAdminModuleRouteParameter();
+	die(__PACKAGE__,"-> require a ModuleRouteParameter") if !defined($self->{'_route_prefix_'});
+	# default 
+	$self->{'_default_mod_'} = $self->{'_SYS_'}->config()->getAdminDefault();
+	# modules
+	my @mods = $self->{'_SYS_'}->config()->getAdminModules();
+	$self->{'_modules_'} = {};
+	for (my $idx = 0; $idx <= $#mods; $idx++) {
+		$self->{'_modules_'}->{$idx} = $mods[$idx];
+		# strip white spaces
+		$self->{'_modules_'}->{$idx} =~ s/\s//g;
+	}
 	return bless($self,$class);
 }
 
 sub dispatch {
 	my $self = shift;
 	my $event = shift;
-	if ( ! exists($ACTIONS_BINDING{$event}) ) {
+	if ( ! exists($self->{'_modules_'}->{$event}) ) {
 		warn(__PACKAGE__,"-> invalid event : $event");
 		return undef;
 	}
-	my $module = $ACTIONS_BINDING{$event}->{'package'};
+	my $module = $self->{'_modules_'}->{$event};
 	# import into namespace
 	_require($module);
 	# create module
-	my $handler = $module->new(sys=>$self->{'_SYS_'},id=>$event,label=>$ACTIONS_BINDING{$event}->{'label'},dname=>DISPATCH_NAME);
+	my $handler = $module->new(sys=>$self->{'_SYS_'},
+	                           id=>$event,
+	                           label=>$self->{'_modules_'}->{$event},
+	                           dname=>$self->getDispatchName());
 	return $handler->process();
 }
 
 sub getDispatchName {
-	return DISPATCH_NAME;
+	my $self = shift;
+	return $self->{'_route_prefix_'};
 }
 
 sub getDefaultDispatch {
-	my $name = shift;
-	$name = shift if ref($name);
-	return $name if (defined($name) && exists($ACTIONS_BINDING{$name}));
-	my $k;
-	foreach $k ( keys(%ACTIONS_BINDING) ) {
-		return $k if ( exists($ACTIONS_BINDING{$k}->{'default'}) && $ACTIONS_BINDING{$k}->{'default'} == 1);
+	my $self = shift;
+	my $event = shift;
+	return $event if (defined($event) && exists($self->{'_modules_'}->{$event}));
+	my ($k,$kfirst);
+	foreach $k ( keys(%{$self->{'_modules_'}}) ) {
+		$kfirst = $k if !defined($kfirst);
+		return $k if ( $self->{'_modules_'}->{$k} eq $self->{'_default_mod_'} );
 	}
-	return $k;
+	return $kfirst;
 }
 
 sub enumDispatch {
-	return keys(%ACTIONS_BINDING);
+	my $self = shift;
+	return sort(keys(%{$self->{'_modules_'}}));
 }
 
 sub getDispatchLabel {
-	my $name = shift;
-	$name = shift if ref($name);
-	return $ACTIONS_BINDING{$name}->{'label'} if exists($ACTIONS_BINDING{$name}->{'label'});
+	my $self = shift;
+	my $event = shift;
+	return exists($self->{'_modules_'}->{$event}) ? $self->{'_modules_'}->{$event} : "unknown";
 }
 
 sub _require {

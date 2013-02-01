@@ -50,7 +50,15 @@ do {
 	$uri = $conf->getUriStatic();
 	my $static_path = $conf->getStaticFileDir();
 	push(@Alias,$uri,$static_path);
-
+	# ManageXml
+	if ( $conf->useUriManageXml() ) {
+		$uri = $conf->getUriManageXml();
+		push(@PerlModule,"FILEX::Apache::Handler::ManageXml");
+		$Location{$uri} = {
+			SetHandler => "perl-script",
+			 PerlHandler => "FILEX::Apache::Handler::ManageXml",
+		};
+	}
 	# end
 };
 

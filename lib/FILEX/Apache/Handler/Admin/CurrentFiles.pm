@@ -42,7 +42,7 @@ sub process {
 	my $sub_action = $S->apreq->param(SUB_ACTION_FIELD_NAME) || -1;
 	SWITCH : {
 		if ( $sub_action == SUB_FILE_INFO ) {
-			my $file_id = $S->apreq->param('id');
+			my $file_id = $S->apreq->param(FILE_ID_FIELD_NAME);
 			last SWITCH if ( !defined($file_id) );
 			my $inT = doFileInfos(system=>$S, file_id=>$file_id,url=>$self->genFileInfoUrl($file_id),
 			                      mode=>1,sub_action_value=>SUB_FILE_INFO,
@@ -76,25 +76,25 @@ sub process {
 	$T->param(FILEX_FILE_COUNT=>$#results+1);
 	my ($hrsize, $hrunit) = hrSize($S->getUsedDiskSpace());
 	$T->param(FILEX_USED_DISK_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
-	$T->param(FILEX_SORT_NAME_ASC_URL=>$self->genSortUrl("filename",0));
-	$T->param(FILEX_SORT_NAME_DESC_URL=>$self->genSortUrl("filename",1));
-	$T->param(FILEX_SORT_OWNER_ASC_URL=>$self->genSortUrl("fileowner",0));
-	$T->param(FILEX_SORT_OWNER_DESC_URL=>$self->genSortUrl("fileowner",1));
-	$T->param(FILEX_SORT_SIZE_ASC_URL=>$self->genSortUrl("filesize",0));
-	$T->param(FILEX_SORT_SIZE_DESC_URL=>$self->genSortUrl("filesize",1));
-	$T->param(FILEX_SORT_UPLOAD_ASC_URL=>$self->genSortUrl("uploaddate",0));
-	$T->param(FILEX_SORT_UPLOAD_DESC_URL=>$self->genSortUrl("uploaddate",1));
-	$T->param(FILEX_SORT_EXPIRE_ASC_URL=>$self->genSortUrl("expiredate",0));
-	$T->param(FILEX_SORT_EXPIRE_DESC_URL=>$self->genSortUrl("expiredate",1));
-	$T->param(FILEX_SORT_DISK_ASC_URL=>$self->genSortUrl("diskname",0));
-	$T->param(FILEX_SORT_DISK_DESC_URL=>$self->genSortUrl("diskname",1));
-	$T->param(FILEX_SORT_DOWNLOAD_COUNT_ASC_URL=>$self->genSortUrl("dlcount",0));
-	$T->param(FILEX_SORT_DOWNLOAD_COUNT_DESC_URL=>$self->genSortUrl("dlcount",1));
+	$T->param(FILEX_SORT_NAME_ASC_URL=>$S->toHtml($self->genSortUrl("filename",0)));
+	$T->param(FILEX_SORT_NAME_DESC_URL=>$S->toHtml($self->genSortUrl("filename",1)));
+	$T->param(FILEX_SORT_OWNER_ASC_URL=>$S->toHtml($self->genSortUrl("fileowner",0)));
+	$T->param(FILEX_SORT_OWNER_DESC_URL=>$S->toHtml($self->genSortUrl("fileowner",1)));
+	$T->param(FILEX_SORT_SIZE_ASC_URL=>$S->toHtml($self->genSortUrl("filesize",0)));
+	$T->param(FILEX_SORT_SIZE_DESC_URL=>$S->toHtml($self->genSortUrl("filesize",1)));
+	$T->param(FILEX_SORT_UPLOAD_ASC_URL=>$S->toHtml($self->genSortUrl("uploaddate",0)));
+	$T->param(FILEX_SORT_UPLOAD_DESC_URL=>$S->toHtml($self->genSortUrl("uploaddate",1)));
+	$T->param(FILEX_SORT_EXPIRE_ASC_URL=>$S->toHtml($self->genSortUrl("expiredate",0)));
+	$T->param(FILEX_SORT_EXPIRE_DESC_URL=>$S->toHtml($self->genSortUrl("expiredate",1)));
+	$T->param(FILEX_SORT_DISK_ASC_URL=>$S->toHtml($self->genSortUrl("diskname",0)));
+	$T->param(FILEX_SORT_DISK_DESC_URL=>$S->toHtml($self->genSortUrl("diskname",1)));
+	$T->param(FILEX_SORT_DOWNLOAD_COUNT_ASC_URL=>$S->toHtml($self->genSortUrl("dlcount",0)));
+	$T->param(FILEX_SORT_DOWNLOAD_COUNT_DESC_URL=>$S->toHtml($self->genSortUrl("dlcount",1)));
 	my (@files_loop,$file_owner);
 	for ( my $i = 0; $i <= $#results; $i++ ) {
 		my $record = {};
 		($hrsize,$hrunit) = hrSize($results[$i]->{'file_size'});
-		$record->{'FILEX_FILE_INFO_URL'} = $self->genFileInfoUrl($results[$i]->{'id'});
+		$record->{'FILEX_FILE_INFO_URL'} = $S->toHtml($self->genFileInfoUrl($results[$i]->{'id'}));
 		if ( length($results[$i]->{'real_name'}) > 0 ) {
 			if ( length($results[$i]->{'real_name'}) > MAX_NAME_SIZE ) {
 				$record->{'FILEX_FILE_NAME'} = $S->toHtml( substr($results[$i]->{'real_name'},0,MAX_NAME_SIZE-3)."..." );
@@ -104,15 +104,17 @@ sub process {
 		} else {
 			$record->{'FILEX_FILE_NAME'} = "???";
 		}
+		$record->{'FILEX_LONG_FILE_NAME'} = $S->toHtml($results[$i]->{'real_name'});
 		$record->{'FILEX_FILE_SIZE'} = "$hrsize ".$S->i18n->localizeToHtml($hrunit);
 		$file_owner = $results[$i]->{'owner'};
 		# BEGIN - INSA
-		# $file_owner .= " *" if $self->isStudent($file_owner);
+		#my $student_type = $self->isStudent($file_owner);
+		#$file_owner .= " ($student_type)" if defined($student_type);
 		# END - INSA
 		$record->{'FILEX_FILE_OWNER'} = $S->toHtml($file_owner);
 		$record->{'FILEX_UPLOAD_DATE'} = $S->toHtml(tsToLocal($results[$i]->{'ts_upload_date'}));
 		$record->{'FILEX_EXPIRE_DATE'} = $S->toHtml(tsToLocal($results[$i]->{'ts_expire_date'}));
-		$record->{'FILEX_DOWNLOAD_COUNT'} = $results[$i]->{'download_count'};
+		$record->{'FILEX_DOWNLOAD_COUNT'} = $results[$i]->{'download_count'} || 0;
 		$record->{'FILEX_DISK_NAME'} = $results[$i]->{'file_name'};
 		push(@files_loop,$record);
 	}
@@ -127,7 +129,12 @@ sub isStudent {
 	my $uname = shift;
 	my $S = $self->sys();
 	my $dn = $S->ldap->getUserDn($uname);
-	return ( $dn =~ /ou=ETUDIANT-.*/i ) ? 1 : 0;
+  $dn =~ s/\s//g;
+  my $student_type = undef;
+  if ( $dn =~ /ou=ETUDIANT-(.+),.*,.*/i ) {
+  	$student_type = $1;
+  }
+  return $student_type;
 }
 
 sub genFileInfoUrl {

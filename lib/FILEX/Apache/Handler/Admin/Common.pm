@@ -45,7 +45,7 @@ sub doFileInfos {
 	$T->param(SUB_ACTION_VALUE=>$ARGZ{'sub_action_value'});
 	$T->param(FILE_ID_FIELD_NAME=>$ARGZ{'file_id_field_name'});
 	$T->param(FILE_ID_VALUE=>$file_id);
-	$T->param(FILEX_FORM_ACTION_URL=>$ARGZ{'url'});
+	$T->param(FILEX_FORM_ACTION_URL=>$S->toHtml($ARGZ{'url'}));
 	my $upload = eval { FILEX::DB::Upload->new(id=>$file_id); };
 	if ($@) {
 		$T->param(FILEX_HAS_ERROR=>1);
@@ -60,7 +60,7 @@ sub doFileInfos {
 	# Set template admin mode
 	$T->param(FILEX_ADMIN_MODE=>1) if ( $mode == ADMIN_MODE );
 	# check if the user is the owner of the file
-	my $bIsOwner = $upload->checkOwner($S->getAuthUser());
+	my $bIsOwner = $upload->checkOwner($S->getUser()->getUniqId());
 	# if in admin_mode => ok if the logged user is an administrator
 	# if not in admin_mode then the file must belong to the user
 	if ( ($mode != ADMIN_MODE && !$bIsOwner) ) {
@@ -239,7 +239,7 @@ sub doFileInfos {
 	#
 	# get download address
 	#
-	$T->param(FILEX_GET_ADDRESS=>genGetUrl($S,$upload->getFileName())) if ($bIsExpired != 1);
+	$T->param(FILEX_GET_ADDRESS=>$S->toHtml(genGetUrl($S,$upload->getFileName()))) if ($bIsExpired != 1);
 
 	# Administrative mode display
 	if ( $mode == ADMIN_MODE ) {
@@ -269,7 +269,7 @@ sub doFileInfos {
 		# if file has not expired
 		if ($bIsExpired != 1) {
 			# administrative download address
-			$T->param(FILEX_ADMIN_GET_ADDRESS=>genGetUrl($S,$upload->getFileName(),1));
+			$T->param(FILEX_ADMIN_GET_ADDRESS=>$S->toHtml(genGetUrl($S,$upload->getFileName(),1)));
 			# enable / disable
 			# form parameter name
 			$T->param(FILEX_FORM_STATE_NAME=>FIELD_STATE_NAME);
@@ -316,41 +316,6 @@ sub doFileInfos {
 	return $T;
 }
 
-sub genActivateUrl {
-	my $S = shift;
-	my $current_url = shift;
-	my $state = shift;
-	my $activate = FIELD_STATE_NAME;
-	$current_url .= "&".$S->genQueryString({$activate=>$state});
-	return $current_url;
-}
-
-sub genDeliveryUrl {
-	my $S = shift;
-	my $current_url = shift;
-	my $state = shift;
-	my $activate = FIELD_DELIVERY_NAME;
-	$current_url .= "&".$S->genQueryString({$activate=>$state});
-	return $current_url;
-}
-
-sub genResumeUrl {
-	my $S = shift;
-	my $current_url = shift;
-	my $state = shift;
-	my $activate = FIELD_RESUME_NAME;
-	$current_url .= "&".$S->genQueryString({$activate=>$state});
-	return $current_url;
-}
-
-sub genPurgeUrl {
-	my $S = shift;
-	my $current_url = shift;
-	my $expired = FIELD_EXPIRE_NAME;
-	$current_url .= "&".$S->genQueryString({$expired=>1});
-	return $current_url;
-}
-
 sub genGetUrl {
 	my $S = shift; # FILEX::System
 	my $f = shift; # file_name
@@ -359,9 +324,9 @@ sub genGetUrl {
 	my $fAdmin = ADMIN_DOWNLOAD_FIELD_NAME;
 	my $url = $S->getGetUrl();
 	if ( $admin == 1 ) {
-		$url .= "?".$S->genQueryString({$fFile=>$f,$fAdmin=>1});
+		$url .= "?".$S->genQueryString(params=>{$fFile=>$f,$fAdmin=>1});
 	} else {
-		$url .= "?".$S->genQueryString({$fFile=>$f});
+		$url .= "?".$S->genQueryString(params=>{$fFile=>$f});
 	}
 	return $url;
 }

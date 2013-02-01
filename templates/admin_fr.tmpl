@@ -18,9 +18,9 @@
 	<TMPL_ELSE>
 	<div class="admenu">
 		<form method="post" action="<TMPL_VAR NAME='FILEX_FORM_MENU_ACTION'>">
-			<p>Actions : <select name="maction" id="Select">
+			<p>Actions : <select name="<TMPL_VAR NAME='FILEX_FORM_SELECT_FIELD_NAME'>" id="Select">
 				<TMPL_LOOP NAME="FILEX_ACTION_MENU_LOOP">
-				<option <TMPL_VAR NAME="FILEX_FORM_MENU_OPT_SELECTED"> value="<TMPL_VAR NAME='FILEX_FORM_MENU_OPT_VALUE'>"><TMPL_VAR NAME='FILEX_FORM_MENU_OPT_LABEL'></option>
+				<option <TMPL_IF NAME="FILEX_FORM_MENU_OPT_SELECTED">selected</TMPL_IF> value="<TMPL_VAR NAME='FILEX_FORM_MENU_OPT_VALUE'>"><TMPL_VAR NAME='FILEX_FORM_MENU_OPT_LABEL'></option>
 				</TMPL_LOOP>
 			</select><input type="submit" class="Submit" value="Envoyer"></p>
 		</form>

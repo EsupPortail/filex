@@ -37,15 +37,14 @@ sub handler {
 	my ($order_by,$order);
 	$S = FILEX::System->new(shift);
 	# Auth
-	$S->beginSession();
+	my $user = $S->beginSession();
 	# load template
 	$T = $S->getTemplate(name=>"manage");
 	# Database
 	$DB = FILEX::DB::Manage->new();
-	my $username = $S->getAuthUser();
-	$T->param(FILEX_USER_NAME=>$S->toHtml($S->getUserRealName($username)));
+	$T->param(FILEX_USER_NAME=>$S->toHtml($user->getRealName()));
 	$T->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
-	$T->param(FILEX_UPLOAD_URL=>$S->getUploadUrl());
+	$T->param(FILEX_UPLOAD_URL=>$S->toHtml($S->getUploadUrl()));
 
 	# sub action
 	my $sub_action = $S->apreq->param(SUB_ACTION_FIELD_NAME) || -1;
@@ -77,7 +76,7 @@ sub handler {
 		$cfParams{'orderby'} = $ORDER_FIELDS{$order_by};
 		$cfParams{'order'} = $order;
 	}
-	if ( !$DB->getFiles(owner=>$username,results=>\@results,%cfParams) ) {
+	if ( !$DB->getFiles(owner_uniq_id=>$user->getUniqId(),results=>\@results,%cfParams) ) {
 		$T->param(FILEX_HAS_ERROR=>1);
 		$T->param(FILEX_ERROR=>$S->i18n->localizeToHtml("database error %s",$DB->getLastErrorString()));
 		display($S,$T);
@@ -85,8 +84,8 @@ sub handler {
 	if ($#results >= 0) {
 		$T->param(FILEX_HAS_FILES=>1);
 		$T->param(FILEX_FILE_COUNT=>$#results+1);
-		my ($quota_max_file_size,$quota_max_used_space) = $S->getQuota($username);
-		my $current_used_space = $S->getUserDiskSpace($username);
+		my ($quota_max_file_size,$quota_max_used_space) = $S->getQuota($user);
+		my $current_used_space = $user->getDiskSpace();
 		my ($hrsize,$hrunit) = hrSize($current_used_space);
 		$T->param(FILEX_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
 		if ( $quota_max_used_space > 0 ) {
@@ -94,16 +93,16 @@ sub handler {
 			($hrsize,$hrunit) = hrSize($quota_max_used_space);
 			$T->param(FILEX_MAX_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
 		}
-		$T->param(FILEX_SORT_NAME_ASC_URL=>genSortUrl($S,"filename",0));
-		$T->param(FILEX_SORT_NAME_DESC_URL=>genSortUrl($S,"filename",1));
-		$T->param(FILEX_SORT_SIZE_ASC_URL=>genSortUrl($S,"filesize",0));
-		$T->param(FILEX_SORT_SIZE_DESC_URL=>genSortUrl($S,"filesize",1));
-		$T->param(FILEX_SORT_UPLOAD_DATE_ASC_URL=>genSortUrl($S,"uploaddate",0));
-		$T->param(FILEX_SORT_UPLOAD_DATE_DESC_URL=>genSortUrl($S,"uploaddate",1));
-		$T->param(FILEX_SORT_EXPIRE_DATE_ASC_URL=>genSortUrl($S,"expiredate",0));
-		$T->param(FILEX_SORT_EXPIRE_DATE_DESC_URL=>genSortUrl($S,"expiredate",1));
-		$T->param(FILEX_SORT_DOWNLOAD_COUNT_ASC_URL=>genSortUrl($S,"dlcount",0));
-		$T->param(FILEX_SORT_DOWNLOAD_COUNT_DESC_URL=>genSortUrl($S,"dlcount",1));
+		$T->param(FILEX_SORT_NAME_ASC_URL=>$S->toHtml(genSortUrl($S,"filename",0)));
+		$T->param(FILEX_SORT_NAME_DESC_URL=>$S->toHtml(genSortUrl($S,"filename",1)));
+		$T->param(FILEX_SORT_SIZE_ASC_URL=>$S->toHtml(genSortUrl($S,"filesize",0)));
+		$T->param(FILEX_SORT_SIZE_DESC_URL=>$S->toHtml(genSortUrl($S,"filesize",1)));
+		$T->param(FILEX_SORT_UPLOAD_DATE_ASC_URL=>$S->toHtml(genSortUrl($S,"uploaddate",0)));
+		$T->param(FILEX_SORT_UPLOAD_DATE_DESC_URL=>$S->toHtml(genSortUrl($S,"uploaddate",1)));
+		$T->param(FILEX_SORT_EXPIRE_DATE_ASC_URL=>$S->toHtml(genSortUrl($S,"expiredate",0)));
+		$T->param(FILEX_SORT_EXPIRE_DATE_DESC_URL=>$S->toHtml(genSortUrl($S,"expiredate",1)));
+		$T->param(FILEX_SORT_DOWNLOAD_COUNT_ASC_URL=>$S->toHtml(genSortUrl($S,"dlcount",0)));
+		$T->param(FILEX_SORT_DOWNLOAD_COUNT_DESC_URL=>$S->toHtml(genSortUrl($S,"dlcount",1)));
 		my (@files_loop);
 		for ( my $i = 0; $i <= $#results; $i++ ) {
 			my $record = {};
@@ -118,10 +117,11 @@ sub handler {
 			} else {
 				$record->{'FILEX_FILE_NAME'} = "???";
 			}
-			$record->{'FILEX_FILE_INFO_URL'} = genFileInfoUrl($S,$results[$i]->{'id'});
+			$record->{'FILEX_LONG_FILE_NAME'} = $S->toHtml($results[$i]->{'real_name'});
+			$record->{'FILEX_FILE_INFO_URL'} = $S->toHtml(genFileInfoUrl($S,$results[$i]->{'id'}));
 			$record->{'FILEX_UPLOAD_DATE'} = $S->toHtml(tsToLocal($results[$i]->{'ts_upload_date'}));
 			$record->{'FILEX_EXPIRE_DATE'} = $S->toHtml(tsToLocal($results[$i]->{'ts_expire_date'}));
-			$record->{'FILEX_DOWNLOAD_COUNT'} = $results[$i]->{'download_count'};
+			$record->{'FILEX_DOWNLOAD_COUNT'} = $results[$i]->{'download_count'} || 0;
 			$record->{'FILEX_HAS_EXPIRED'} = 1 if ($results[$i]->{'expired'} == 1);
 			push(@files_loop,$record);
 		}
@@ -152,7 +152,7 @@ sub genSortUrl {
 	my $sub_sort_order = SUB_SORT_ORDER;
 	my $url = $S->getCurrentUrl();
 	$url .= "?".$S->genQueryString(
-		{
+		params=>{
 			$sub_action => SUB_SORT,
 			$sub_sort_by => $order_by,
 			$sub_sort_order => $order
@@ -165,7 +165,7 @@ sub genFileInfoUrl {
 	my $sub_action = SUB_ACTION_FIELD_NAME;
 	my $url = $S->getCurrentUrl();
 	$url .= "?".$S->genQueryString(
-		{
+		params=>{
 			$sub_action => SUB_FILEINFO,
 			id => $file_id
 		}

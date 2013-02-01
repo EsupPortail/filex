@@ -28,7 +28,7 @@
 		</thead>
 		<tbody>
 			<TMPL_LOOP NAME="FILEX_FILES_LOOP">
-			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>><td><a href="javascript:;" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>')" title="Information"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td><TMPL_VAR NAME="FILEX_DISK_NAME"></td><td><TMPL_VAR NAME="FILEX_FILE_OWNER"></td><td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td><td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td><td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td></tr>
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>><td><a href="javascript:;" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>')" title="<TMPL_VAR NAME='FILEX_LONG_FILE_NAME'>"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td><td><TMPL_VAR NAME="FILEX_DISK_NAME"></td><td><TMPL_VAR NAME="FILEX_FILE_OWNER"></td><td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td><td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td><td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td><td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td></tr>
 			</TMPL_LOOP>
 		</tbody>
 	</table>

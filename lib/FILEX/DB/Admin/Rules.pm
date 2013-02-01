@@ -16,7 +16,8 @@ $VERSION = 1.0;
 my %RULE_TYPES = (
   1 => "DN",
   2 => "GROUP",
-	3 => "UID"
+	3 => "UID",
+	4 => "LDAP"
 );
 
 # exported functions

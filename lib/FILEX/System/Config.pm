@@ -11,6 +11,7 @@ use constant CASECTION => "Cache";
 use constant LDAPSECTION => "Ldap";
 use constant URISECTION => "Uri";
 use constant SMTPSECTION => "Smtp";
+use constant ADMSECTION => "Admin";
 
 $VERSION = 1.1;
 
@@ -65,7 +66,7 @@ sub _INITIALIZE_ {
 	$self->{'_config_'} = new Config::IniFiles(-file=>${$self->{'_config_path_'}},-reloadwarn=>1);
 	# die on error
 	if ( !defined($self->{'_config_'}) ) {
-		warn (__PACKAGE__,"-> Unable to Read Config File : ",${$self->{'_config_path'}});
+		warn (__PACKAGE__,"-> Unable to Read Config File : ",${$self->{'_config_path_'}});
 		return undef;
 	}
 	# check values
@@ -188,6 +189,26 @@ sub _VALIDATE_ {
 			warn(__PACKAGE__,"-> [".SYSSECTION."].CasServer is mandatory !");
 			return undef;
 	}
+	# [System].SessionDirectory
+	$tst_value = $config->val(SYSSECTION,"SessionDirectory");
+	if ( !$tst_value || length($tst_value) <=0 ) {
+		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionDirectory is mandatory !");
+		return undef;
+	}
+	if ( ! -d $tst_value ) {
+		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionDirectory is not a directory : $tst_value !");
+		return undef;
+	}
+	# [System].SessionLockDirectory
+	$tst_value = $config->val(SYSSECTION,"SessionLockDirectory");
+	if ( !$tst_value || length($tst_value) <=0 ) {
+		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionLockDirectory is mandatory !");
+		return undef;
+	}
+	if ( ! -d $tst_value ) {
+		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionLockDirectory is not a directory : $tst_value !");
+		return undef;
+	}
 
 	# [Ldap]
 	if ( $config->SectionExists(LDAPSECTION) != 1 ) {
@@ -257,7 +278,29 @@ sub _VALIDATE_ {
 		return undef;
 	}
 	warn(__PACKAGE__,"-> [".URISECTION."].manage : invalid uri : $tst_value !") && return undef if ( $tst_value !~ /^\//);
-	
+	# [Admin]
+	if ( $config->SectionExists(ADMSECTION) != 1 ) {
+		warn(__PACKAGE__,"-> [".ADMSECTION."] is mantatory !");
+		return undef;
+	}
+	# [Admin].Modules
+	$tst_value = $config->val(ADMSECTION,"Modules");
+	if ( !$tst_value || length($tst_value) <= 0 ) {
+		warn(__PACKAGE__,"-> [".ADMSECTION."].Modules is mandatory !");
+		return undef;
+	}
+	# [Admin].Default
+	$tst_value = $config->val(ADMSECTION,"Default");
+	if ( !$tst_value || length($tst_value) <= 0 ) {
+		warn(__PACKAGE__,"-> [".ADMSECTION."].Default is mandatory !");
+		return undef;
+	}
+	# [Admin].ModuleRouteParameter
+	$tst_value = $config->val(ADMSECTION,"ModuleRouteParameter");
+	if ( !$tst_value || length($tst_value) <= 0 ) {
+		warn(__PACKAGE__,"-> [".ADMSECTION."].ModuleRouteParameter is mandatory !");
+		return undef;
+	}
 	return 1;
 }
 
@@ -265,7 +308,7 @@ sub _VALIDATE_ {
 sub _reload {
 	my $self = shift;
 	# return if we don't need reload
-	return if ( ! ${$self->{'_reload_'}} );
+	return if ( !${$self->{'_reload_'}} );
 	# inline error function
 	my $errfunc;
 	if ( ${$self->{'_dieonreload_'}} ) {
@@ -280,14 +323,15 @@ sub _reload {
 		$errfunc->("Unable to stat ",${$self->{'_config_path_'}});
 		return undef;
 	}
+	# get current modified time
 	my $st_mtime = $st->mtime();
 	# return if no reload needed
 	if ( $self->{'_cmtime_'} < $st_mtime ) {
+		warn(__PACKAGE__,"-> Need to Reload ",${$self->{'_config_path_'}},":",$self->{'_cmtime_'},":",$st_mtime);
 		$self->{'_cmtime_'} = $st_mtime;
 	} else {
 		return;
 	}
-	warn(__PACKAGE__,"-> Need to Reload ",${$self->{'_config_path_'}},":",$self->{'_cmtime_'});
 	if ( ! $self->{'_config_'}->ReadConfig() ) {
 		$errfunc->("Unable to Re-Read Configuration File ",${$self->{'_config_path_'}});
 		return undef;
@@ -448,7 +492,12 @@ sub needEmailNotification {
 	# if set to 1
 	return ( $self->{'_config_'}->val(SYSSECTION,"EmailNotify") == 1 ) ? 1 : undef;
 }
-
+# check if we need to use the big brother feature
+sub useBigBrother {
+	my $self = shift;
+	$self->_reload();
+	return ( $self->{'_config_'}->val(SYSSECTION,"UseBigBrother") == 1 ) ? 1 : 0;
+}
 # get CAS Server
 sub getCasServer {
 	my $self = shift;
@@ -456,6 +505,18 @@ sub getCasServer {
 	return $self->{'_config_'}->val(SYSSECTION,"CasServer");
 }
 
+# session directory
+sub getSessionDirectory {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(SYSSECTION,"SessionDirectory");
+}
+# session lock
+sub getSessionLockDirectory {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(SYSSECTION,"SessionLockDirectory");
+}
 # getCookieName
 sub getCookieName {
 	my $self = shift;
@@ -470,13 +531,6 @@ sub getCookieExpires {
 	# default to 30 minutes if not specified
 	my $cktime = $self->{'_config_'}->val(SYSSECTION,"CookieExpires",1800);
 	return ($cktime =~ /^[0-9]+$/) ? $cktime : 1800;
-}
-
-# get Cookie magic
-sub getCookieMagik {
-	my $self = shift;
-	$self->_reload();
-	return $self->{'_config_'}->val(SYSSECTION,"CookieMagik","MaGiK");
 }
 
 # the template directory
@@ -577,7 +631,18 @@ sub getLdapUsernameAttr {
 	$self->_reload();
 	return $self->{'_config_'}->val(LDAPSECTION,"UsernameAttr");
 }
-
+# get ldap uniq id attr
+sub getLdapUniqAttr {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(LDAPSECTION,"UniqAttr",undef);
+}
+# get ldap unid id attr mode
+sub getLdapUniqAttrMode {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(LDAPSECTION,"UniqAttrMode",0);
+}
 # get ldap mail attr
 sub getLdapMailAttr {
 	my $self = shift;
@@ -658,6 +723,36 @@ sub getUriStatic {
 	my $self = shift;
 	$self->_reload();
 	return $self->{'_config_'}->val(URISECTION,"static");
+}
+
+sub getUriManageXml {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(URISECTION,"managexml");
+}
+
+sub useUriManageXml {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(URISECTION,"useManageXml",0);
+}
+
+# admin
+sub getAdminModules {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(ADMSECTION,"Modules");
+}
+
+sub getAdminDefault {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(ADMSECTION,"Default");
+}
+sub getAdminModuleRouteParameter {
+	my $self = shift;
+	$self->_reload();
+	return $self->{'_config_'}->val(ADMSECTION,"ModuleRouteParameter");
 }
 
 sub isSetup {

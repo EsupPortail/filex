@@ -44,7 +44,8 @@ sub new {
 			renew_count => undef,
 			with_password => undef,
 			password => undef,
-			user_agent => undef
+			user_agent => undef,
+			owner_uniq_id => undef
 		}
 	};
 	my %ARGZ = @_;
@@ -255,6 +256,15 @@ sub _create {
     return undef;
   } else {
 		push(@fields,"owner");
+		push(@values,$dbh->quote($value));
+  }
+	# owner_uniq_id
+	$value = $self->{'_UPLOAD_'}->{'fields'}->{'owner_uniq_id'};
+  if ( !defined($value) || !$self->checkStrLength($value,0,256) ) {
+    $self->setLastError(string=>"[ owner_uniq_id ] must exists or invalid field format",code=>-2,query=>"$value");
+    return undef;
+  } else {
+		push(@fields,"owner_uniq_id");
 		push(@values,$dbh->quote($value));
   }
 	# get_resume (not mandatory)
@@ -502,7 +512,21 @@ sub getOwner {
 	my $self = shift;
 	return $self->{'_UPLOAD_'}->{'fields'}->{'owner'};
 }
-
+# set only if new
+sub setOwnerUniqId {
+	my $self = shift;
+	my $value = shift;
+	if ( $self->{'_UPLOAD_'}->{'is_new'} != 1 ) {
+		warn(__PACKAGE__,"-> Can only set [ owner_uniq_id ] on new record");
+		return;
+	}
+	$self->{'_UPLOAD_'}->{'fields'}->{'owner_uniq_id'} = $value;
+	$self->{'_UPLOAD_'}->{'data_change'} ++;
+}
+sub getOwnerUniqId {
+	my $self = shift;
+	return $self->{'_UPLOAD_'}->{'fields'}->{'owner_uniq_id'};
+}
 # set only if new
 sub setContentType {
 	my $self = shift;
@@ -694,7 +718,7 @@ sub extendExpireDate {
 sub checkOwner {
 	my $self = shift;
 	my $owner = shift;
-	return ( $owner eq $self->{'_UPLOAD_'}->{'fields'}->{'owner'} )?1:0;
+	return ( $owner eq $self->{'_UPLOAD_'}->{'fields'}->{'owner_uniq_id'} )?1:0;
 }
 # add download record
 sub addDownloadRecord {
@@ -742,7 +766,7 @@ sub addDownloadRecord {
 # get Download count
 sub getDownloadCount {
 	my $self = shift;
-	return $self->{'_UPLOAD_'}->{'fields'}->{'download_count'};
+	return $self->{'_UPLOAD_'}->{'fields'}->{'download_count'} || 0;
 }
 # is downloaded
 sub isDownloaded {

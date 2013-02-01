@@ -81,8 +81,8 @@ sub process {
 					FILEX_ADMIN_INFOS=>$S->toHtml($S->getUserRealName($results[$i]->{'uid'})),
 					FILEX_ADMIN_MAIL=>$S->getMail($results[$i]->{'uid'}),
 					FILEX_ADMIN_STATE=>( $state ) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable"),
-					FILEX_REMOVE_URL=>$delurl,
-					FILEX_STATE_URL=>$stateurl
+					FILEX_REMOVE_URL=>$S->toHtml($delurl),
+					FILEX_STATE_URL=>$S->toHtml($stateurl)
 			});
 			$T->param(FILEX_HAS_ADMINS=>1);
 			$T->param(FILEX_ADMINS_LOOP=>\@loop);

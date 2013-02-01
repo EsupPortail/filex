@@ -7,19 +7,24 @@ use FILEX::DB::base 1.0;
 @ISA = qw(FILEX::DB::base);
 $VERSION = 1.0;
 
-# owner => user name
+# owner_uniq_id => user name
 # results => ARRAY REF
 # [opt] orderby => "field name"
 # [opt] order =>  1 (desc) | 0 (asc)
+# [opt] active => 1 | 0 get only active files - non expired -
 sub getFiles {
 	my $self = shift;
 	my %ARGZ = @_;
-	warn(__PACKAGE__,"require an Array Ref") && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY");
-	warn(__PACKAGE__,"require a owner") && return undef if ( !exists($ARGZ{'results'}) || length($ARGZ{'owner'}) == 0);
+	warn(__PACKAGE__,"=> require an Array Ref") && return undef if ( !exists($ARGZ{'results'}) || ref($ARGZ{'results'}) ne "ARRAY");
+	warn(__PACKAGE__,"=> require a owner_uniq_id") && return undef if ( !exists($ARGZ{'owner_uniq_id'}) || length($ARGZ{'owner_uniq_id'}) == 0);
 	my $dbh = $self->_dbh();
 	my $res = $ARGZ{'results'};
-	my $owner = $dbh->quote($ARGZ{'owner'});
+	my $owner = $dbh->quote($ARGZ{'owner_uniq_id'});
+	# show only active files
+	my $active = ( exists($ARGZ{'active'}) ) ? $ARGZ{'active'} : 0;
+	$active = 0 if ( !defined($active) || ($active != 1) );
 
+	# the query	
 	my $strQuery = "SELECT u.*, ".
 	               "UNIX_TIMESTAMP(upload_date) AS ts_upload_date, ".
 	               "UNIX_TIMESTAMP(expire_date) AS ts_expire_date, ".
@@ -27,8 +32,12 @@ sub getFiles {
 	               "NOW() > expire_date AS expired ".
 	               "FROM upload AS u ".
 	               "LEFT JOIN get AS g ON u.id = g.upload_id ".
-	               "WHERE owner=$owner ".
-	               "GROUP BY u.id ";
+	               "WHERE owner_uniq_id=$owner ";
+	if ( $active ) {
+		$strQuery .= "AND expire_date >= NOW() ";
+	}
+	$strQuery .=   "GROUP BY u.id ";
+	# order
 	my $order_by = ( exists($ARGZ{'orderby'}) && length($ARGZ{'orderby'}) ) ? $ARGZ{'orderby'} : 'upload_date';
 	my $order = ( exists($ARGZ{'order'}) ) ? $ARGZ{'order'} : 1;
 	$order = ( defined($order) && $order == 1 ) ? "DESC" : "ASC";

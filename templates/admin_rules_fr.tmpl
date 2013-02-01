@@ -5,6 +5,7 @@
 		<li>Les r&egrave;gles de type "<strong>DN</strong>" : ce sont des expressions r&eacute;guli&egrave;res appliqu&eacute;es sur le DN d'un utilisateur authentifi&eacute; avec succ&egrave;s.</li>
 		<li>Les r&egrave;gles de type "<strong>GROUP</strong>" : ce sont des noms de groupe LDAP. Si l'utilisateur appartient &agrave; l'un de ces groupes, une action pourra &egrave;tre effectu&eacute;e.</li>
 		<li>Les r&egrave;gles de type "<strong>UID</strong>" : ce sont des identifiants d'utilisateurs.</li>
+		<li>Les r&egrave;gles de type "<strong>LDAP</strong>" : ce sont des requ&ecirc;tes ldap appliqu&eacute;es sur l'identifiant de l'utilisateur (par exemple : si la r&egrave;gle est "<code>(&amp;(employeeType=student)(departmentNumber=XXX))</code>" la requ&ecirc;te effective sera : "<code>(&amp;(uid=user)<strong>(&amp;(employeeType=student)(departmentNumber=XXX))</strong>)</code>")</li>
 	</ul>
 	<p><strong>Attention</strong> : les r&egrave;gles &eacute;tant r&eacute;f&eacute;renc&eacute;es par la gestion des <em>exclusions</em> et des <em>quotas</em>; si vous supprimer une r&egrave;gle, alors les entr&eacute;es d'exclusions et de quotas les r&eacute;f&eacute;ren&ccedil;ant seront supprim&eacute;es.</p>
 	<form method="post" action="<TMPL_VAR NAME='FILEX_RULES_FORM_ACTION'>">

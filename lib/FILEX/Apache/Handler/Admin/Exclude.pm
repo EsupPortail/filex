@@ -9,14 +9,14 @@ use constant SA_STATE => 2;
 use constant SA_MODIFY => 4;
 use constant SA_SHOW_MODIFY => 5;
 use constant SA_ADD => 3;
-#use constant SUBACTION => "sa";
 
 use constant SUB_ACTION_FIELD_NAME=>"sa";
 use constant EXCLUDE_RULE_ID_FIELD_NAME=>"exclude_rule_id";
-use constant EXCLUDE_RULE_NAME_FIELD_NAME=>"exclude_name";
+use constant EXCLUDE_RULE_DESCRIPTION_FIELD_NAME=>"exclude_desc";
 use constant EXCLUDE_RULE_RORDER_FIELD_NAME=>"exclude_rorder";
 use constant EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME=>"exclude_id";
 use constant EXCLUDE_RULE_EXCLUDE_STATE_FIELD_NAME=>"exclude_state";
+use constant EXCLUDE_RULE_REASON_FIELD_NAME=>"exclude_rule_reason";
 
 use FILEX::DB::Admin::Exclude;
 use FILEX::Tools::Utils qw(tsToLocal);
@@ -29,9 +29,10 @@ sub process {
 	# fill basic template fields
 	$T->param(FILEX_EXCLUDE_FORM_ACTION=>$S->getCurrentUrl());
 	$T->param(FILEX_EXCLUDE_RULE_ID_FIELD_NAME=>EXCLUDE_RULE_ID_FIELD_NAME);
-	$T->param(FILEX_EXCLUDE_RULE_NAME_FIELD_NAME=>EXCLUDE_RULE_NAME_FIELD_NAME);
+	$T->param(FILEX_EXCLUDE_RULE_DESCRIPTION_FIELD_NAME=>EXCLUDE_RULE_DESCRIPTION_FIELD_NAME);
 	$T->param(FILEX_EXCLUDE_RULE_RORDER_FIELD_NAME=>EXCLUDE_RULE_RORDER_FIELD_NAME);
 	$T->param(FILEX_EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME=>EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME);
+	$T->param(FILEX_EXCLUDE_RULE_REASON_FIELD_NAME=>EXCLUDE_RULE_REASON_FIELD_NAME);
 	$T->param(FILEX_MAIN_ACTION_FIELD_NAME=>$self->getDispatchName());
 	$T->param(FILEX_MAIN_ACTION_ID=>$self->getActionId());
 	$T->param(FILEX_SUB_ACTION_FIELD_NAME=>SUB_ACTION_FIELD_NAME);
@@ -50,7 +51,8 @@ sub process {
 	SWITCH : {
 		# add a new rule
 		if ( $sub_action == SA_ADD ) {
-			if ( ! $exclude_DB->add(name=>$S->apreq->param(EXCLUDE_RULE_NAME_FIELD_NAME),
+			if ( ! $exclude_DB->add(description=>$S->apreq->param(EXCLUDE_RULE_DESCRIPTION_FIELD_NAME),
+				reason=>$S->apreq->param(EXCLUDE_RULE_REASON_FIELD_NAME),
 				rule_id=>$S->apreq->param(EXCLUDE_RULE_ID_FIELD_NAME),
 				rorder=>$S->apreq->param(EXCLUDE_RULE_RORDER_FIELD_NAME)) ) {
 				$errstr = ($exclude_DB->getLastErrorCode() == 1062) ? $S->i18n->localize("rule already exists") : $exclude_DB->getLastErrorString();
@@ -86,9 +88,10 @@ sub process {
 			$hkey = keys(%hexclude);
 			if ( $hkey > 0 ) {
 				# fill modify template
-				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_NAME=>$hexclude{'name'});
+				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_DESCRIPTION=>$hexclude{'description'});
 				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_ID=>$hid);
 				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_RORDER=>$hexclude{'rorder'});
+				$T->param(FILEX_EXCLUDE_FORM_EXCLUDE_REASON=>$hexclude{'reason'});
 				$selected_rule = $hexclude{'rule_id'};
 				$form_sub_action = SA_MODIFY;
 			}
@@ -97,7 +100,8 @@ sub process {
 		# modify a selected rule
 		if ( $sub_action == SA_MODIFY ) {
 			if ( ! $exclude_DB->modify(id=>$S->apreq->param(EXCLUDE_RULE_EXCLUDE_ID_FIELD_NAME),
-					name=>$S->apreq->param(EXCLUDE_RULE_NAME_FIELD_NAME),
+					description=>$S->apreq->param(EXCLUDE_RULE_DESCRIPTION_FIELD_NAME),
+					reason=>$S->apreq->param(EXCLUDE_RULE_REASON_FIELD_NAME),
 					rule_id=>$S->apreq->param(EXCLUDE_RULE_ID_FIELD_NAME),
 					rorder=>$S->apreq->param(EXCLUDE_RULE_RORDER_FIELD_NAME)) ) {
 				$b_err = 1;
@@ -135,13 +139,13 @@ sub process {
 			my $record = {};
 			$record->{'FILEX_EXCLUDE_DATE'} = tsToLocal($results[$i]->{'ts_create_date'});
 			$record->{'FILEX_EXCLUDE_ORDER'} = $results[$i]->{'rorder'};
-			$record->{'FILEX_EXCLUDE_NAME'} = $S->toHtml($results[$i]->{'name'});
+			$record->{'FILEX_EXCLUDE_DESCRIPTION'} = $S->toHtml($results[$i]->{'description'}||'');
 			$record->{'FILEX_EXCLUDE_STATE'} = ($results[$i]->{'enable'} == 1) ? $S->i18n->localizeToHtml("enable") : $S->i18n->localizeToHtml("disable");
 			$record->{'FILEX_EXCLUDE_RULE'} = $S->toHtml($results[$i]->{'rule_name'});
 			$state = $results[$i]->{'enable'};
-			$record->{'FILEX_STATE_URL'} = $self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 );
-			$record->{'FILEX_REMOVE_URL'} = $self->genRemoveUrl($results[$i]->{'id'});
-			$record->{'FILEX_MODIFY_URL'} = $self->genModifyUrl($results[$i]->{'id'});
+			$record->{'FILEX_STATE_URL'} = $S->toHtml($self->genStateUrl($results[$i]->{'id'}, ($state == 1) ? 0 : 1 ));
+			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
+			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@exclude_loop,$record);
 		}
 		$T->param(FILEX_HAS_EXCLUDE=>1);

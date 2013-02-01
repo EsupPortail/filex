@@ -25,6 +25,13 @@ sub handler {
 	my $dlid = $S->apreq->param(DLID_FIELD_NAME);
 	my $inireq = $S->apreq->param(INI_FIELD_NAME);
 	my $url = genUrl($S->getCurrentUrl(),$dlid);
+	# check if user is authenticated
+  my $user = $S->beginSession(no_auth=>1);
+	my $max_file_size = 0;
+	# if authenticated, retrieve the user max file size
+	# retrive <0 or 0 or >0
+	$max_file_size = $S->getUserMaxFileSize($user) if defined($user);
+
 	my $end = undef;
 	my %dl_info;
 	# no dlid 
@@ -76,23 +83,10 @@ sub handler {
 	$dl_info{'end'} = $IPCache->get($dlid."end") || 0;
 	$dl_info{'lastupdatetime'} = $IPCache->get($dlid."lastupdatetime") || 0;
 	$dl_info{'lastupdatelength'} = $IPCache->get($dlid."lastupdatelength") || 0;
-	$dl_info{'toolarge'} = $IPCache->get($dlid."toolarge") || 0;
+
 	# fill the filename
 	$template->param(FILEX_FILE_NAME=>toHtml($dl_info{'filename'}));
-	# if file size toolarge
-	if ( $dl_info{'toolarge'} == 1 ) {
-		# reset 
-		$IPCache->set($dlid."canceled",0);
-		$IPCache->set($dlid."length",0);
-		$IPCache->set($dlid."toolarge",0);
-		$IPCache->set($dlid."lastupdatelength",0);
-		$IPCache->set($dlid."lastupdatetime",0);
-		$template->param(FILEX_HAS_ERROR=>1);
-		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file size too large"));
-		$template->param(FILEX_HAS_ERROR_DESC=>1);
-		$template->param(FILEX_ERROR_DESC=>$S->i18n->localizeToHtml("too large desc"));
-		display($S,$template,$url,1);
-	}
+
 	# if upload canceled
 	if ( $dl_info{'canceled'} == 1 ) {
 		# reset canceled value
@@ -135,7 +129,9 @@ sub handler {
 	$IPCache->set($dlid."lastupdatelength", $dl_info{'length'});
 	# progress
 	my $progress = ceil( ($dl_info{'length'}*100) / $dl_info{'size'} );
-
+	# in case of no cookie the meter continue to work
+	# make the meter end
+	$IPCache->set($dlid."end",1) if ( ($progress == 100) && !defined($user) ); 
 	# fill template
 	my ($fsz, $funit);
 	$template->param(FILEX_PROGRESS=>$progress);
@@ -146,6 +142,11 @@ sub handler {
 	($fsz,$funit) = hrSize($currate);
 	$template->param(FILEX_DATA_RATE=>$fsz." ".$S->i18n->localizeToHtml($funit)."/s");
 	$template->param(FILEX_REMAINING_TIME=>$rtime." ".$S->i18n->localizeToHtml("seconds"));
+	# check for the max_file_size
+	if ( ($max_file_size > 0) && ($dl_info{'length'} > $max_file_size) ) {
+		$template->param(FILEX_NOB_ERROR=>$S->i18n->localizeToHtml("file size too large"));
+		$template->param(FILEX_NOB_ERROR_DESC=>$S->i18n->localizeToHtml("too large desc"));
+	}
 	display($S,$template,$url);
 	return OK;
 }

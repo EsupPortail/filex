@@ -52,7 +52,7 @@ warn($#errors);
 				}
 			);
 		}
-		$T->param(FILEX_PURGE_ALL_URL=>$self->genPurgeAllUrl());
+		$T->param(FILEX_PURGE_ALL_URL=>$S->toHtml($self->genPurgeAllUrl()));
 		$T->param(FILEX_HAS_PURGE=>1);
 		$T->param(FILEX_PURGE_LOOP=>\@loop);
 	}
@@ -106,7 +106,7 @@ sub sendResume {
 	$t->param(FILEX_DOWNLOAD_COUNT=>$upload->getDownloadCount());
 	# loop
 	my (@dl,@dl_loop);
-	if ( $upload->getDownloads(\@dl) ) {
+	if ( $upload->getDownloads(results=>\@dl) ) {
 		for ( my $i=0; $i <= $#dl; $i++ ) {
 			push(@dl_loop,
 				{ 

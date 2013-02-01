@@ -1,0 +1,18 @@
+Une des grosses modification dans la version 1.5 est l'ajout du champ OWNER_UNIQ_ID dans la table UPLOAD.
+
+Ce champ à été rajouté car il est possible que l'identifiant d'un utilisateur soit recyclé.
+
+Le problème est que l'historique des fichiers de l'ancien utilisateur appartiendra alors au nouveau
+
+Donc toute les opérations sur les fichiers d'un utilisateurs sont maintenant effectuées sur le champ OWNER_UNIQ_ID,
+le champ OWNER devenant en quelque sorte un alias.
+
+Si vous mettez à jour votre version de FILEX; il y a un script dans le répertoire doc/ nommé : update_uniq_id.pl
+
+Ce script met à jour les valeurs du champ OWNER_UNIQ_ID pour chaque utilisateur référencé dans la base de donnée.
+
+Usage : update_uniq_id -c /chemin/vers/FILEX.ini
+
+ATTENTION : 
+
+Veillez à configurer correctement les paramètres "UniqAttr" et "UniqAttrMode" du fichier FILEX.ini

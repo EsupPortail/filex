@@ -1,0 +1,163 @@
+<h1>Recherche : </h1>
+<ul>
+	<li>Pour les recherches utilisant les op&eacute;rateurs de type &quot;<strong>like</strong>&quot; utilisez &quot;<strong>%</strong>&quot; comme caract&egrave;re g&eacute;n&eacute;rique.</li>
+	<li>Les dates sont au format <strong>JJ/MM/AAAA</strong></li>
+</ul>
+<form method="post" action="<TMPL_VAR NAME='FILEX_SEARCH_FORM_ACTION'>">
+	<!-- file name -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_NAME_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_NAME_E_CHECKED">checked</TMPL_IF>>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_NAME_J_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_NAME_J_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idname">Nom : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_NAME_T_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_NAME_T_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<input type="text" id="idname" name="<TMPL_VAR NAME='FILEX_SEARCH_NAME_FIELD_NAME'>" size="50" maxlength="255" class="Field" value="<TMPL_VAR NAME='FILEX_SEARCH_NAME_VALUE'>"><br>
+	<!-- owner -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_OWNER_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_OWNER_E_CHECKED">checked</TMPL_IF>>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_OWNER_J_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_OWNER_J_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idowner">Propri&eacute;taire : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_OWNER_T_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_OWNER_T_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<input type="text" class="Field" id="idowner" name="<TMPL_VAR NAME='FILEX_SEARCH_OWNER_FIELD_NAME'>" size="30" maxlength="50" value="<TMPL_VAR NAME='FILEX_SEARCH_OWNER_VALUE'>"><br>
+	<!-- upload date -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_UDATE_E_CHECKED">checked</TMPL_IF>>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE_J_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_UDATE_J_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idudate">Date de d&eacute;pose : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE_T_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_UDATE_T_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<input type="text" id="idudate" name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE_FIELD_NAME'>" class="Field" size="10" maxlength="10" value="<TMPL_VAR NAME='FILEX_SEARCH_UDATE_VALUE'>">
+	<!-- upload_date2 -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE2_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_UDATE2_E_CHECKED">checked</TMPL_IF>>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE2_J_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_UDATE2_J_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idudate2">Date de d&eacute;pose : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE2_T_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_UDATE2_T_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<input type="text" id="idudate2" name="<TMPL_VAR NAME='FILEX_SEARCH_UDATE2_FIELD_NAME'>" class="Field" size="10" maxlength="10" value="<TMPL_VAR NAME='FILEX_SEARCH_UDATE2_VALUE'>"><br>
+	<!-- expire date -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_EDATE_E_CHECKED">checked</TMPL_IF>>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE_J_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_EDATE_J_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idedate">Date de d'expiration : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE_T_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_EDATE_T_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<input type="text" name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE_FIELD_NAME'>" id="idedate" class="Field" size="10" maxlength="10" value="<TMPL_VAR NAME='FILEX_SEARCH_EDATE_VALUE'>">
+	<!-- expire_date2 -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE2_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_EDATE2_E_CHECKED">checked</TMPL_IF>>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE2_J_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_EDATE2_J_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idedate2">Date de d'expiration : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE2_T_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_EDATE2_T_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<input type="text" name="<TMPL_VAR NAME='FILEX_SEARCH_EDATE2_FIELD_NAME'>" id="idedate2" class="Field" size="10" maxlength="10" value="<TMPL_VAR NAME='FILEX_SEARCH_EDATE2_VALUE'>"><br>
+	<!-- file size -->
+	<!-- enable -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_ENABLE_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_ENABLE_E_CHECKED">checked</TMPL_IF>>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_ENABLE_J_FIELD_NAME'>">
+	<TMPL_LOOP NAME="FILEX_SEARCH_ENABLE_J_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idenable">D&eacute;sactiv&eacute; : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_ENABLE_FIELD_NAME'>" id="idenable">
+	<TMPL_LOOP NAME="FILEX_SEARCH_ENABLE_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select><br>
+	<!-- hidden params for routing -->
+	<!-- sort clause -->
+	<input type="checkbox" name="<TMPL_VAR NAME='FILEX_SEARCH_SORT_E_FIELD_NAME'>" value="1" <TMPL_IF NAME="FILEX_SEARCH_SORT_E_CHECKED">checked</TMPL_IF>>
+	<label for="idsort">Trier par : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_SORT_FIELD_NAME'>" id="idsort">
+	<TMPL_LOOP NAME="FILEX_SEARCH_SORT_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select>
+	<label for="idsortorder">Ordre : </label>
+	<select name="<TMPL_VAR NAME='FILEX_SEARCH_SORT_O_FIELD_NAME'>" id="idsortorder">
+	<TMPL_LOOP NAME="FILEX_SEARCH_SORT_O_LOOP">
+		<option value="<TMPL_VAR NAME='VALUE'>" <TMPL_IF NAME="SELECTED">selected</TMPL_IF>><TMPL_VAR NAME="TEXT"></option>
+	</TMPL_LOOP>
+	</select><br>
+	<input type="hidden" name="<TMPL_VAR NAME='FILEX_MAIN_ACTION_FIELD_NAME'>" value="<TMPL_VAR NAME='FILEX_MAIN_ACTION_ID'>">
+	<input type="submit" value="Chercher" class="Submit"><input type="reset" value="Annuler" class="Submit">
+</form>
+<TMPL_IF NAME="FILEX_HAS_ERROR"><p class="error"><TMPL_VAR NAME="FILEX_HAS_ERROR"></p></TMPL_IF>
+<TMPL_IF NAME="FILEX_HAS_RESULTS">
+	<script language="javascript" type="text/javascript">
+	<!--
+	function openInfoWindow(url) {
+	var infowin;
+	infowin = this.open(url,"_file","toolbar=no,location=no,directories=no,status=1,menubar=no,scrollbars=1,resizable=1,width=500,height=400");
+	infowin.focus();
+	}
+	//-->
+	</script>
+	<table class="infos" cellpadding="0" cellspacing="0" width="100%" summary="R&eacute;sultats de la recherche">
+		<caption>R&eacute;sultats de la recherche : <TMPL_VAR NAME="FILEX_SEARCH_COUNT"> fichier(s)</caption>
+		<thead>
+			<tr>
+				<td>Nom</td>
+				<td>Disque</td>
+				<td>Propri&eacute;taire</td>
+				<td>Taille</td>
+				<td>D&eacute;pos&eacute; le</td>
+				<td>Expire le</td>
+				<td>T&eacute;l&eacute;charg&eacute;</td>
+			</tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="FILEX_RESULTS_LOOP">
+			<tr<TMPL_UNLESS NAME="__odd__"> class="even"</TMPL_UNLESS>>
+				<td><a href="javascript:;" onClick="javascript:openInfoWindow('<TMPL_VAR NAME='FILEX_FILE_INFO_URL'>')" title="<TMPL_VAR NAME='FILEX_LONG_FILE_NAME'>"><TMPL_VAR NAME="FILEX_FILE_NAME"></a></td>
+				<td><TMPL_VAR NAME="FILEX_DISK_NAME"></td>
+				<td><TMPL_VAR NAME="FILEX_FILE_OWNER"></td>
+				<td><TMPL_VAR NAME="FILEX_FILE_SIZE"></td>
+				<td><TMPL_VAR NAME="FILEX_UPLOAD_DATE"></td>
+				<td><TMPL_VAR NAME="FILEX_EXPIRE_DATE"></td>
+				<td><TMPL_VAR NAME="FILEX_DOWNLOAD_COUNT"></td>
+			</tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+<TMPL_ELSE>
+<p>Pas de r&eacute;sultats</p>
+</TMPL_IF>

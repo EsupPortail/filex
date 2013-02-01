@@ -122,8 +122,8 @@ sub process {
 			$record->{'FILEX_RULE_NAME'} = $S->toHtml($results[$i]->{'name'});
 			$record->{'FILEX_RULE_EXP'} = $S->toHtml($results[$i]->{'exp'});
 			$state = $results[$i]->{'enable'};
-			$record->{'FILEX_REMOVE_URL'} = $self->genRemoveUrl($results[$i]->{'id'});
-			$record->{'FILEX_MODIFY_URL'} = $self->genModifyUrl($results[$i]->{'id'});
+			$record->{'FILEX_REMOVE_URL'} = $S->toHtml($self->genRemoveUrl($results[$i]->{'id'}));
+			$record->{'FILEX_MODIFY_URL'} = $S->toHtml($self->genModifyUrl($results[$i]->{'id'}));
 			push(@rules_loop,$record);
 		}
 		$T->param(FILEX_HAS_RULES=>1);

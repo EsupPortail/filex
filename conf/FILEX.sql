@@ -64,9 +64,12 @@ CREATE TABLE upload (
 	with_password BOOL NOT NULL DEFAULT 0,
 	password VARCHAR(32) DEFAULT NULL,
 	user_agent VARCHAR(255) DEFAULT NULL,
+	owner_uniq_id VARCHAR(255) NOT NULL,
   PRIMARY KEY  (id),
   INDEX idx_filename (file_name),
-  INDEX idx_expire (expire_date)
+  INDEX idx_expire (expire_date),
+	INDEX idx_owner (owner),
+	INDEX idx_owner_uniq_id (owner_uniq_id),
 ) TYPE=InnoDB;
 
 
@@ -159,7 +162,7 @@ CREATE TABLE rules (
 --
 -- id = clef primaire
 -- rule_id = règle de référence
--- name = nom de la règle
+-- description = description de la règle
 -- enable = activé ou non (0|1)
 -- rorder = ordre d'application de la règle
 -- create-date = date de création de la règle
@@ -167,7 +170,8 @@ CREATE TABLE rules (
 CREATE TABLE exclude (
 	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	rule_id BIGINT UNSIGNED NOT NULL UNIQUE,
-	name VARCHAR(50) UNIQUE NOT NULL,
+	description VARCHAR(50),
+	reason VARCHAR(255),
 	enable BOOL DEFAULT 1,
 	rorder INT DEFAULT 1,
   create_date DATETIME NOT NULL,
@@ -183,7 +187,7 @@ CREATE TABLE exclude (
 --
 -- id = clef primaire
 -- rule_id = règle de référence
--- name = nom de la règle
+-- description = description de la règle
 -- enable = activé ou non
 -- qorder = ordre d'application de la règle
 -- create_date = date de création de la règle
@@ -191,7 +195,7 @@ CREATE TABLE exclude (
 CREATE TABLE quota (
 	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	rule_id BIGINT UNSIGNED NOT NULL UNIQUE,
-	name VARCHAR(50) NOT NULL UNIQUE,
+	description VARCHAR(50),
 	enable BOOL DEFAULT 1,
 	qorder INT DEFAULT 1,
 	create_date DATETIME NOT NULL,
@@ -202,4 +206,19 @@ CREATE TABLE quota (
 	CONSTRAINT fk_rule_quota_id FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
 ) Type=InnoDB;
 
-
+--
+--
+--
+--
+CREATE TABLE big_brother (
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	rule_id BIGINT UNSIGNED NOT NULL UNIQUE,
+	description VARCHAR(50),
+	enable BOOL DEFAULT 1,
+	norder INT DEFAULT 1,
+	create_date DATETIME NOT NULL,
+	mail VARCHAR(255) NOT NULL,
+	PRIMARY KEY (id),
+	INDEX idx_rule_id (rule_id),
+	CONSTRAINT fk_rule_notify_id FOREIGN KEY (rule_id) REFERENCES rules(id) ON DELETE CASCADE
+) Type=InnoDB;

@@ -5,6 +5,15 @@ use IO::Socket::SSL;
 use File::Spec;
 use Carp;
 
+# olivier.franco@insa-lyon.fr
+# 16/09/2005 -> no more call to escape_chars because it breaks url on a proxied application with
+# uPortal : CWebProxy Module use '&' as query string parameter delimiter when requesting PT for the application
+# and validatePT escape '&' to 0x26 thus PT requested by CWebProxy for this service cannot be validate :
+# CWebProxy PT service request : 
+# https://cas.my.domain/cas/proxy?pgt=PGT-xxx&targetService=https://proxied.my.domain/serice?p1=0&p2=1&p3=2
+# Proxied app PT service validate : http://my.host.my.domain/service?p1=1%26p2=2%26p3=3
+# https://cas.my.domain/cas/proxyValidate?service=https://proxied.my.domain/service?p1=0%26p2=1%26p3=2&ticket=PT-xxx
+
 sub new {
     my($pkg, %param) = @_;
     my $cas_server = {};
@@ -63,10 +72,10 @@ sub _escape_chars {
     ## Escape chars
     ##  !"#$%&'()+,:;<=>?[] AND accented chars
     ## escape % first
-#    foreach my $i (0x25,0x20..0x24,0x26..0x2c,0x3a..0x3f,0x5b,0x5d,0x80..0x9f,0xa0..0xff) {
+#   foreach my $i (0x25,0x20..0x24,0x26..0x2c,0x3a..0x3f,0x5b,0x5d,0x80..0x9f,0xa0..0xff) {
     foreach my $i (0x26) {
-	my $hex_i = sprintf("%lx", $i);
-	$s =~ s/\x$hex_i/%$hex_i/g;
+			my $hex_i = sprintf("%lx", $i);
+			$s =~ s/\x$hex_i/%$hex_i/g;
     }
 
     return $s;
@@ -76,23 +85,23 @@ sub dump_var {
     my ($var, $level, $fd) = @_;
     
     if (ref($var)) {
-	if (ref($var) eq 'ARRAY') {
-	    foreach my $index (0..$#{$var}) {
-		print $fd "\t"x$level.$index."\n";
-		&dump_var($var->[$index], $level+1, $fd);
-	    }
-	}elsif (ref($var) eq 'HASH') {
-	    foreach my $key (sort keys %{$var}) {
-		print $fd "\t"x$level.'_'.$key.'_'."\n";
-		&dump_var($var->{$key}, $level+1, $fd);
-	    }    
-	}
-    }else {
-	if (defined $var) {
-	    print $fd "\t"x$level."'$var'"."\n";
-	}else {
-	    print $fd "\t"x$level."UNDEF\n";
-	}
+			if (ref($var) eq 'ARRAY') {
+				foreach my $index (0..$#{$var}) {
+					print $fd "\t"x$level.$index."\n";
+					&dump_var($var->[$index], $level+1, $fd);
+	    	}
+			} elsif (ref($var) eq 'HASH') {
+				foreach my $key (sort keys %{$var}) {
+					print $fd "\t"x$level.'_'.$key.'_'."\n";
+					&dump_var($var->{$key}, $level+1, $fd);
+	    	}    
+			}
+    } else {
+			if (defined $var) {
+				print $fd "\t"x$level."'$var'"."\n";
+			} else {
+				print $fd "\t"x$level."UNDEF\n";
+			}
     }
 }
 
@@ -152,7 +161,8 @@ sub getServerLoginURL {
     my $self = shift;
     my $service = shift;
     
-    return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service);
+    #return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service);
+    return $self->{'url'}.$self->{'loginPath'}.'?service='.$service;
 }
 
 ## Returns non-blocking login URL
@@ -161,7 +171,8 @@ sub getServerLoginGatewayURL {
     my $self = shift;
     my $service = shift;
     
-    return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service).'&gateway=1';
+    #return $self->{'url'}.$self->{'loginPath'}.'?service='.&_escape_chars($service).'&gateway=1';
+    return $self->{'url'}.$self->{'loginPath'}.'?service='.$service.'&gateway=1';
 }
 
 ## Return logout URL
@@ -170,7 +181,8 @@ sub getServerLogoutURL {
     my $self = shift;
     my $service = shift;
     
-    return $self->{'url'}.$self->{'logoutPath'}.'?service='.&_escape_chars($service).'&gateway=1';
+    #return $self->{'url'}.$self->{'logoutPath'}.'?service='.&_escape_chars($service).'&gateway=1';
+    return $self->{'url'}.$self->{'logoutPath'}.'?service='.$service.'&gateway=1';
 }
 
 sub getServerServiceValidateURL {
@@ -179,9 +191,11 @@ sub getServerServiceValidateURL {
     my $ticket = shift;
     my $pgtUrl = shift;
 
-    my $query_string = 'service='.&_escape_chars($service).'&ticket='.$ticket;
+    #my $query_string = 'service='.&_escape_chars($service).'&ticket='.$ticket;
+    my $query_string = 'service='.$service.'&ticket='.$ticket;
     if (defined $pgtUrl) {
-			$query_string .= '&pgtUrl='.&_escape_chars($pgtUrl);
+			#$query_string .= '&pgtUrl='.&_escape_chars($pgtUrl);
+			$query_string .= '&pgtUrl='.$pgtUrl;
     }
 
     ## URL was /validate with CAS 1.0
@@ -193,7 +207,8 @@ sub getServerProxyURL {
     my $targetService = shift;
     my $pgt = shift;
 
-    return $self->{'url'}.$self->{'proxyPath'}.'?targetService='.&_escape_chars($targetService).'&pgt='.&_escape_chars($pgt);
+    #return $self->{'url'}.$self->{'proxyPath'}.'?targetService='.&_escape_chars($targetService).'&pgt='.&_escape_chars($pgt);
+    return $self->{'url'}.$self->{'proxyPath'}.'?targetService='.$targetService.'&pgt='.$pgt;
 }
 
 sub getServerProxyValidateURL {
@@ -201,8 +216,8 @@ sub getServerProxyValidateURL {
     my $service = shift;
     my $ticket = shift;
 
-    return $self->{'url'}.$self->{'proxyValidatePath'}.'?service='.&_escape_chars($service).'&ticket='.&_escape_chars($ticket);
-     
+    #return $self->{'url'}.$self->{'proxyValidatePath'}.'?service='.&_escape_chars($service).'&ticket='.&_escape_chars($ticket);
+    return $self->{'url'}.$self->{'proxyValidatePath'}.'?service='.$service.'&ticket='.$ticket;
 }
 
 ## Validate a Service Ticket
@@ -331,11 +346,15 @@ sub validatePT {
     my $self = shift;
     my $service = shift;
     my $ticket = shift;
-    my $xml = $self->callCAS($self->getServerProxyValidateURL($service, $ticket));
+		my $url = $self->getServerProxyValidateURL($service, $ticket);
+		$url =~ s/%26/&/gc;
+    #my $xml = $self->callCAS($self->getServerProxyValidateURL($service, $ticket));
+    my $xml = $self->callCAS($url);
 
     if (defined $xml->{'cas:serviceResponse'}[0]{'cas:authenticationFailure'}) {
-			$self->{'errors'} = sprintf("Failed to validate Proxy Ticket %s : %s", 
-				$ticket, $xml->{'cas:serviceResponse'}[0]{'cas:authenticationFailure'}[0]);
+			$self->{'errors'} = sprintf("Failed to validate Proxy Ticket %s : %s [%s] [%s]", 
+				$ticket, $xml->{'cas:serviceResponse'}[0]{'cas:authenticationFailure'}[0],
+			  $service,$url);
 			return undef;
     }
 

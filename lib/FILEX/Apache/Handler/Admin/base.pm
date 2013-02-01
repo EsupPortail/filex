@@ -48,7 +48,7 @@ sub genQueryString {
 		next if $k eq $dname;
 		$q->{$k} = $v;
 	}
-	return $self->{'_SYS_'}->genQueryString($q);
+	return $self->{'_SYS_'}->genQueryString(params=>$q);
 }
 
 1;

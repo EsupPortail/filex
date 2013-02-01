@@ -22,9 +22,9 @@ sub handler {
 	my $main_template; # the Main admin template
 	# Auth
 	$S = FILEX::System->new(shift);
-	$S->beginSession();
+	my $user = $S->beginSession();
 	# verify if admin
-	if ( ! $S->isAdmin($S->getAuthUser()) ) {
+	if ( !$S->isAdmin($user) ) {
 		$S->denyAccess();
 	}
 	# create the dispatcher
@@ -40,8 +40,8 @@ sub handler {
 		do_action_menu($S,$main_template,$disp,$main_action); 
 		$main_template->param(FILEX_MAIN_CONTENT=>$T->output());
 		$main_template->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
-		$main_template->param(FILEX_USER_NAME=>$S->toHtml($S->getUserRealName($S->getAuthUser())));
-		$main_template->param(FILEX_UPLOAD_URL=>$S->getUploadUrl());
+		$main_template->param(FILEX_USER_NAME=>$S->toHtml($user->getRealName()));
+		$main_template->param(FILEX_UPLOAD_URL=>$S->toHtml($S->getUploadUrl()));
 	} else {
 		$main_template = $T;
 	}
@@ -67,7 +67,6 @@ sub do_action_menu {
 	my $disp = shift; # dispatcher
 	my $ca = shift; # current menu action
 	my @form_menu;
-	my $def_action; #default action
 	my $k;
 	foreach $k ( $disp->enumDispatch() ) {
 		my $r = {
@@ -75,12 +74,11 @@ sub do_action_menu {
 			FILEX_FORM_MENU_OPT_LABEL=>$s->i18n->localizeToHtml($disp->getDispatchLabel($k))
 		};
 		# current action
-		$def_action = $r if ( $ca eq $k );
+		$r->{'FILEX_FORM_MENU_OPT_SELECTED'} = 1 if ( $ca eq $k );
 		push(@form_menu,$r);
 	}
-	# set default action
-	$def_action->{'FILEX_FORM_MENU_OPT_SELECTED'} = "selected" if defined($def_action);
 	# the form action
+	$t->param(FILEX_FORM_SELECT_FIELD_NAME=>$disp->getDispatchName());
 	$t->param(FILEX_FORM_MENU_ACTION=>$s->getCurrentUrl());
 	# the menu
 	$t->param(FILEX_ACTION_MENU_LOOP=>\@form_menu);
