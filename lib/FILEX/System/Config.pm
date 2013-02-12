@@ -41,8 +41,11 @@ sub _initialize_ {
 	$self->{'_config_'} = new Config::IniFiles(-file=>$self->{'_config_path_'},-reloadwarn=>1) or 
 		die(__PACKAGE__,"=> Unable to Read Config File : ",$self->{'_config_path_'});
 	# check values
-	die(__PACKAGE__,"-> Config File : ",$self->{'_config_path_'}," contains error !") 
-		if ! _validate_($self->{'_config_'});
+	eval { _validate_($self->{'_config_'}) };
+	if ($@) {
+	    warn "$@\n";
+	    die(__PACKAGE__,"-> Config File : ",$self->{'_config_path_'}," contains error !\n") 
+	}
 	# stat the file
 	#my $st = stat(${$self->{'_config_path_'}});
  	#if ( ! $st ) {
@@ -59,60 +62,16 @@ sub _validate_ {
 	my $config = shift;
 	my $tst_value;
 
-	_validate_section_exists(DBSECTION) or return undef;
-
-	# [Database].Name
-	$tst_value = $config->val(DBSECTION, "Name");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".DBSECTION."].Name is mandatory !");
-		return undef;
-	}
-	# [Database].Username
-	$tst_value = $config->val(DBSECTION, "Username");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".DBSECTION."].Username is mandatory !");
-		return undef;
-	}
+	# [Database]
+	_validate_mandatory_value($config, DBSECTION, "Name");
+	_validate_mandatory_value($config, DBSECTION, "Username");
 	# [Database].Password not mandatory
 
-	_validate_section_exists(SYSSECTION) or return undef;
-
-	# [System].TmpFileDir
-	$tst_value = $config->val(SYSSECTION, "TmpFileDir");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].TmpFileDir is mandatory !");
-		return undef;
-	}
-	if ( ! -d $tst_value ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].TmpFileDir is not a directory : $tst_value !");
-		return undef;
-	}
-	# [System].FileRepository
-	$tst_value = $config->val(SYSSECTION, "FileRepository");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].FileRepository is mandatory !");
-		return undef;
-	}
-	if ( ! -d $tst_value ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].FileRepository is not a directory : $tst_value !");
-		return undef;
-	}
-  # [System].StaticFileDir
-	$tst_value = $config->val(SYSSECTION,"StaticFileDir");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].StaticFileDir is mandatory !");
-		return undef;
-	}
-	if ( ! -d $tst_value ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].StaticFileDir is not a directory : $tst_value !");
-		return undef;
-	}
-	# [System].TemplateIniFile
-	$tst_value = $config->val(SYSSECTION, "TemplateIniFile");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].TemplateIniFile is mandatory !");
-		return undef;
-	}
+	# [System]
+	_validate_mandatory_directory($config, SYSSECTION, "TmpFileDir");
+	_validate_mandatory_directory($config, SYSSECTION, "FileRepository");
+	_validate_mandatory_directory($config, SYSSECTION,"StaticFileDir");
+	_validate_mandatory_value($config, SYSSECTION, "TemplateIniFile");
 	# [System].DefaultFileExpire
 	# [System].MaxFileExpire
 	# [System].MinFileExpire
@@ -121,152 +80,85 @@ sub _validate_ {
 	$dfe = abs(int($config->val(SYSSECTION,"DefaultFileExpire",7)));
 	$maxfe = abs(int($config->val(SYSSECTION,"MaxFileExpire",7)));
 	if ( $minfe > $maxfe ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].MinFileExpire > [".SYSSECTION."]MaxFileExpire");
-		return undef;
+		die(__PACKAGE__,"-> [".SYSSECTION."].MinFileExpire > [".SYSSECTION."]MaxFileExpire\n");
 	}
 	if ( $dfe > $maxfe ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].DefaultFileExpire > [".SYSSECTION."]MaxFileExpire");
-		return undef;
+		die(__PACKAGE__,"-> [".SYSSECTION."].DefaultFileExpire > [".SYSSECTION."]MaxFileExpire\n");
 	}
-	#
+	$tst_value = $config->val(SYSSECTION,"TemplateIniFile");
 	if ( ! -f $tst_value ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].TemplateIniFile does not exists : $tst_value !");
-		return undef;
+		die(__PACKAGE__,"-> [".SYSSECTION."].TemplateIniFile does not exists : $tst_value !\n");
 	}
 	# [System].MaxFileSize
 	# [System].MaxUsedSpace
 	# [System].EmailNotify
-	if ( $config->val(SYSSECTION, "EmailNotify") == 1 ) {
-		# [System].SmtpServer
-		_validate_section_exists(SMTPSECTION) or return undef;
 
-		$tst_value = $config->val(SMTPSECTION, "Server");
-		if ( !$tst_value || length($tst_value) <= 0 ) {
-			warn(__PACKAGE__,"-> [".SMTPSECTION."].Server is mandatory if [".SYSSECTION."].EmailNotify=1");
-			return undef;
-		}
+	if ( $config->val(SYSSECTION, "EmailNotify") == 1 ) {
+		# [Smtp]
+		_validate_mandatory_value($config, SMTPSECTION, "Server");
 	}
-	# [System].CasServer
-	$tst_value = $config->val(SYSSECTION,"CasServer");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-			warn(__PACKAGE__,"-> [".SYSSECTION."].CasServer is mandatory !");
-			return undef;
-	}
-	# [System].SessionDirectory
-	$tst_value = $config->val(SYSSECTION,"SessionDirectory");
-	if ( !$tst_value || length($tst_value) <=0 ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionDirectory is mandatory !");
-		return undef;
-	}
-	if ( ! -d $tst_value ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionDirectory is not a directory : $tst_value !");
-		return undef;
-	}
-	# [System].SessionLockDirectory
-	$tst_value = $config->val(SYSSECTION,"SessionLockDirectory");
-	if ( !$tst_value || length($tst_value) <=0 ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionLockDirectory is mandatory !");
-		return undef;
-	}
-	if ( ! -d $tst_value ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."].SessionLockDirectory is not a directory : $tst_value !");
-		return undef;
-	}
+	_validate_mandatory_value($config, SYSSECTION,"CasServer");
+	_validate_mandatory_directory($config, SYSSECTION,"SessionDirectory");
+	_validate_mandatory_directory($config, SYSSECTION,"SessionLockDirectory");
 
 	# [Ldap]
-	_validate_section_exists(LDAPSECTION) or return undef;
-	# [Ldap].ServerUrl
-	$tst_value = $config->val(LDAPSECTION,"ServerUrl");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".LDAPSECTION."].ServerUrl is mandatory !");
-		return undef;
-	}
-	# [Ldap].UidAttr
-	$tst_value = $config->val(LDAPSECTION,"UidAttr");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".LDAPSECTION."].UidAttr is mandatory !");
-		return undef;
-	}
-	
-	# [Ldap].MailAttr
-	$tst_value = $config->val(LDAPSECTION,"MailAttr");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".LDAPSECTION."].MailAttr is mandatory !");
-		return undef;
-	}
-
-	# [ldap].UsernameAttr
-	$tst_value = $config->val(LDAPSECTION,"UsernameAttr");	
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".LDAPSECTION."].UsernameAttr is mandatory !");
-		return undef;
-	}
-
-	# [Ldap].GroupQuery
-	# not mandatory !
+	_validate_mandatory_value($config, LDAPSECTION,"ServerUrl");
+	_validate_mandatory_value($config, LDAPSECTION,"UidAttr");
+	_validate_mandatory_value($config, LDAPSECTION,"MailAttr");
+	_validate_mandatory_value($config, LDAPSECTION,"UsernameAttr");	
+	# [Ldap].GroupQuery not mandatory
 
 	# [Uri]
-	_validate_section_exists(URISECTION) or return undef;
-	# [Uri].get
-	$tst_value = $config->val(URISECTION,"get");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".URISECTION."].get is mandatory !");
-		return undef;
-	}
-	warn(__PACKAGE__,"-> [".URISECTION."].get : invalid uri : $tst_value !") && return undef if ( $tst_value !~ /^\//);
-	# [Uri].upload
-	$tst_value = $config->val(URISECTION,"upload");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".URISECTION."].upload is mandatory !");
-		return undef;
-	}
-	warn(__PACKAGE__,"-> [".URISECTION."].upload : invalid uri : $tst_value !") && return undef if ( $tst_value !~ /^\//);
-	# [Uri].meter
-	$tst_value = $config->val(URISECTION,"meter");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".URISECTION."].meter is mandatory !");
-		return undef;
-	}
-	warn(__PACKAGE__,"-> [".URISECTION."].meter : invalid uri : $tst_value !") && return undef if ( $tst_value !~ /^\//);
-	# [Uri].manage
-	$tst_value = $config->val(URISECTION,"manage");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".URISECTION."].manage is mandatory !");
-		return undef;
-	}
-	warn(__PACKAGE__,"-> [".URISECTION."].manage : invalid uri : $tst_value !") && return undef if ( $tst_value !~ /^\//);
+	_validate_mandatory_url($config, URISECTION,"get");
+	_validate_mandatory_url($config, URISECTION,"upload");
+	_validate_mandatory_url($config, URISECTION,"meter");
+	_validate_mandatory_url($config, URISECTION,"manage");
+
 	# [Admin]
-	_validate_section_exists(ADMSECTION) or return undef;
-	# [Admin].Modules
-	$tst_value = $config->val(ADMSECTION,"Modules");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".ADMSECTION."].Modules is mandatory !");
-		return undef;
-	}
-	# [Admin].Default
-	$tst_value = $config->val(ADMSECTION,"Default");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".ADMSECTION."].Default is mandatory !");
-		return undef;
-	}
-	# [Admin].ModuleRouteParameter
-	$tst_value = $config->val(ADMSECTION,"ModuleRouteParameter");
-	if ( !$tst_value || length($tst_value) <= 0 ) {
-		warn(__PACKAGE__,"-> [".ADMSECTION."].ModuleRouteParameter is mandatory !");
-		return undef;
-	}
-	return 1;
+	_validate_mandatory_value($config, ADMSECTION,"Modules");
+	_validate_mandatory_value($config, ADMSECTION,"Default");
+	_validate_mandatory_value($config, ADMSECTION,"ModuleRouteParameter");
 }
 
 sub _validate_section_exists {
-    my $self = shift;
-    my $section = shift;
+    my ($config, $section) = @_;
 
     if ( $config->SectionExists($section) != 1 ) {
-	warn(__PACKAGE__,"-> [" . $section . "] is mandatory !");
-	return undef;
+	die(__PACKAGE__,"-> [" . $section . "] is mandatory !\n");
     }
-    return 1;
+}
+
+sub _validate_mandatory_value {
+    my ($config, $section, $name) = @_;
+
+    _validate_section_exists($config, $section);
+
+    my $tst_value = $config->val($section, $name);
+    if ( !$tst_value || length($tst_value) <= 0 ) {
+	die(__PACKAGE__,"-> [" . $section . "].$name is mandatory !\n");
+    }
+}
+
+sub _validate_mandatory_directory {
+    my ($config, $section, $name) = @_;
+
+    _validate_mandatory_value($config, $section, $name);
+
+    my $tst_value = $config->val($section, $name);
+    if ( ! -d $tst_value ) {
+	die(__PACKAGE__,"-> [" . $section . "].$name is not a directory : $tst_value !\n");
+    }
+}
+
+sub _validate_mandatory_url {
+    my ($config, $section, $name) = @_;
+
+    _validate_mandatory_value($config, $section, $name);
+
+    my $tst_value = $config->val($section, $name);
+    if ( $tst_value !~ m!^/! ) {
+	die(__PACKAGE__,"-> [" . $section . "].$name : invalid uri : $tst_value !\n");
+    }
 }
 
 sub getConfigFile {
