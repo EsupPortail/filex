@@ -58,11 +58,9 @@ sub _initialize_ {
 sub _validate_ {
 	my $config = shift;
 	my $tst_value;
-	# Validate Database Section
-	if ( $config->SectionExists(DBSECTION) != 1 ) {
-		warn(__PACKAGE__,"-> [".DBSECTION."] is mandatory !");
-		return undef;
-	}
+
+	_validate_section_exists(DBSECTION) or return undef;
+
 	# [Database].Name
 	$tst_value = $config->val(DBSECTION, "Name");
 	if ( !$tst_value || length($tst_value) <= 0 ) {
@@ -76,11 +74,9 @@ sub _validate_ {
 		return undef;
 	}
 	# [Database].Password not mandatory
-	# Validate System Section
-	if ( $config->SectionExists(SYSSECTION) != 1 ) {
-		warn(__PACKAGE__,"-> [".SYSSECTION."] is mandatory !");
-		return undef;
-	}
+
+	_validate_section_exists(SYSSECTION) or return undef;
+
 	# [System].TmpFileDir
 	$tst_value = $config->val(SYSSECTION, "TmpFileDir");
 	if ( !$tst_value || length($tst_value) <= 0 ) {
@@ -142,10 +138,8 @@ sub _validate_ {
 	# [System].EmailNotify
 	if ( $config->val(SYSSECTION, "EmailNotify") == 1 ) {
 		# [System].SmtpServer
-		if ( $config->SectionExists(SMTPSECTION) != 1 ) {
-			warn(__PACKAGE__,"-> [".SMTPSECTION."] is mandatory if [".SYSSECTION."].EmailNotify=1");
-			return undef;
-		}
+		_validate_section_exists(SMTPSECTION) or return undef;
+
 		$tst_value = $config->val(SMTPSECTION, "Server");
 		if ( !$tst_value || length($tst_value) <= 0 ) {
 			warn(__PACKAGE__,"-> [".SMTPSECTION."].Server is mandatory if [".SYSSECTION."].EmailNotify=1");
@@ -180,10 +174,7 @@ sub _validate_ {
 	}
 
 	# [Ldap]
-	if ( $config->SectionExists(LDAPSECTION) != 1 ) {
-		warn(__PACKAGE__,"-> [".LDAPSECTION."] is mandatory !");
-		return undef;
-	}
+	_validate_section_exists(LDAPSECTION) or return undef;
 	# [Ldap].ServerUrl
 	$tst_value = $config->val(LDAPSECTION,"ServerUrl");
 	if ( !$tst_value || length($tst_value) <= 0 ) {
@@ -215,10 +206,7 @@ sub _validate_ {
 	# not mandatory !
 
 	# [Uri]
-	if ( $config->SectionExists(URISECTION) != 1 ) {
-		warn(__PACKAGE__,"-> [".URISECTION."] is mantatory !");
-		return undef;
-	}
+	_validate_section_exists(URISECTION) or return undef;
 	# [Uri].get
 	$tst_value = $config->val(URISECTION,"get");
 	if ( !$tst_value || length($tst_value) <= 0 ) {
@@ -248,10 +236,7 @@ sub _validate_ {
 	}
 	warn(__PACKAGE__,"-> [".URISECTION."].manage : invalid uri : $tst_value !") && return undef if ( $tst_value !~ /^\//);
 	# [Admin]
-	if ( $config->SectionExists(ADMSECTION) != 1 ) {
-		warn(__PACKAGE__,"-> [".ADMSECTION."] is mantatory !");
-		return undef;
-	}
+	_validate_section_exists(ADMSECTION) or return undef;
 	# [Admin].Modules
 	$tst_value = $config->val(ADMSECTION,"Modules");
 	if ( !$tst_value || length($tst_value) <= 0 ) {
@@ -271,6 +256,17 @@ sub _validate_ {
 		return undef;
 	}
 	return 1;
+}
+
+sub _validate_section_exists {
+    my $self = shift;
+    my $section = shift;
+
+    if ( $config->SectionExists($section) != 1 ) {
+	warn(__PACKAGE__,"-> [" . $section . "] is mandatory !");
+	return undef;
+    }
+    return 1;
 }
 
 sub getConfigFile {
