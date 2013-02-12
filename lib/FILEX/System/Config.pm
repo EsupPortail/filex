@@ -72,6 +72,10 @@ sub _validate_ {
 	_validate_mandatory_directory($config, SYSSECTION, "FileRepository");
 	_validate_mandatory_directory($config, SYSSECTION,"StaticFileDir");
 	_validate_mandatory_value($config, SYSSECTION, "TemplateIniFile");
+	$tst_value = $config->val(SYSSECTION,"TemplateIniFile");
+	if ( ! -f $tst_value ) {
+		die(__PACKAGE__,"-> [".SYSSECTION."].TemplateIniFile does not exists : $tst_value !\n");
+	}
 	# [System].DefaultFileExpire
 	# [System].MaxFileExpire
 	# [System].MinFileExpire
@@ -84,10 +88,6 @@ sub _validate_ {
 	}
 	if ( $dfe > $maxfe ) {
 		die(__PACKAGE__,"-> [".SYSSECTION."].DefaultFileExpire > [".SYSSECTION."]MaxFileExpire\n");
-	}
-	$tst_value = $config->val(SYSSECTION,"TemplateIniFile");
-	if ( ! -f $tst_value ) {
-		die(__PACKAGE__,"-> [".SYSSECTION."].TemplateIniFile does not exists : $tst_value !\n");
 	}
 	# [System].MaxFileSize
 	# [System].MaxUsedSpace
