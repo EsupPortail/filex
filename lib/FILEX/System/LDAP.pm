@@ -76,7 +76,7 @@ sub _searchRaw {
 
   my $ldap = $self->srv();
   my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
-  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+  my $uidAttr = $self->{'_config_'}->getUidAttr();
   my %searchArgz;
   $searchArgz{'base'} = $baseSearch if ( $baseSearch && length($baseSearch) );
   $searchArgz{'scope'} = "sub";
@@ -96,7 +96,7 @@ sub getUserDn {
 	my $self = shift;
   my $uid = shift;
 
-  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+  my $uidAttr = $self->{'_config_'}->getUidAttr();
   my $mesg = $self->_searchRaw($uid, [$uidAttr]);
 
  # only one value can be returned
@@ -110,7 +110,7 @@ sub userExists {
   my $self = shift;
   my $uid = shift;
 
-  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+  my $uidAttr = $self->{'_config_'}->getUidAttr();
   my $mesg = $self->_searchRaw($uid, [$uidAttr]);
 
   # count
@@ -149,21 +149,21 @@ sub getAttr {
 sub getMail {
   my $self = shift;
   my $uid = shift;
-	my $mailAttr = $self->{'_config_'}->getLdapMailAttr();
+	my $mailAttr = $self->{'_config_'}->getMailAttr();
   return $self->getAttr($uid, $mailAttr);
 }
 
 sub getUserRealName {
     my $self = shift;
     my $uid = shift;
-    my $attr = $self->{'_config_'}->getLdapUsernameAttr();
+    my $attr = $self->{'_config_'}->getUsernameAttr();
     return $self->getAttr($uid, $attr);
 }
 
 sub getUniqId {
     my $self = shift;
     my $uid = shift;
-    my $attr = $self->{'_config_'}->getLdapUniqAttrMode();
+    my $attr = $self->{'_config_'}->getUniqAttrMode();
     return defined($attr) && $self->getAttr($uid, $attr);
 }
 
@@ -180,7 +180,7 @@ sub inGroup {
 
 	my $ldap = $self->srv();
   my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
-  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+  my $uidAttr = $self->{'_config_'}->getUidAttr();
 	my $ldapQuery = $self->{'_config_'}->getLdapGroupQuery();
 	# replace %U (username), %G (group name), %D (user dn)
 	# check if it require a DN
@@ -221,7 +221,7 @@ sub inQuery {
 
  	my $ldap = $self->srv();
   my $baseSearch = $self->{'_config_'}->getLdapSearchBase();
-  my $uidAttr = $self->{'_config_'}->getLdapUidAttr();
+  my $uidAttr = $self->{'_config_'}->getUidAttr();
 	# build the filter
 	my $filter = "(&($uidAttr=$uid)$query)";
   my %searchArgz;

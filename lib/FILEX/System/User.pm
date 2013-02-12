@@ -232,7 +232,7 @@ sub getUniqId {
 	
 	# not in session then get it
 
-	if ( $self->{'_config_'}->getLdapUniqAttrMode() != 1 ) {
+	if ( $self->{'_config_'}->getUniqAttrMode() != 1 ) {
 	    $uniq_id = $self->{'id'};
 	} else {	
 	    $uniq_id = $self->{'_ldap_'}->getUniqId($self->{'id'});

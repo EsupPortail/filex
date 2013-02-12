@@ -10,6 +10,7 @@ use constant DBSECTION => "Database";
 use constant SYSSECTION => "System";
 use constant CASECTION => "Cache";
 use constant LDAPSECTION => "Ldap";
+use constant ATTRIBUTESECTION => "Attribute";
 use constant URISECTION => "Uri";
 use constant SMTPSECTION => "Smtp";
 use constant ADMSECTION => "Admin";
@@ -103,9 +104,11 @@ sub _validate_ {
 
 	# [Ldap]
 	_validate_mandatory_value($config, LDAPSECTION,"ServerUrl");
-	_validate_mandatory_value($config, LDAPSECTION,"UidAttr");
-	_validate_mandatory_value($config, LDAPSECTION,"MailAttr");
-	_validate_mandatory_value($config, LDAPSECTION,"UsernameAttr");	
+
+	# [Attribute]
+	_validate_mandatory_value($config, ATTRIBUTESECTION,"UidAttr");
+	_validate_mandatory_value($config, ATTRIBUTESECTION,"MailAttr");
+	_validate_mandatory_value($config, ATTRIBUTESECTION,"UsernameAttr");	
 	# [Ldap].GroupQuery not mandatory
 
 	# [Uri]
@@ -495,35 +498,35 @@ sub getLdapSearchBase {
 }
 
 # get ldap uid attr
-sub getLdapUidAttr {
+sub getUidAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{_config_}->val(LDAPSECTION,"UidAttr");
+	return $self->{_config_}->val(ATTRIBUTESECTION,"UidAttr");
 }
 
 # get ldap username attr
-sub getLdapUsernameAttr {
+sub getUsernameAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{_config_}->val(LDAPSECTION,"UsernameAttr");
+	return $self->{_config_}->val(ATTRIBUTESECTION,"UsernameAttr");
 }
 # get ldap uniq id attr
-sub getLdapUniqAttr {
+sub getUniqAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{_config_}->val(LDAPSECTION,"UniqAttr",undef);
+	return $self->{_config_}->val(ATTRIBUTESECTION,"UniqAttr",undef);
 }
 # get ldap unid id attr mode
-sub getLdapUniqAttrMode {
+sub getUniqAttrMode {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{_config_}->val(LDAPSECTION,"UniqAttrMode",0);
+	return $self->{_config_}->val(ATTRIBUTESECTION,"UniqAttrMode",0);
 }
 # get ldap mail attr
-sub getLdapMailAttr {
+sub getMailAttr {
 	my $self = shift;
 	#$self->_reload();
-	return $self->{_config_}->val(LDAPSECTION,"MailAttr");
+	return $self->{_config_}->val(ATTRIBUTESECTION,"MailAttr");
 }
 
 # get ldap group query

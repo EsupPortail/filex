@@ -26,8 +26,8 @@ my $dbh = dbConnect($config);
 # get owner
 my $owners = getOwners($dbh);
 # check if we need 
-my $uniq_id_attr = $config->getLdapUniqAttr();
-my $uniq_id_attr_mode = $config->getLdapUniqAttrMode();
+my $uniq_id_attr = $config->getUniqAttr();
+my $uniq_id_attr_mode = $config->getUniqAttrMode();
 my $uniq_id_attr_lc = lc($uniq_id_attr) if ($uniq_id_attr);
 
 my $str_query = "UPDATE upload SET owner_uniq_id = ? WHERE owner = ?";
