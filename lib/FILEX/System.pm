@@ -36,6 +36,7 @@ BEGIN {
 		require Apache2::Connection;
 		require Apache2::Util;
 		require Apache2::Request;
+		require Apache2::RequestIO;
 		require Apache2::Upload;
 		require APR::Status;
 	} else {
