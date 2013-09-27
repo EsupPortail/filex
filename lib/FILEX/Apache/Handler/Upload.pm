@@ -146,21 +146,9 @@ sub run {
 	my $user = $S->beginSession(); 
 
 	# load templates
-	$t_begin = $S->getTemplate(name=>"upload");
+	$t_begin = _template_begin($S);
 	$t_end = $S->getTemplate(name=>"upload_end");
 
-	# fill in some parameters
-	$t_begin->param(FILEX_FORM_UPLOAD_DAY_KEEP_NAME=>DAY_KEEP_FIELD_NAME);
-	$t_begin->param(FILEX_FORM_UPLOAD_DELIVERY_NAME=>DELIVERY_FIELD_NAME);
-	$t_begin->param(FILEX_FORM_UPLOAD_RESUME_NAME=>RESUME_FIELD_NAME);
-	$t_begin->param(FILEX_FORM_UPLOAD_UPLOAD_NAME=>UPLOAD_FIELD_NAME);
-	$t_begin->param(FILEX_FORM_UPLOAD_OLD_DLID_NAME=>OLD_DLID_FIELD_NAME);
-	$t_begin->param(FILEX_FORM_UPLOAD_NEED_PASSWORD_NAME=>NEED_PASSWORD_FIELD_NAME);
-	$t_begin->param(FILEX_FORM_UPLOAD_PASSWORD_NAME=>PASSWORD_FIELD_NAME);
-	$t_begin->param(FILEX_MIN_PASSWORD_LENGTH=>$S->config->getMinPasswordLength());
-	$t_begin->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
-	$t_begin->param(FILEX_MAX_DAY_KEEP=>$S->config->getMaxFileExpire());
-	$t_begin->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	$t_begin->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
 	$t_end->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	$t_end->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
@@ -368,6 +356,25 @@ sub _compute_expire_loop {
 		}
 		$expire_loop_row;
 	} ($S->config->getMinFileExpire() .. $S->config->getMaxFileExpire());
+}
+
+sub _template_begin {
+	my ($S) = @_;
+
+	my $t_begin = $S->getTemplate(name=>"upload");
+	$t_begin->param(FILEX_FORM_UPLOAD_DAY_KEEP_NAME=>DAY_KEEP_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_DELIVERY_NAME=>DELIVERY_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_RESUME_NAME=>RESUME_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_UPLOAD_NAME=>UPLOAD_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_OLD_DLID_NAME=>OLD_DLID_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_NEED_PASSWORD_NAME=>NEED_PASSWORD_FIELD_NAME);
+	$t_begin->param(FILEX_FORM_UPLOAD_PASSWORD_NAME=>PASSWORD_FIELD_NAME);
+	$t_begin->param(FILEX_MIN_PASSWORD_LENGTH=>$S->config->getMinPasswordLength());
+	$t_begin->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
+	$t_begin->param(FILEX_MAX_DAY_KEEP=>$S->config->getMaxFileExpire());
+	$t_begin->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
+
+	$t_begin;
 }
 
 # display 
