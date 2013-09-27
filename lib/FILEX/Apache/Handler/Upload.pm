@@ -173,32 +173,14 @@ sub run {
 
 	# check for quotas
 	my ($quota_max_file_size,$quota_max_used_space) = $user->getQuota(); 
-	my ($hrsize,$hrunit);
 	if ( $quota_max_used_space > 0 ) {
-		($hrsize,$hrunit) = hrSize($quota_max_used_space);
+		my ($hrsize,$hrunit) = hrSize($quota_max_used_space);
 		$t_begin->param(FILEX_MANAGE_HAVE_QUOTA=>1);
 		$t_begin->param(FILEX_MANAGE_MAX_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
 	}
 	my $current_user_space = $user->getDiskSpace();
- 	($hrsize,$hrunit) = hrSize($current_user_space);
+ 	my ($hrsize,$hrunit) = hrSize($current_user_space);
 	$t_begin->param(FILEX_MANAGE_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
-
-	my $max_file_size = $user->getMaxFileSize();
-	# if max_file_size < 0 then unlimited upload size
-	# if max_file_size == 0 then we cannot upload (quota reached)
-	# max_file_size == 0 then no upload
-  if ( $max_file_size == 0 ) {
-		$t_begin->param(FILEX_CAN_UPLOAD=>0);
-		$t_begin->param(FILEX_HAS_ERROR=>1);
-		$t_begin->param(FILEX_ERROR=>$S->i18n->localizeToHtml("quota exceed"));
-		display($S,$t_begin);
-	} 
-
-	if ( $max_file_size > 0 ) {
-		$t_begin->param(FILEX_HAS_MAX_FILE_SIZE=>1);
-		($hrsize,$hrunit) = hrSize($max_file_size);
-		$t_begin->param(FILEX_MAX_FILE_SIZE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
-	}
 
 	# check if space remaining
 	if ( ! $S->isSpaceRemaining() ) {
@@ -218,17 +200,11 @@ sub run {
 	# otherwise get the upload field
 	$Upload  = $S->apreq->upload(UPLOAD_FIELD_NAME);
 
+	_check_upload_size($S, $Upload, $t_begin, $user->getMaxFileSize());
+
 	# check if we uploaded some things
 	if ( !$Upload ) { 
 		# if not then exit
-		display($S,$t_begin);
-	} elsif ( $Upload->size() <= 0 ) {
-		$t_begin->param(FILEX_HAS_ERROR=>1);
-		$t_begin->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file size is null"));
-		display($S,$t_begin);
-	} elsif ( ($Upload->size() > $max_file_size) && ($max_file_size > 0) ) {
-		$t_begin->param(FILEX_HAS_ERROR=>1);
-		$t_begin->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file size too large"));
 		display($S,$t_begin);
 	}
 
@@ -375,6 +351,38 @@ sub _template_begin {
 	$t_begin->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 
 	$t_begin;
+}
+
+sub _check_upload_size {
+	my ($S, $Upload, $t_begin, $max_file_size) = @_;
+
+	# if max_file_size < 0 then unlimited upload size
+	# if max_file_size == 0 then we cannot upload (quota reached)
+	# max_file_size == 0 then no upload
+	if ( $max_file_size == 0 ) {
+		$t_begin->param(FILEX_CAN_UPLOAD=>0);
+		$t_begin->param(FILEX_HAS_ERROR=>1);
+		$t_begin->param(FILEX_ERROR=>$S->i18n->localizeToHtml("quota exceed"));
+		display($S,$t_begin);
+	} 
+
+	if ( $max_file_size > 0 ) {
+		$t_begin->param(FILEX_HAS_MAX_FILE_SIZE=>1);
+		my ($hrsize,$hrunit) = hrSize($max_file_size);
+		$t_begin->param(FILEX_MAX_FILE_SIZE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
+	}
+
+	$Upload or return;
+
+	if ( $Upload->size() <= 0 ) {
+		$t_begin->param(FILEX_HAS_ERROR=>1);
+		$t_begin->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file size is null"));
+		display($S,$t_begin);
+	} elsif ( ($Upload->size() > $max_file_size) && ($max_file_size > 0) ) {
+		$t_begin->param(FILEX_HAS_ERROR=>1);
+		$t_begin->param(FILEX_ERROR=>$S->i18n->localizeToHtml("file size too large"));
+		display($S,$t_begin);
+	}
 }
 
 # display 
