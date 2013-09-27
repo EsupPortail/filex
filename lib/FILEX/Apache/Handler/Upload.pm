@@ -91,35 +91,7 @@ sub run {
 			# set the IPC Size 
 			my $cntlength = $posted_content_length;
 			$IPCache->set($download_id."size",$cntlength) if ( $cntlength );
-			# initialize the upload hook
-			# note : hook_data = uploadid
-			# note : inspired from Apache::UploadMeter
-			my $prevtime;
-			my $oldlength = 0;
-			my $transparent_hook = sub {
-				my ($upl, $buf, $len, $hook_data) = @_;
-				return if ( ! $IPCache );
-				# check if upload begin
-				if ( $oldlength == 0 ) {
-					$IPCache->set($hook_data."filename",normalize((MP2) ? $upl->upload_filename() : $upl->filename()));
-					$IPCache->set($hook_data."starttime",time());
-					$IPCache->set($hook_data."canceled",0);
-					$IPCache->set($hook_data."end",0);
-				}
-
-				# on MP2 the len was the current total upload size
-				my $newlength = (MP2) ? $len : $len + $oldlength;
-
-				# increment current length
-				$oldlength = $newlength;
-
-				my $time = [gettimeofday];
-				if (!$prevtime || tv_interval($prevtime, $time) > 0.2) {
-				    # store current length
-				    $IPCache->set($hook_data."length",$newlength);
-				    $prevtime = $time;
-				}
-			};
+			my $transparent_hook = _new_upload_hook($IPCache);
 			$S = FILEX::System->new($r,with_upload=>1,with_hook=>{"hook_data"=>$download_id,"upload_hook"=>$transparent_hook});
 		}
 		# continue there the request is parsed now
@@ -330,6 +302,42 @@ sub _compute_expire_loop {
 		$expire_loop_row;
 	} ($S->config->getMinFileExpire() .. $S->config->getMaxFileExpire());
 }
+
+sub _new_upload_hook {
+	my ($IPCache) = @_;
+
+			# initialize the upload hook
+			# note : hook_data = uploadid
+			# note : inspired from Apache::UploadMeter
+			my $prevtime;
+			my $oldlength = 0;
+
+			sub {
+				my ($upl, $buf, $len, $hook_data) = @_;
+				return if ( ! $IPCache );
+				# check if upload begin
+				if ( $oldlength == 0 ) {
+					$IPCache->set($hook_data."filename",normalize((MP2) ? $upl->upload_filename() : $upl->filename()));
+					$IPCache->set($hook_data."starttime",time());
+					$IPCache->set($hook_data."canceled",0);
+					$IPCache->set($hook_data."end",0);
+				}
+
+				# on MP2 the len was the current total upload size
+				my $newlength = (MP2) ? $len : $len + $oldlength;
+
+				# increment current length
+				$oldlength = $newlength;
+
+				my $time = [gettimeofday];
+				if (!$prevtime || tv_interval($prevtime, $time) > 0.2) {
+				    # store current length
+				    $IPCache->set($hook_data."length",$newlength);
+				    $prevtime = $time;
+				}
+			};
+}
+
 
 sub _template_begin {
 	my ($S) = @_;
