@@ -63,9 +63,6 @@ sub run {
 	my $r = shift;
 	my $S; # FILEX::System object
 	my $bUploadCanceled = 0; # upload canceled ?
-	my $Upload; # the Upload object
-	my $download_id; # the uniq download id
-	my ($t_begin,$t_end); # the templates
 	my $dlid_field_name = DLID_FIELD_NAME;
 
 	# BEGIN INITIALIZATION 
@@ -78,7 +75,7 @@ sub run {
 		%args = $r->args();
 	}
 	# if we have de dlid in the QS then we must hook for upload meter
-	$download_id = exists($args{$dlid_field_name}) ? $args{$dlid_field_name} : undef;
+	my $download_id = exists($args{$dlid_field_name}) ? $args{$dlid_field_name} : undef;
 	if ( $download_id ) {
 		# the new config object
 		# init config object (because we need info to initialize the IPCache
@@ -146,8 +143,8 @@ sub run {
 	my $user = $S->beginSession(); 
 
 	# load templates
-	$t_begin = _template_begin($S);
-	$t_end = $S->getTemplate(name=>"upload_end");
+	my $t_begin = _template_begin($S);
+	my $t_end = $S->getTemplate(name=>"upload_end");
 
 	$t_begin->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
 	$t_end->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
@@ -198,7 +195,7 @@ sub run {
 		display($S,$t_begin);
 	}
 	# otherwise get the upload field
-	$Upload  = $S->apreq->upload(UPLOAD_FIELD_NAME);
+	my $Upload  = $S->apreq->upload(UPLOAD_FIELD_NAME);
 
 	_check_upload_size($S, $Upload, $t_begin, $user->getMaxFileSize());
 
