@@ -124,7 +124,6 @@ sub run {
 		display($S,$t_begin);
 	}
 
-	# the real begining is here
 	# check if the request is aborted
 	if ( $bUploadCanceled )  {
 		$t_begin->param(FILEX_HAS_ERROR=>1);
@@ -153,8 +152,7 @@ sub run {
 		display($S,$t_begin);
 	}
 
-	my $t_end = _template_end($S, $record, %upload_infos);
-	$t_end->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
+	my $t_end = _template_end($S, $user, $record, %upload_infos);
 
 	# send email if needed
 	if ( $S->config->needEmailNotification() ) {
@@ -340,10 +338,11 @@ sub _template_begin {
 }
 
 sub _template_end {   
-	my ($S, $record, %upload_infos) = @_;
+	my ($S, $user, $record, %upload_infos) = @_;
 
 	my $t_end = $S->getTemplate(name=>"upload_end");
 
+	$t_end->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
 	$t_end->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 	$t_end->param(FILEX_FILE_NAME=>toHtml($record->getRealName()));
 	my ($fsz,$funit) = hrSize($record->getFileSize());
