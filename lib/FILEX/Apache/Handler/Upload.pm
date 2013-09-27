@@ -109,39 +109,12 @@ sub run {
 	# beginSession will redirect the user if required
 	my $user = $S->beginSession(); 
 
-	# load templates
-	my $t_begin = _template_begin($S);
-
-	$t_begin->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
-
-	# fill in the first template
-	$t_begin->param(FILEX_MANAGE_UPLOADED_FILES_COUNT=>$user->getUploadCount());
-	$t_begin->param(FILEX_MANAGE_ACTIVE_FILES_COUNT=>$user->getActiveCount());
-	$t_begin->param(FILEX_MANAGE_URL=>toHtml($S->getManageUrl()));
-	$t_begin->param(FILEX_CAN_UPLOAD=>1);
-	$t_begin->param(FILEX_FORM_UPLOAD_ACTION=>toHtml(genFormAction($S,$download_id)));
-	$t_begin->param(FILEX_OLD_DLID=>$download_id);
-	$t_begin->param(FILEX_METER_URL=>toHtml(genMeterUrl($S,$download_id)));
-	if ( $user->isAdmin() ) {
-		$t_begin->param(FILEX_MANAGE_IS_ADMIN=>1);
-		$t_begin->param(FILEX_MANAGE_ADMIN_URL=>$S->getAdminUrl());
-	}
+	my $t_begin = _template_begin($S, $user, $download_id);
 
 	my %upload_infos = _get_upload_infos_from_req_params($S);
 
 	my @expire_loop = _compute_expire_loop($S, $upload_infos{daykeep});
 	$t_begin->param(FILEX_EXPIRE_LOOP=>\@expire_loop);
-
-	# check for quotas
-	my ($quota_max_file_size,$quota_max_used_space) = $user->getQuota(); 
-	if ( $quota_max_used_space > 0 ) {
-		my ($hrsize,$hrunit) = hrSize($quota_max_used_space);
-		$t_begin->param(FILEX_MANAGE_HAVE_QUOTA=>1);
-		$t_begin->param(FILEX_MANAGE_MAX_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
-	}
-	my $current_user_space = $user->getDiskSpace();
- 	my ($hrsize,$hrunit) = hrSize($current_user_space);
-	$t_begin->param(FILEX_MANAGE_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
 
 	# check if space remaining
 	if ( ! $S->isSpaceRemaining() ) {
@@ -324,7 +297,7 @@ sub _new_upload_hook {
 
 
 sub _template_begin {
-	my ($S) = @_;
+	my ($S, $user, $download_id) = @_;
 
 	my $t_begin = $S->getTemplate(name=>"upload");
 	$t_begin->param(FILEX_FORM_UPLOAD_DAY_KEEP_NAME=>DAY_KEEP_FIELD_NAME);
@@ -338,6 +311,30 @@ sub _template_begin {
 	$t_begin->param(FILEX_MAX_PASSWORD_LENGTH=>$S->config->getMaxPasswordLength());
 	$t_begin->param(FILEX_MAX_DAY_KEEP=>$S->config->getMaxFileExpire());
 	$t_begin->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
+
+	$t_begin->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
+	$t_begin->param(FILEX_MANAGE_UPLOADED_FILES_COUNT=>$user->getUploadCount());
+	$t_begin->param(FILEX_MANAGE_ACTIVE_FILES_COUNT=>$user->getActiveCount());
+	$t_begin->param(FILEX_MANAGE_URL=>toHtml($S->getManageUrl()));
+	$t_begin->param(FILEX_CAN_UPLOAD=>1);
+	$t_begin->param(FILEX_FORM_UPLOAD_ACTION=>toHtml(genFormAction($S,$download_id)));
+	$t_begin->param(FILEX_OLD_DLID=>$download_id);
+	$t_begin->param(FILEX_METER_URL=>toHtml(genMeterUrl($S,$download_id)));
+	if ( $user->isAdmin() ) {
+		$t_begin->param(FILEX_MANAGE_IS_ADMIN=>1);
+		$t_begin->param(FILEX_MANAGE_ADMIN_URL=>$S->getAdminUrl());
+	}
+
+	# check for quotas
+	my ($quota_max_file_size,$quota_max_used_space) = $user->getQuota(); 
+	if ( $quota_max_used_space > 0 ) {
+		my ($hrsize,$hrunit) = hrSize($quota_max_used_space);
+		$t_begin->param(FILEX_MANAGE_HAVE_QUOTA=>1);
+		$t_begin->param(FILEX_MANAGE_MAX_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
+	}
+	my $current_user_space = $user->getDiskSpace();
+ 	my ($hrsize,$hrunit) = hrSize($current_user_space);
+	$t_begin->param(FILEX_MANAGE_USED_SPACE=>"$hrsize ".$S->i18n->localizeToHtml($hrunit));
 
 	$t_begin;
 }
