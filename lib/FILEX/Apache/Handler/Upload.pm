@@ -65,7 +65,6 @@ sub run {
 	my $bUploadCanceled = 0; # upload canceled ?
 	my $Upload; # the Upload object
 	my $download_id; # the uniq download id
-	my %upload_infos; # upload informations
 	my ($t_begin,$t_end); # the templates
 	my $dlid_field_name = DLID_FIELD_NAME;
 
@@ -179,21 +178,9 @@ sub run {
 		$t_begin->param(FILEX_MANAGE_ADMIN_URL=>$S->getAdminUrl());
 	}
 
-	# the expire loop
-	my (@expire_loop, $expire_default, $expire_posted, $expire_value, $expire_min, $expire_max);
-	$expire_default = $S->config->getDefaultFileExpire();
-	$expire_min = $S->config->getMinFileExpire();
-	$expire_max = $S->config->getMaxFileExpire();
-	$upload_infos{'daykeep'} = $S->apreq->param(DAY_KEEP_FIELD_NAME) || $expire_default;
-	$upload_infos{'daykeep'} = $expire_default if ( $upload_infos{'daykeep'} > $expire_max );
-	# fill daykeep
-	for ( $expire_value = $expire_min; $expire_value <= $expire_max; $expire_value++ ) {
-		my $expire_loop_row = {'FILEX_EXPIRE_VALUE'=>$expire_value};
-		if ( $expire_value == $upload_infos{'daykeep'} ) {
-			$expire_loop_row->{'FILEX_EXPIRE_SELECTED'} = 1;
-		} 
-		push(@expire_loop,$expire_loop_row);
-	}	
+	my %upload_infos = _get_upload_infos_from_req_params($S);
+
+	my @expire_loop = _compute_expire_loop($S, $upload_infos{daykeep});
 	$t_begin->param(FILEX_EXPIRE_LOOP=>\@expire_loop);
 
 	# check for quotas
@@ -257,20 +244,14 @@ sub run {
 		display($S,$t_begin);
 	}
 
-	# new - receive delivery & receive resume
-	$upload_infos{'getdelivery'} = $S->apreq->param(DELIVERY_FIELD_NAME) || 0;
-	$upload_infos{'getdelivery'} = 0 if ($upload_infos{'getdelivery'} !~ /^[0-1]$/);
-	$upload_infos{'getresume'} = $S->apreq->param(RESUME_FIELD_NAME) || 0;
-	$upload_infos{'getresume'} = 0 if ($upload_infos{'getresume'} !~ /^[0-1]$/);
-	$upload_infos{'wpwd'} = $S->apreq->param(NEED_PASSWORD_FIELD_NAME) || 0;
-	$upload_infos{'wpwd'} = 0 if ( $upload_infos{'wpwd'} !~ /^[0-1]$/);
-	$upload_infos{'password'} = $S->apreq->param(PASSWORD_FIELD_NAME);
-	# process upload
-	$upload_infos{'real_filename'} = normalize($Upload->filename());
+	$upload_infos{'owner'} = $user->getId();
+	$upload_infos{'owner_uniq_id'} = $user->getUniqId();
+
 	$upload_infos{'file_name'} = genUniqId(); # "filesystem" filename
+	$upload_infos{'upload_date'} = time(); # get the time from 01/01/1970 0:0:0 GMT
+	$upload_infos{'real_filename'} = normalize($Upload->filename());
 	$upload_infos{'file_size'} = $Upload->size();
 	$upload_infos{'file_type'} = $Upload->type();
-	$upload_infos{'upload_date'} = time(); # get the time from 01/01/1970 0:0:0 GMT
 
 	# store file on disk
 	my $destination = File::Spec->catfile($S->config->getFileRepository(),$upload_infos{'file_name'});
@@ -280,45 +261,11 @@ sub run {
 		display($S,$t_begin);
 	}
 	# register the new file
-	my $record = eval { FILEX::DB::Upload->new(); };
+	my $record = eval { _register_new_upload($S, %upload_infos) };
 	if ( $@ ) {
 		warn(__PACKAGE__,"-> problem while creating new record : $@");
 		$t_begin->param(FILEX_HAS_ERROR=>1);
 		$t_begin->param(FILEX_ERROR=>$@);
-		display($S,$t_begin);
-	}
-	$record->setFileName($upload_infos{'file_name'});
-	$record->setRealName($upload_infos{'real_filename'});
-	$record->setOwner($user->getId());
-	$record->setOwnerUniqId($user->getUniqId());
-	$record->setIpAddress($S->getRemoteIP());
-	if ( $S->isBehindProxy() ) {
-		$record->setUseProxy(1);
-		$record->setProxyInfos($S->getProxyInfos());
-	}
-	$record->setContentType($upload_infos{'file_type'});
-	$record->setFileSize($upload_infos{'file_size'});
-	$record->setUploadDate($upload_infos{'upload_date'});
-	$record->setExpireDays($upload_infos{'daykeep'});
-	$record->setGetDelivery($upload_infos{'getdelivery'});
-	$record->setGetResume($upload_infos{'getresume'});
-	$record->setUserAgent($S->getUserAgent());
-	# set password if checked and password is ok
-	if ( $upload_infos{'wpwd'} == 1 ) {
-		if ( defined($upload_infos{'password'}) ) {
-			# strip whitespace 
-			$upload_infos{'password'} =~ s/\s//g;
-			my $pwd_length = length($upload_infos{'password'});
-			# set password only if in valid range
-			$record->setPassword($upload_infos{'password'}) if ( $pwd_length >= $S->config->getMinPasswordLength() && 
-			                                                     $pwd_length <= $S->config->getMaxPasswordLength() );
-		}
-	}
-	# create the new record
-	if ( ! $record->save() ) {
-		warn(__PACKAGE__,"-> Unable to save record ...");
-		$t_begin->param(FILEX_HAS_ERROR=>1);
-		$t_begin->param(FILEX_ERROR=>$record->getLastErrorString());
 		display($S,$t_begin);
 	}
 	# send email if needed
@@ -343,6 +290,81 @@ sub run {
 	}
 	display($S,$t_end);
 	return MP2 ? Apache2::Const::OK : Apache::Constants::OK;
+}
+
+sub _register_new_upload {
+	my ($S, %upload_infos) = @_;
+
+	# register the new file
+	my $record = FILEX::DB::Upload->new();
+
+	$record->setFileName($upload_infos{'file_name'});
+	$record->setRealName($upload_infos{'real_filename'});
+	$record->setOwner($upload_infos{'owner'});
+	$record->setOwnerUniqId($upload_infos{'owner_uniq_id'});
+	$record->setContentType($upload_infos{'file_type'});
+	$record->setFileSize($upload_infos{'file_size'});
+	$record->setUploadDate($upload_infos{'upload_date'});
+	$record->setExpireDays($upload_infos{'daykeep'});
+	$record->setGetDelivery($upload_infos{'getdelivery'});
+	$record->setGetResume($upload_infos{'getresume'});
+	$record->setPassword($upload_infos{'password'}) if defined $upload_infos{'password'};
+
+	$record->setUserAgent($S->getUserAgent());
+	$record->setIpAddress($S->getRemoteIP());
+	if ( $S->isBehindProxy() ) {
+		$record->setUseProxy(1);
+		$record->setProxyInfos($S->getProxyInfos());
+	}
+
+	# create the new record
+	$record->save() or die "unable to save record " . $record->getLastErrorString();
+
+	$record;
+}
+
+sub _get_upload_infos_from_req_params {
+	my ($S) = @_;
+
+	my %upload_infos; # upload informations
+	$upload_infos{'getdelivery'} = $S->apreq->param(DELIVERY_FIELD_NAME) || 0;
+	$upload_infos{'getdelivery'} = 0 if ($upload_infos{'getdelivery'} !~ /^[0-1]$/);
+	$upload_infos{'getresume'} = $S->apreq->param(RESUME_FIELD_NAME) || 0;
+	$upload_infos{'getresume'} = 0 if ($upload_infos{'getresume'} !~ /^[0-1]$/);
+	$upload_infos{'wpwd'} = $S->apreq->param(NEED_PASSWORD_FIELD_NAME) || 0;
+	$upload_infos{'wpwd'} = 0 if ( $upload_infos{'wpwd'} !~ /^[0-1]$/);
+	
+	# set password if checked and password is ok
+	if ( $upload_infos{'wpwd'} == 1 ) {
+	        my $password = $S->apreq->param(PASSWORD_FIELD_NAME);
+		if ( defined $password ) {
+			# strip whitespace 
+			$password =~ s/\s//g;
+			my $pwd_length = length($password);
+			# set password only if in valid range
+			$upload_infos{'password'} = $password if ( $pwd_length >= $S->config->getMinPasswordLength() && 
+								   $pwd_length <= $S->config->getMaxPasswordLength() );
+		}
+	}
+
+	my $expire_default = $S->config->getDefaultFileExpire();
+	my $expire_max = $S->config->getMaxFileExpire();
+	$upload_infos{'daykeep'} = $S->apreq->param(DAY_KEEP_FIELD_NAME) || $expire_default;
+	$upload_infos{'daykeep'} = $expire_default if ( $upload_infos{'daykeep'} > $expire_max );
+
+	%upload_infos;
+}
+
+sub _compute_expire_loop {
+	my ($S, $daykeep) = @_;
+
+	map { 
+		my $expire_loop_row = {'FILEX_EXPIRE_VALUE'=>$_};
+		if ( $_ == $daykeep) {
+		    $expire_loop_row->{'FILEX_EXPIRE_SELECTED'} = 1;
+		}
+		$expire_loop_row;
+	} ($S->config->getMinFileExpire() .. $S->config->getMaxFileExpire());
 }
 
 # display 
