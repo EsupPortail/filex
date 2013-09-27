@@ -111,11 +111,8 @@ sub run {
 
 	# load templates
 	my $t_begin = _template_begin($S);
-	my $t_end = $S->getTemplate(name=>"upload_end");
 
 	$t_begin->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
-	$t_end->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
-	$t_end->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
 
 	# fill in the first template
 	$t_begin->param(FILEX_MANAGE_UPLOADED_FILES_COUNT=>$user->getUploadCount());
@@ -182,6 +179,10 @@ sub run {
 		$t_begin->param(FILEX_ERROR=>$@);
 		display($S,$t_begin);
 	}
+
+	my $t_end = _template_end($S, $record, %upload_infos);
+	$t_end->param(FILEX_USER_NAME=>toHtml($user->getRealName()));
+
 	# send email if needed
 	if ( $S->config->needEmailNotification() ) {
 		# password is stored as an md5 string so we need the clear text one
@@ -189,18 +190,6 @@ sub run {
 			$t_end->param(FILEX_HAS_ERROR=>1);
 			$t_end->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to send email"));
 		}
-	}
-	# fill last template
-	$t_end->param(FILEX_FILE_NAME=>toHtml($record->getRealName()));
-	my ($fsz,$funit) = hrSize($record->getFileSize());
-	$t_end->param(FILEX_FILE_SIZE=>$fsz." ".$S->i18n->localizeToHtml($funit));
-	$t_end->param(FILEX_FILE_EXPIRE=>toHtml(tsToLocal($record->getExpireDate())));
-	$t_end->param(FILEX_GET_URL=>toHtml(genGetUrl($S,$record->getFileName())));
-	$t_end->param(FILEX_DAY_KEEP=>$upload_infos{'daykeep'});
-	$t_end->param(FILEX_UPLOAD_URL=>toHtml($S->getUploadUrl()));
-	if ( $record->needPassword() ) {
-		$t_end->param(FILEX_HAS_PASSWORD=>1);
-		$t_end->param(FILEX_PASSWORD=>toHtml($upload_infos{'password'}));
 	}
 	display($S,$t_end);
 	return MP2 ? Apache2::Const::OK : Apache::Constants::OK;
@@ -351,6 +340,26 @@ sub _template_begin {
 	$t_begin->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
 
 	$t_begin;
+}
+
+sub _template_end {   
+	my ($S, $record, %upload_infos) = @_;
+
+	my $t_end = $S->getTemplate(name=>"upload_end");
+
+	$t_end->param(FILEX_SYSTEM_EMAIL=>$S->config->getSystemEmail());
+	$t_end->param(FILEX_FILE_NAME=>toHtml($record->getRealName()));
+	my ($fsz,$funit) = hrSize($record->getFileSize());
+	$t_end->param(FILEX_FILE_SIZE=>$fsz." ".$S->i18n->localizeToHtml($funit));
+	$t_end->param(FILEX_FILE_EXPIRE=>toHtml(tsToLocal($record->getExpireDate())));
+	$t_end->param(FILEX_GET_URL=>toHtml(genGetUrl($S,$record->getFileName())));
+	$t_end->param(FILEX_DAY_KEEP=>$upload_infos{'daykeep'});
+	$t_end->param(FILEX_UPLOAD_URL=>toHtml($S->getUploadUrl()));
+	if ( $record->needPassword() ) {
+		$t_end->param(FILEX_HAS_PASSWORD=>1);
+		$t_end->param(FILEX_PASSWORD=>toHtml($upload_infos{'password'}));
+	}
+	$t_end;
 }
 
 sub _check_upload_size {
