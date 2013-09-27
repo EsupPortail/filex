@@ -75,21 +75,16 @@ sub run {
 		%args = $r->args();
 	}
 	# if we have de dlid in the QS then we must hook for upload meter
-	my $download_id = exists($args{$dlid_field_name}) ? $args{$dlid_field_name} : undef;
+	my $download_id = $args{$dlid_field_name};
 	if ( $download_id ) {
-		# the new config object
-		# init config object (because we need info to initialize the IPCache
 		my $Config = FILEX::System::Config->instance(file=>$r->dir_config(FILEX_CONFIG_NAME));
-		# get maximum file upload size and check it
-		my $posted_content_length = (MP2) ? $r->headers_in->{'Content-Length'} : $r->header_in('Content-Length');
-		# initialize IPC Cache if we have a download id and if the upload size is not too large
+		my $cntlength = (MP2) ? $r->headers_in->{'Content-Length'} : $r->header_in('Content-Length');
 		my $IPCache = initIPCCache($Config);
 		if ( !$IPCache ) {
 			warn(__PACKAGE__,"-> Unable to create Shared Cache !");
 			$S = FILEX::System->new($r,with_upload=>1);
 		} else {
 			# set the IPC Size 
-			my $cntlength = $posted_content_length;
 			$IPCache->set($download_id."size",$cntlength) if ( $cntlength );
 			my $transparent_hook = _new_upload_hook($IPCache);
 			$S = FILEX::System->new($r,with_upload=>1,with_hook=>{"hook_data"=>$download_id,"upload_hook"=>$transparent_hook});
