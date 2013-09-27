@@ -247,21 +247,7 @@ sub run {
 	$upload_infos{'owner'} = $user->getId();
 	$upload_infos{'owner_uniq_id'} = $user->getUniqId();
 
-	$upload_infos{'file_name'} = genUniqId(); # "filesystem" filename
-	$upload_infos{'upload_date'} = time(); # get the time from 01/01/1970 0:0:0 GMT
-	$upload_infos{'real_filename'} = normalize($Upload->filename());
-	$upload_infos{'file_size'} = $Upload->size();
-	$upload_infos{'file_type'} = $Upload->type();
-
-	# store file on disk
-	my $destination = File::Spec->catfile($S->config->getFileRepository(),$upload_infos{'file_name'});
-	if ( !storeFile($destination, $Upload, $S->config()) ) {
-		$t_begin->param(FILEX_HAS_ERROR=>1);
-		$t_begin->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to store file"));
-		display($S,$t_begin);
-	}
-	# register the new file
-	my $record = eval { _register_new_upload($S, %upload_infos) };
+	my $record = eval { _store_file_and_register_on_disk($S, $Upload, %upload_infos) };
 	if ( $@ ) {
 		warn(__PACKAGE__,"-> problem while creating new record : $@");
 		$t_begin->param(FILEX_HAS_ERROR=>1);
@@ -290,6 +276,23 @@ sub run {
 	}
 	display($S,$t_end);
 	return MP2 ? Apache2::Const::OK : Apache::Constants::OK;
+}
+
+sub _store_file_and_register_on_disk {
+	my ($S, $Upload, %upload_infos) = @_;
+
+	$upload_infos{'file_name'} = genUniqId(); # "filesystem" filename
+	$upload_infos{'upload_date'} = time(); # get the time from 01/01/1970 0:0:0 GMT
+	$upload_infos{'real_filename'} = normalize($Upload->filename());
+	$upload_infos{'file_size'} = $Upload->size();
+	$upload_infos{'file_type'} = $Upload->type();
+    
+	# store file on disk
+	my $destination = File::Spec->catfile($S->config->getFileRepository(),$upload_infos{'file_name'});
+	if (!storeFile($destination, $Upload, $S->config())) {
+		die $S->i18n->localizeToHtml("unable to store file");
+	}
+	_register_new_upload($S, %upload_infos);
 }
 
 sub _register_new_upload {
