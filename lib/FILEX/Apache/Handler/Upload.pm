@@ -32,6 +32,8 @@ use constant DLID_FIELD_NAME => "dlid";
 use constant NEED_PASSWORD_FIELD_NAME => "withpwd";
 # password id field
 use constant PASSWORD_FIELD_NAME => "pwd";
+# for trusted IPs
+use constant OWNER_FIELD_NAME => "owner";
 
 $VERSION = 1.0;
 
@@ -106,6 +108,12 @@ sub run {
 		$download_id = genUniqId();
 	}
 	# END INITIALIZATION 
+
+	my $trustedUri = $S->config->getUriTrustedUpload();	
+	if ($trustedUri && $trustedUri eq $S->apreq->uri) {
+	    return _trusted_upload($S);
+	}
+
 	# beginSession will redirect the user if required
 	my $user = $S->beginSession(); 
 
@@ -165,6 +173,30 @@ sub run {
 	display($S,$t_end);
 	return MP2 ? Apache2::Const::OK : Apache::Constants::OK;
 }
+
+sub _trusted_upload {
+	my ($S) = @_;
+
+	my %upload_infos = _get_upload_infos_from_req_params($S);
+	$upload_infos{'owner_uniq_id'} = $upload_infos{'owner'} =
+		$S->apreq->param(OWNER_FIELD_NAME);
+	my $Upload  = $S->apreq->upload(UPLOAD_FIELD_NAME) or _raw_fatal_error($S, 'trusted upload: missing "' . UPLOAD_FIELD_NAME . '" param');
+
+	my $record = eval { _store_file_and_register_on_disk($S, $Upload, %upload_infos) };
+	if ($@) { _raw_fatal_error($S, $@) }
+
+	$S->sendHeader("Content-type"=>"text/plain");
+	$S->apreq->print(genGetUrl($S,$record->getFileName()));
+	return Apache2::Const::OK;
+}
+
+sub _raw_fatal_error {
+    my ($S, $err) = @_;
+    $S->sendHeader("Content-type"=>"text/plain");
+    $S->apreq->print($err);
+    exit(Apache2::Const::OK()); # should be error, but otherwise we get apache default text
+}
+
 
 sub _store_file_and_register_on_disk {
 	my ($S, $Upload, %upload_infos) = @_;

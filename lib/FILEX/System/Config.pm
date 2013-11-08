@@ -548,6 +548,12 @@ sub getSystemEmail {
 	return $self->{_config_}->val(SYSSECTION,"SystemEmail");
 }
 
+sub getTrustedIPsRegex {
+	my $self = shift;
+	#$self->_reload();
+	return $self->{_config_}->val(SYSSECTION,"TrustedIPsRegex");
+}
+
 # get File expiration default
 sub getDefaultFileExpire {
 	my $self = shift;
@@ -598,6 +604,12 @@ sub getUriUpload {
 	my $self = shift;
 	#$self->_reload();
 	return $self->{_config_}->val(URISECTION,"upload");
+}
+
+sub getUriTrustedUpload {
+	my $self = shift;
+	#$self->_reload();
+	return $self->{_config_}->val(URISECTION,"trusted_upload");
 }
 
 sub getUriMeter {

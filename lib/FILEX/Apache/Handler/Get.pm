@@ -141,7 +141,7 @@ sub run {
 		$Template->param(FILEX_FILE_SIZE=>$fsz." ".$S->i18n->localizeToHtml("$funit"));
 		$Template->param(FILEX_FILE_PUBLISHED_DATE=>toHtml(tsToGmt($upload->getUploadDate())." (GMT)"));
 		$Template->param(FILEX_FILE_EXPIRE_DATE=>toHtml(tsToGmt($upload->getExpireDate()). " (GMT)"));
-		$Template->param(FILEX_FILE_OWNER=>$S->getMail($upload->getOwner()));
+		$Template->param(FILEX_FILE_OWNER=>$S->getMail($upload->getOwner()) || $upload->getOwner());
 		# password failed !
 		if ( $bPasswordFailed ) {
 			$Template->param(FILEX_HAS_ERROR=>1);
