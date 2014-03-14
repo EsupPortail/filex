@@ -1,4 +1,19 @@
+v1.8
+
+- migration:
+  - conf/FILEX.ini: UidAttr/MailAttr/UsernameAttr are now in [Attribute] instead of [Ldap]
+  - apply conf/update-1.7-1.8.sql
+
 - authentification Shib (avec une seule regle : SHIB)
+  doc/migrate-db-to-shib.pl disponible pour migrer de CAS à Shib
+- use postMessage-resize-iframe-in-parent.js to have dynamic height in uportal iframe
+- implement special trusted upload to be used with curl
+  example of use: 
+  curl -F 'upload=@foo.png' -F 'daykeep=1' -F 'owner=foo@univ.fr' https://filex.univ.fr/filex/trusted-upload
+- fix slow upload: writing to IPC cache is too slow to be done every few byte uploads
+- corrections orthographiques
+- handle multiple ldap servers
+- simple fix for mod-perl2 2.0.7
 
 v1.7a
 1- Correction d'un petit bug dans le module de configuration d'Apache (HttpConfig.pm) dans le cas d'un usage avec apache 1.x
