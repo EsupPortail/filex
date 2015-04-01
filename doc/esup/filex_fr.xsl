@@ -69,12 +69,12 @@ Vous pouvez les trier selon différent critères en cliquant sur <strong>+</stro
 							<xsl:with-param name="node" select="./sorts"/>
 							<xsl:with-param name="name">sort_download_count_asc</xsl:with-param>
 							<xsl:with-param name="text">+</xsl:with-param>
-							<xsl:with-param name="title">Tri croissant sur le nombre de téléchargement</xsl:with-param>
+							<xsl:with-param name="title">Tri croissant sur le nombre de téléchargements</xsl:with-param>
 							</xsl:call-template> Téléchargé <xsl:call-template name="gen_sort_url">
 							<xsl:with-param name="node" select="./sorts"/>
 							<xsl:with-param name="name">sort_download_count_desc</xsl:with-param>
 							<xsl:with-param name="text">-</xsl:with-param>
-							<xsl:with-param name="title">Tri décroissant sur le nombre de téléchargement</xsl:with-param>
+							<xsl:with-param name="title">Tri décroissant sur le nombre de téléchargements</xsl:with-param>
 							</xsl:call-template></th>
 				</tr>
 			</thead>
