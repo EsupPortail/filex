@@ -30,8 +30,8 @@ require Exporter;
 %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 $VERSION = 1;
 
-my @UNIT_TABLE = qw(byte kbyte mbyte);
-my %UNIT_IDX = (byte=>{idx=>0,mul=>1},kbyte=>{idx=>1,mul=>1024},mbyte=>{idx=>2,mul=>1024*1024});
+my @UNIT_TABLE = qw(byte kbyte mbyte gbyte);
+my %UNIT_IDX = (byte=>{idx=>0,mul=>1},kbyte=>{idx=>1,mul=>1024},mbyte=>{idx=>2,mul=>1024*1024},gbyte=>{idx=>3,mul=>1024*1024*1024});
 
 # timestamp to locale TZ
 sub tsToLocal {
@@ -51,7 +51,9 @@ sub hrSize {
 	#return ($size,"byte") 
 	return ($size,$UNIT_TABLE[0]) if ($size < 1024);
 	return (sprintf("%.2f",$size/1024),$UNIT_TABLE[1]) if ( $size < (1024*1024));
-	return (sprintf("%.2f",$size/(1024*1024)),$UNIT_TABLE[2]);
+	return (sprintf("%.2f",$size/(1024*1024)),$UNIT_TABLE[2]) if ( $size < (1024*1024*1024));
+        return (sprintf("%.2f",$size/(1024*1024*1024)),$UNIT_TABLE[3]);
+
 }
 
 sub unitLength {
