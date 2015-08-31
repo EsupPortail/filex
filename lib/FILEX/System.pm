@@ -799,7 +799,8 @@ sub isBehindProxy {
 # get remote host ip address
 sub getRemoteIP {
 	my $self = shift;
-	return $self->apreq->connection->remote_ip();
+	my $c = $self->apreq->connection;
+	return $c->can('remote_ip') ? $c->remote_ip : $self->apreq->useragent_ip;
 	# if behind proxy 
 	#return ( $self->isBehindProxy() ) ? $self->apreq->header_in('X-Forwarded-For') : $self->apreq->connection->remote_ip();
 }
