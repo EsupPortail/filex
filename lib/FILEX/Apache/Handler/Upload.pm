@@ -119,7 +119,7 @@ sub run {
 
 	my $t_begin = _template_begin($S, $user, $download_id);
 
-	my %upload_infos = _get_upload_infos_from_req_params($S);
+	my %upload_infos = _get_upload_infos_from_req_params($S, {});
 
 	my @expire_loop = _compute_expire_loop($S, $upload_infos{daykeep});
 	$t_begin->param(FILEX_EXPIRE_LOOP=>\@expire_loop);
@@ -177,7 +177,7 @@ sub run {
 sub _trusted_upload {
 	my ($S) = @_;
 
-	my %upload_infos = _get_upload_infos_from_req_params($S);
+	my %upload_infos = _get_upload_infos_from_req_params($S, { trusted => 1 });
 	$upload_infos{'owner_uniq_id'} = $upload_infos{'owner'} =
 		$S->apreq->param(OWNER_FIELD_NAME);
 	my $Upload  = $S->apreq->upload(UPLOAD_FIELD_NAME) or _raw_fatal_error($S, 'trusted upload: missing "' . UPLOAD_FIELD_NAME . '" param');
@@ -247,7 +247,7 @@ sub _register_new_upload {
 }
 
 sub _get_upload_infos_from_req_params {
-	my ($S) = @_;
+	my ($S, $opts) = @_;
 
 	my %upload_infos; # upload informations
 	$upload_infos{'getdelivery'} = $S->apreq->param(DELIVERY_FIELD_NAME) || 0;
@@ -273,7 +273,7 @@ sub _get_upload_infos_from_req_params {
 	my $expire_default = $S->config->getDefaultFileExpire();
 	my $expire_max = $S->config->getMaxFileExpire();
 	$upload_infos{'daykeep'} = $S->apreq->param(DAY_KEEP_FIELD_NAME) || $expire_default;
-	$upload_infos{'daykeep'} = $expire_default if ( $upload_infos{'daykeep'} > $expire_max );
+	$upload_infos{'daykeep'} = $expire_default if ( $upload_infos{'daykeep'} > $expire_max && !$opts->{trusted} );
 
 	%upload_infos;
 }
