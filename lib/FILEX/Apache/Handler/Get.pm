@@ -272,7 +272,8 @@ sub sendMail {
 	$t->param(FILEX_FILE_SIZE=>$fsz." ".$s->i18n->localize($funit));
 	$t->param(FILEX_FILE_DATE=>tsToLocal($u->getUploadDate()));
 	$t->param(FILEX_FILE_EXPIRE=>tsToLocal($u->getExpireDate()));
-	my $remote_ip = $s->apreq->connection->remote_ip();
+	my $c = $s->apreq->connection;
+	my $remote_ip = $c->can('remote_ip') ? $c->remote_ip : $s->apreq->useragent_ip;
 	my $remote_name = rDns($remote_ip) || $s->i18n->localize("unknown");
 	$t->param(FILEX_DOWNLOAD_ADDRESS=>$remote_ip);
 	$t->param(FILEX_DOWNLOAD_NAME=>$remote_name);
