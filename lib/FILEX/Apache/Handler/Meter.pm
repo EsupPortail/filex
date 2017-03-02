@@ -40,7 +40,6 @@ sub run {
 	my $template = $S->getTemplate(name=>"meter");
 	my $dlid = $S->apreq->param(DLID_FIELD_NAME);
 	my $inireq = $S->apreq->param(INI_FIELD_NAME);
-	my $url = genUrl($S->getCurrentUrl(),$dlid);
 	# check if user is authenticated
   my $user = $S->beginSession(no_auth=>1);
 	my $max_file_size = 0;
@@ -54,13 +53,13 @@ sub run {
 	if ( ! $dlid ) {
 		$template->param(FILEX_HAS_ERROR=>1);
 		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("no progress meter"));
-		display($S,$template,$url,1); 
+		display($S,$template); 
 	}
 	my $IPCache = initIPCCache($S->config);
 	if ( ! $IPCache ) {
 		$template->param(FILEX_HAS_ERROR=>1);
 		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("unable to initialize IPC"));
-		display($S,$template,$url,1);
+		display($S,$template);
 	}
 	# fetch cache infos
 	$dl_info{'size'} = $IPCache->get($dlid."size");
@@ -73,7 +72,7 @@ sub run {
 	if ( ! $inireq && ! $dl_info{'size'} ) {
 		$template->param(FILEX_HAS_ERROR=>1);
 		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("no progress meter"));
-		display($S,$template,$url,1); 
+		display($S,$template); 
 	}
 	# wait on size because this is the first published key : cf Upload.pm
 	for ( my $i = 0; $i < $tout; $i++ ) {
@@ -89,7 +88,7 @@ sub run {
 	if ( $pb ) {
 		$template->param(FILEX_HAS_ERROR=>1);
 		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("no progress meter"));
-		display($S,$template,$url,1); 
+		display($S,$template); 
 	}
 	# fetch other datas
 	$dl_info{'filename'} = $IPCache->get($dlid."filename") || "";
@@ -114,7 +113,7 @@ sub run {
 		# display
 		$template->param(FILEX_HAS_ERROR=>1);
 		$template->param(FILEX_ERROR=>$S->i18n->localizeToHtml("upload canceled"));
-		display($S,$template,$url,1);
+		display($S,$template);
 	}
 
 	# if upload end
@@ -130,7 +129,7 @@ sub run {
 		$IPCache->remove($dlid."filename");
 		$IPCache->remove($dlid."starttime");
 		$IPCache->remove($dlid."end");
-		display($S,$template,$url,1);
+		display($S,$template);
 	}
 
 	# do computation
@@ -163,31 +162,19 @@ sub run {
 		$template->param(FILEX_NOB_ERROR=>$S->i18n->localizeToHtml("file size too large"));
 		$template->param(FILEX_NOB_ERROR_DESC=>$S->i18n->localizeToHtml("too large desc"));
 	}
-	display($S,$template,$url);
+        $template->param(FILEX_REFRESH_DELAY=>$S->config->getMeterRefreshDelay());
+	display($S,$template);
 	return (MP2) ? Apache2::Const::OK : Apache::Constants::OK;
 }
 
 sub display {
 	my $s = shift;
 	my $t = shift;
-	my $url = shift;
-	my $end = shift;
 	# base for static include
 	$t->param(FILEX_STATIC_FILE_BASE=>$s->getStaticUrl()) if ( $t->query(name=>'FILEX_STATIC_FILE_BASE') );
-	if ( !$end ) {
-		$s->sendHeader("Content-Type"=>"text/html","Refresh"=>$s->config->getMeterRefreshDelay().";url=$url");
-	} else {
-		$s->sendHeader("Content-Type"=>"text/html");
-	}
+        $s->sendHeader("Content-Type"=>"text/html");
 	$s->apreq->print($t->output());
 	exit( (MP2) ? Apache2::Const::OK : Apache::Constants::OK);
-}
-
-sub genUrl {
-	my $url = shift;
-	my $dlid = shift;
-	$url .= "?".DLID_FIELD_NAME."=$dlid";
-	return $url;
 }
 
 # initialize IPC Cache

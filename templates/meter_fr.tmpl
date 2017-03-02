@@ -1,6 +1,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
+  <TMPL_IF NAME="FILEX_REFRESH_DELAY">
+    <script>setTimeout(function() { window.location.href = window.location.href; }, <TMPL_VAR NAME="FILEX_REFRESH_DELAY">000); </script>
+  </TMPL_IF>
   <TMPL_INCLUDE NAME="include_head.tmpl">
 	<title>FileX : <TMPL_VAR NAME="FILEX_PROGRESS"> %</title>
 	<style type="text/css">
