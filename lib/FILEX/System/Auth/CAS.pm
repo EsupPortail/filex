@@ -480,7 +480,7 @@ sub get_https2{
 	    return undef;
 	}
 	
-	my $request = "GET $path HTTP/1.0\r\n";
+	my $request = "GET $path HTTP/1.1\r\nHost: $host\r\n";
 	print $ssl_socket "$request\r\n";
 
 	my @result;
