@@ -1,3 +1,7 @@
+v1.11
+
+- fix HTTP request (otherwise you need "HttpProtocolOptions unsafe" in CAS apache, if it has CVE-2016-8743 fix)
+
 v1.10
 
 - add meta "viewport" for mobiles (smartphones)
