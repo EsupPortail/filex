@@ -24,7 +24,7 @@ sub new {
 	}
 	$self->{'SmtpServer'} = $ARGZ{'server'};
 	$self->{'Hello'} = $ARGZ{'hello'} if ( defined($ARGZ{'hello'}) && length($ARGZ{'hello'}) > 0);
-	$self->{'Timeout'} = $ARGZ{'timeout'} if ( defined($ARGZ{'timeout'}) );
+	$self->{'Timeout'} = $ARGZ{'timeout'} if $ARGZ{'timeout'};
 	return bless($self,$class);
 }
 
