@@ -704,7 +704,8 @@ sub getCurrentUrl {
 sub getServerUrl {
 	my $self = shift;
 	my $s = $self->apreq->server();
-	my $url = ( $self->apreq->subprocess_env('https') ) ? "https://" : "http://";
+	my $proto = $self->apreq->headers_in->{'X-Forwarded-Proto'} || ($self->apreq->subprocess_env('https') ? "https" : "http");
+	my $url = "$proto://";
 	# host_name 
 	$url .= $self->config()->getHostName() || $s->server_hostname();
 	# port if not standard (0==80);
