@@ -65,7 +65,7 @@ sub _computeUser {
     return { 
 	id => $headers->{'eppn'},
 	mail => $headers->{$self->{'_config_'}->getMailAttr},
-	real_name => $headers->{$self->{'_config_'}->getUsernameAttr},
+	real_name => Encode::encode("ISO-8859-1", Encode::decode("UTF-8", $headers->{$self->{'_config_'}->getUsernameAttr})),
     };
 }
 
