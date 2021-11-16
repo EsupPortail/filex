@@ -1,3 +1,9 @@
+NB : Renater fournit le logiciel libre FileSender : https://filesender.renater.fr/. Nous vous invitons à l'utiliser s'il répond à vos besoins.
+
+Une alternative si vous avez besoin de conserver FileX est d'utiliser https://github.com/UnivParis1/filex-ng .
+
+
+
 Il existe maintenant un module permettant l'intégration dans le portail ESUP/Uportal.
 
 Pour activer ce module il faut configurer le paramètre useManageXml=1 dans le fichier FILEX.ini.
